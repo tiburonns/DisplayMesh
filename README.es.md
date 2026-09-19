@@ -4,7 +4,7 @@ DisplayMesh es un proyecto de pantalla virtual multiplataforma para **hosts macO
 
 El objetivo es permitir que una computadora cree una pantalla extendida real y la transmita a otra computadora o dispositivo Apple mediante **USB o Wi-Fi**, manteniendo baja latencia, alta resolución e interacción táctil.
 
-> **`main` actual: 0.1.2.** Estado: desarrollo inicial. La app de control ya separa USB/Wi-Fi de QUIC/TCP, valida configuraciones compatibles y ofrece interfaz Sistema/English/Español. La integración nativa de pantalla, el empaquetado del receptor Apple y el video end-to-end siguen siendo hitos activos.
+> **`main` actual: 0.2.0-development.** El receptor Apple ya incluye la ruta real de recepción H.264 de baja latencia (paquete DMP → parser Annex-B → VideoToolbox → NV12 → Metal), trabajo de decoder acotado, recuperación por keyframe, diagnósticos en vivo de FPS/bitrate/decode e interfaz Sistema/English/Español. La captura/encode del host y la validación end-to-end en hardware siguen siendo los bloqueadores antes de llamarlo un monitor externo utilizable.
 
 ## Requisitos del producto
 
@@ -15,12 +15,26 @@ El objetivo es permitir que una computadora cree una pantalla extendida real y l
 - Negociación de resolución nativa Retina
 - H.264 por hardware como baseline de baja latencia
 - HEVC / AV1 después cuando el hardware lo permita
-- 1080p60 y 1440p60 primero; 4K60 y 120 Hz después
+- 1080p60 y 1440p60 primero; 4K60 y 120 Hz sólo después de validación en hardware
 - Multitouch, scroll y metadatos de Apple Pencil
 - Mouse y teclado cuando aplique
-- Bitrate, FPS y raster de transmisión adaptativos
+- Bitrate y raster codificado adaptativos sin cambiar la geometría lógica del escritorio
 - Emparejamiento y sesiones cifradas
 - Interfaz en inglés, español e idioma del sistema
+
+## Estrategia de latencia
+
+DisplayMesh prioriza interacción fresca en lugar de comportamiento de reproductor multimedia.
+
+- sin buffer deliberado de reproducción
+- trabajo del decoder acotado
+- decode VideoToolbox en tiempo real en receptores Apple
+- presentación Metal desde superficies NV12
+- solicitud de keyframe después de pérdida de sincronía o reset por backlog
+- prioridad de input/control sobre video en cola
+- el controlador adaptativo reduce bitrate antes de reducir el raster codificado
+- congestión persistente puede bajar 100% → 85% → 75% → 67%
+- la recuperación restaura resolución antes de subir agresivamente el bitrate
 
 ## Enlaces de conexión
 
@@ -42,27 +56,29 @@ apps/control
     ├── displaymesh-core
     │       ├── modelo de dispositivos/sesiones
     │       ├── negociación de capacidades
+    │       ├── framing DMP + contrato de video
+    │       ├── controlador adaptativo de calidad
     │       ├── modelo de touch
-    │       └── modelo de bindings de conexión
+    │       └── ciclo de vida del backend
     │
     ├── backend host macOS
     │       ├── monitor virtual
     │       ├── ScreenCaptureKit
-    │       └── VideoToolbox
+    │       └── encoder VideoToolbox
     │
     ├── backend host Windows
     │       ├── driver virtual IddCx
-    │       ├── DXGI / D3D11
-    │       └── Media Foundation
+    │       ├── DirectX / D3D11
+    │       └── encoder Media Foundation
     │
     └── receptor Apple
             ├── listener con Network.framework
-            ├── decode con VideoToolbox / AVFoundation
-            ├── presentación Metal
+            ├── decoder H.264 con VideoToolbox
+            ├── renderer NV12 con Metal
             └── touch / Pencil con UIKit
 ```
 
-Consulta [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [DMPv1.md](protocol/DMPv1.md), las [notas del receptor Apple](platforms/apple-receiver/README.md) y el [plan de aceptación nativa](docs/TESTING.es.md).
+Consulta [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [DMPv1.md](protocol/DMPv1.md), [QUALITY_GATES.md](docs/QUALITY_GATES.md) y el [plan de aceptación nativa](docs/TESTING.es.md).
 
 ## Compilar la aplicación de control
 
@@ -72,7 +88,15 @@ Instala Rust estable y ejecuta:
 cargo run -p displaymesh-control
 ```
 
-La aplicación de control compila tanto en macOS como en Windows. Los backends de monitor virtual están separados intencionalmente de la UI compartida para usar las APIs y el modelo de drivers adecuados en cada plataforma.
+## Generar el proyecto para iPhone/iPad
+
+Instala XcodeGen y ejecuta:
+
+```bash
+cd platforms/apple-receiver
+xcodegen generate
+open DisplayMeshReceiver.xcodeproj
+```
 
 ## Idiomas
 

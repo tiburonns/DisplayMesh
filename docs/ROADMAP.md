@@ -11,11 +11,13 @@
 - [x] Reject invalid USB + QUIC binding
 - [x] Shared touch capability/event model
 - [x] Shared DMP framing in Rust and Swift
+- [x] Binary DMP video packet contract
+- [x] Adaptive quality controller with stress/recovery tests
 - [x] Protocol draft
 - [x] macOS / Windows backend boundaries
 - [x] Managed backend lifecycle with create/capture/stop/destroy rollback tests
 - [x] Product quality gates documented
-- [ ] CI green on macOS and Windows after current transport refactor
+- [ ] CI green on all host/receiver jobs
 
 ## M1 — Native display creation
 
@@ -45,21 +47,27 @@
 - [x] System / English / Español localization
 - [x] Rotation-driven panel descriptor refresh
 - [x] Receiver-side six-digit pairing approval UI
-- [x] Receiver protocol framing tests
-- [ ] Hardware H.264 decode/presentation
+- [x] Receiver protocol framing/video packet tests
+- [x] VideoToolbox H.264 decoder implementation
+- [x] NV12 Metal presentation implementation
+- [x] Bounded decode work + keyframe recovery implementation
+- [ ] Validate hardware H.264 decode on iPhone/iPad
 - [ ] Signed device build / TestFlight validation
 
-## M2 — Video path
+## M2 — End-to-end video path
 
 - [ ] macOS ScreenCaptureKit capture
 - [ ] Windows DirectX / IddCx frame path
 - [ ] macOS VideoToolbox H.264 real-time encoder
 - [ ] Windows Media Foundation H.264 hardware encoder
-- [ ] iPhone/iPad hardware H.264 decode
-- [ ] Metal / AVSampleBufferDisplayLayer receiver presentation
-- [ ] Frame dropping / bounded latency queue
-- [ ] Keyframe recovery
+- [x] iPhone/iPad VideoToolbox H.264 receive implementation
+- [x] iPhone/iPad Metal NV12 renderer implementation
+- [x] Receiver bounded-latency policy
+- [x] Receiver keyframe recovery
+- [ ] Host emits DMP video packets with SPS/PPS + IDR recovery frames
 - [ ] End-to-end local loopback test
+- [ ] 1080p60 hardware acceptance
+- [ ] 1440p60 hardware acceptance
 
 ## M3 — USB + network sessions
 
@@ -71,8 +79,10 @@
 - [ ] USB device discovery
 - [ ] Host-side pairing request + identity persistence
 - [ ] End-to-end pairing
-- [ ] Adaptive bitrate
-- [ ] Adaptive stream raster
+- [x] Adaptive bitrate/raster decision engine
+- [ ] Wire host telemetry into adaptive controller
+- [ ] Apply adaptive bitrate to encoders
+- [ ] Apply adaptive stream raster to capture/encode
 - [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
 
 ## M4 — Touch and input
@@ -99,11 +109,12 @@
 - [x] Explicit receiver-side pairing confirmation
 - [x] Development security state shown truthfully in UI
 - [x] Apple receiver reproducible project generation
+- [x] Receiver FPS / bitrate / decode / dropped-frame diagnostics
 - [ ] Apple receiver CI build confirmed green
 - [ ] First-run permission education
 - [ ] Production TLS 1.3 transport
 - [ ] Secure peer identity persistence
-- [ ] Diagnostics with RTT/FPS/bitrate/decode time
+- [ ] End-to-end RTT / queue-depth telemetry
 - [ ] Automatic updates
 - [ ] macOS signing/notarization
 - [ ] Windows app signing
