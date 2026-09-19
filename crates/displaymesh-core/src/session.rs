@@ -1,4 +1,6 @@
-use crate::{Codec, DisplayMode, DisplayPreset, PeerCapabilities, Role, Transport};
+use crate::{
+    Codec, ConnectionMedium, DisplayMode, DisplayPreset, PeerCapabilities, Role, WireProtocol,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionPhase {
@@ -30,7 +32,8 @@ pub struct SessionConfig {
     pub role: Role,
     pub mode: DisplayMode,
     pub codec: Codec,
-    pub transport: Transport,
+    pub connection_medium: ConnectionMedium,
+    pub wire_protocol: WireProtocol,
     pub preset: DisplayPreset,
     pub bitrate_mbps: u16,
     pub encryption_required: bool,
@@ -42,7 +45,8 @@ impl Default for SessionConfig {
             role: Role::Host,
             mode: DisplayMode::Extend,
             codec: Codec::H264,
-            transport: Transport::Quic,
+            connection_medium: ConnectionMedium::Wifi,
+            wire_protocol: WireProtocol::Quic,
             preset: DisplayPreset::PRESETS[1],
             bitrate_mbps: 24,
             encryption_required: true,
@@ -72,7 +76,8 @@ impl SessionConfig {
         local: &PeerCapabilities,
         remote: &PeerCapabilities,
     ) -> Result<NegotiatedSession, SessionNegotiationError> {
-        self.validate().map_err(SessionNegotiationError::InvalidConfig)?;
+        self.validate()
+            .map_err(SessionNegotiationError::InvalidConfig)?;
 
         let compatible = local.intersection(remote);
 
@@ -80,8 +85,16 @@ impl SessionConfig {
             return Err(SessionNegotiationError::UnsupportedCodec(self.codec));
         }
 
-        if !compatible.supports_transport(self.transport) {
-            return Err(SessionNegotiationError::UnsupportedTransport(self.transport));
+        if !compatible.supports_connection_medium(self.connection_medium) {
+            return Err(SessionNegotiationError::UnsupportedConnectionMedium(
+                self.connection_medium,
+            ));
+        }
+
+        if !compatible.supports_wire_protocol(self.wire_protocol) {
+            return Err(SessionNegotiationError::UnsupportedWireProtocol(
+                self.wire_protocol,
+            ));
         }
 
         if !compatible.supports_preset(self.preset) {
@@ -96,7 +109,8 @@ impl SessionConfig {
             role: self.role,
             mode: self.mode,
             codec: self.codec,
-            transport: self.transport,
+            connection_medium: self.connection_medium,
+            wire_protocol: self.wire_protocol,
             preset: self.preset,
             bitrate_mbps: self.bitrate_mbps,
             encrypted: self.encryption_required,
@@ -109,7 +123,8 @@ pub struct NegotiatedSession {
     pub role: Role,
     pub mode: DisplayMode,
     pub codec: Codec,
-    pub transport: Transport,
+    pub connection_medium: ConnectionMedium,
+    pub wire_protocol: WireProtocol,
     pub preset: DisplayPreset,
     pub bitrate_mbps: u16,
     pub encrypted: bool,
@@ -119,7 +134,8 @@ pub struct NegotiatedSession {
 pub enum SessionNegotiationError {
     InvalidConfig(SessionValidationError),
     UnsupportedCodec(Codec),
-    UnsupportedTransport(Transport),
+    UnsupportedConnectionMedium(ConnectionMedium),
+    UnsupportedWireProtocol(WireProtocol),
     UnsupportedPreset(DisplayPreset),
     EncryptionUnavailable,
 }
@@ -131,12 +147,14 @@ impl std::fmt::Display for SessionNegotiationError {
             Self::UnsupportedCodec(codec) => {
                 write!(f, "selected codec is not supported by both peers: {codec}")
             }
-            Self::UnsupportedTransport(transport) => {
-                write!(
-                    f,
-                    "selected transport is not supported by both peers: {transport}"
-                )
-            }
+            Self::UnsupportedConnectionMedium(medium) => write!(
+                f,
+                "selected connection medium is not supported by both peers: {medium}"
+            ),
+            Self::UnsupportedWireProtocol(protocol) => write!(
+                f,
+                "selected wire protocol is not supported by both peers: {protocol}"
+            ),
             Self::UnsupportedPreset(preset) => write!(
                 f,
                 "selected display mode is not supported by both peers: {}x{}@{}",
@@ -195,7 +213,8 @@ mod tests {
         let negotiated = config.negotiate(&local, &remote).unwrap();
 
         assert_eq!(negotiated.codec, Codec::H264);
-        assert_eq!(negotiated.transport, Transport::Quic);
+        assert_eq!(negotiated.connection_medium, ConnectionMedium::Wifi);
+        assert_eq!(negotiated.wire_protocol, WireProtocol::Quic);
         assert_eq!(negotiated.preset, DisplayPreset::PRESETS[1]);
         assert!(negotiated.encrypted);
     }
@@ -215,16 +234,20 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_transport_is_rejected() {
-        let mut config = SessionConfig::default();
-        config.transport = Transport::Usb;
-
+    fn unsupported_connection_medium_is_rejected() {
+        let config = SessionConfig::default();
         let local = PeerCapabilities::development_scaffold();
-        let remote = PeerCapabilities::development_scaffold();
+        let mut remote = PeerCapabilities::development_scaffold();
+        remote.connection_media = vec![ConnectionMedium::Wifi];
+
+        let mut usb_config = config;
+        usb_config.connection_medium = ConnectionMedium::Usb;
 
         assert_eq!(
-            config.negotiate(&local, &remote),
-            Err(SessionNegotiationError::UnsupportedTransport(Transport::Usb))
+            usb_config.negotiate(&local, &remote),
+            Err(SessionNegotiationError::UnsupportedConnectionMedium(
+                ConnectionMedium::Usb
+            ))
         );
     }
 
@@ -245,22 +268,28 @@ mod tests {
     fn capability_intersection_preserves_only_common_values() {
         let local = PeerCapabilities {
             codecs: vec![Codec::H264, Codec::Hevc],
-            transports: vec![Transport::Quic, Transport::Tcp],
+            connection_media: vec![ConnectionMedium::Wifi, ConnectionMedium::Usb],
+            wire_protocols: vec![WireProtocol::Quic, WireProtocol::Tcp],
             presets: vec![DisplayPreset::PRESETS[0], DisplayPreset::PRESETS[1]],
             encryption_supported: true,
+            touch: crate::TouchCapabilities::apple_receiver(),
         };
         let remote = PeerCapabilities {
             codecs: vec![Codec::H264, Codec::Av1],
-            transports: vec![Transport::Tcp],
+            connection_media: vec![ConnectionMedium::Usb],
+            wire_protocols: vec![WireProtocol::Tcp],
             presets: vec![DisplayPreset::PRESETS[1]],
             encryption_supported: true,
+            touch: crate::TouchCapabilities::apple_receiver(),
         };
 
         let common = local.intersection(&remote);
 
         assert_eq!(common.codecs, vec![Codec::H264]);
-        assert_eq!(common.transports, vec![Transport::Tcp]);
+        assert_eq!(common.connection_media, vec![ConnectionMedium::Usb]);
+        assert_eq!(common.wire_protocols, vec![WireProtocol::Tcp]);
         assert_eq!(common.presets, vec![DisplayPreset::PRESETS[1]]);
         assert!(common.encryption_supported);
+        assert!(common.touch.touch);
     }
 }
