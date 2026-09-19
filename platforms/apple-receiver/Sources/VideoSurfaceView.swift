@@ -164,11 +164,15 @@ final class VideoSurfaceView: MTKView {
         ]
 
         encoder.setRenderPipelineState(pipelineState)
-        encoder.setVertexBytes(
-            &vertices,
-            length: MemoryLayout<Float>.stride * vertices.count,
-            index: 0
-        )
+        vertices.withUnsafeBytes { bytes in
+            if let baseAddress = bytes.baseAddress {
+                encoder.setVertexBytes(
+                    baseAddress,
+                    length: bytes.count,
+                    index: 0
+                )
+            }
+        }
         encoder.setFragmentTexture(lumaTexture, index: 0)
         encoder.setFragmentTexture(chromaTexture, index: 1)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
