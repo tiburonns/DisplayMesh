@@ -229,10 +229,6 @@ struct DisplayMeshMacMediaHarness {
             encoder?.requestKeyframe()
         }
 
-        receiver.onInput = { payload in
-            print("input: received \(payload.count) bytes")
-        }
-
         receiver.onErrorMessage = { payload in
             let message = String(data: payload, encoding: .utf8) ?? "<binary error>"
             fputs("receiver: \(message)\n", stderr)
@@ -246,23 +242,49 @@ struct DisplayMeshMacMediaHarness {
             bitrateMbps: options.bitrateMbps
         )
 
+        let inputBridge = MacInputBridge(
+            targetBounds: CGDisplayBounds(capture.display.displayID)
+        )
+        inputBridge.onError = { message in
+            fputs("input: \(message)\n", stderr)
+        }
+
+        let accessibilityReady =
+            inputBridge.requestAccessibilityIfNeeded()
+
+        if accessibilityReady {
+            print("Touch control: Accessibility permission ready.")
+        } else {
+            print(
+                "Touch control: macOS requested Accessibility permission. " +
+                "Grant it in System Settings to enable pointer/scroll input."
+            )
+        }
+
+        receiver.onInput = { [weak inputBridge] payload in
+            inputBridge?.handle(payload)
+        }
+
         print(
             "Streaming display \(capture.display.displayID) at " +
             "\(capture.width)x\(capture.height) @ \(targetFPS) FPS, " +
             "\(options.bitrateMbps) Mbps."
         )
+        print("Touch: one finger = click/drag, two fingers = scroll.")
         print("Press Control-C to stop.")
 
         if let seconds = options.durationSeconds {
             try await Task.sleep(
                 nanoseconds: UInt64(seconds) * 1_000_000_000
             )
+            inputBridge.reset()
             await encoder.stop()
             receiver.close()
         } else {
             while !Task.isCancelled {
                 try await Task.sleep(nanoseconds: 3_600_000_000_000)
             }
+            inputBridge.reset()
             await encoder.stop()
             receiver.close()
         }
