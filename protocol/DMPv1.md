@@ -88,6 +88,37 @@ A host may negotiate a smaller encoded stream raster than the panel's physical p
 
 For a TCP binding, channels are multiplexed with explicit message type and length framing. Interactive implementations must disable Nagle and must never let video backlog block input indefinitely.
 
+## Video payload
+
+A DMP frame with message type `video` carries a binary DMP video packet.
+
+The fixed header is 16 bytes:
+
+| Offset | Size | Field |
+| ---: | ---: | --- |
+| 0 | 1 | codec: 1 H.264, 2 HEVC, 3 AV1 |
+| 1 | 1 | flags; bit 0 means keyframe |
+| 2 | 2 | reserved, currently zero |
+| 4 | 8 | presentation timestamp in microseconds, big endian |
+| 12 | 4 | frame duration in microseconds, big endian |
+| 16 | variable | encoded access unit |
+
+H.264 access units use Annex-B NAL framing. A keyframe access unit should carry current SPS/PPS parameter sets together with the IDR so a receiver can join or recover without waiting for unrelated configuration messages.
+
+The receiver converts Annex-B NAL units to the native decoder representation internally. This keeps DMP portable across VideoToolbox, Media Foundation and other decoder APIs.
+
+### H.264 low-delay requirements
+
+The production H.264 encoder should:
+
+- use hardware acceleration when available,
+- run in realtime mode,
+- avoid B-frame reordering,
+- minimize encoder frame delay,
+- emit IDR frames on receiver request,
+- repeat SPS/PPS on recovery keyframes,
+- favor a bounded latency budget over perfect delivery.
+
 ## Touch input
 
 Touch coordinates are normalized against the receiver presentation surface:
@@ -112,12 +143,15 @@ Receivers should forward coalesced high-frequency samples when useful, but sende
 
 DMPv1 prefers freshness over perfect delivery.
 
-- stale non-key video frames may be dropped
-- video queues must be bounded
-- receiver may request an immediate IDR/keyframe
-- bitrate should be reduced before allowing persistent queue growth
-- input/control must be prioritized ahead of queued video
+- receiver decode queues must be bounded
+- a receiver that loses decode synchronization requests an immediate IDR/keyframe
+- bitrate is reduced before persistent queue growth is allowed
+- stream raster may step down while logical desktop geometry stays stable
+- input/control is prioritized ahead of queued video
+- stale media work is discarded rather than adding interaction latency
 - decode/render telemetry feeds adaptation
+
+DisplayMesh's adaptive controller treats bitrate as the first quality lever. Persistent congestion may then step the encoded stream raster through 100%, 85%, 75% and 67%. Resolution recovery happens before aggressive bitrate upshifts and requires a recovery keyframe.
 
 ## Security
 

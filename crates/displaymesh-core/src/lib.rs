@@ -4,11 +4,16 @@
 //! outside this crate. Keeping those boundaries explicit prevents the shared
 //! UI from depending on private macOS APIs or Windows driver code.
 
+mod adaptive;
 mod backend;
 mod framing;
 mod model;
 mod session;
+mod video;
 
+pub use adaptive::{
+    AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile,
+};
 pub use backend::{
     BackendError, BackendLifecycleState, DisplayBackend, ManagedDisplayBackend,
     NativeBackendStatus, NativeProofLevel,
@@ -24,4 +29,7 @@ pub use model::{
 };
 pub use session::{
     NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
+};
+pub use video::{
+    DMP_VIDEO_HEADER_LEN, DmpVideoCodec, DmpVideoFlags, DmpVideoPacket, DmpVideoPacketError,
 };

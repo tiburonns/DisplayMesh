@@ -25,6 +25,11 @@
 "pairing.waitingMessage" = "La computadora conectada debe solicitar emparejamiento antes de usar esta pantalla.";
 
 "diagnostics.title" = "Diagnósticos de DisplayMesh";
+"diagnostics.fps" = "%.0f FPS";
+"diagnostics.decode" = "%.1f ms decodificación";
+"diagnostics.bitrate" = "%.1f Mbps";
+"diagnostics.dropped" = "%llu descartados";
+"diagnostics.hardware" = "Decodificación de video por hardware";
 
 "settings.title" = "Ajustes";
 "settings.language.section" = "Idioma";

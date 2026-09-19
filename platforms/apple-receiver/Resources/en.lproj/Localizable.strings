@@ -25,6 +25,11 @@
 "pairing.waitingMessage" = "A connected computer must request pairing before this display can be used.";
 
 "diagnostics.title" = "DisplayMesh diagnostics";
+"diagnostics.fps" = "%.0f FPS";
+"diagnostics.decode" = "%.1f ms decode";
+"diagnostics.bitrate" = "%.1f Mbps";
+"diagnostics.dropped" = "%llu dropped";
+"diagnostics.hardware" = "Hardware video decoder";
 
 "settings.title" = "Settings";
 "settings.language.section" = "Language";
