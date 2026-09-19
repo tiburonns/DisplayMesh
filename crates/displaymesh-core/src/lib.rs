@@ -8,6 +8,7 @@ mod adaptive;
 mod backend;
 mod framing;
 mod model;
+mod optimizer;
 mod session;
 mod video;
 
@@ -27,6 +28,7 @@ pub use model::{
     OperatingSystem, PeerCapabilities, Role, TouchCapabilities, TouchPhase, TouchPoint,
     WireProtocol,
 };
+pub use optimizer::{OptimizationError, SessionOptimizer};
 pub use session::{
     NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
 };
