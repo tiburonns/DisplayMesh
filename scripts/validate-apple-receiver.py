@@ -15,12 +15,16 @@ required_files = [
     RECEIVER / "App" / "ReceiverRootView.swift",
     RECEIVER / "App" / "ReceiverViewModel.swift",
     RECEIVER / "Protocol" / "DMPFrame.swift",
+    RECEIVER / "Protocol" / "DMPVideoPacket.swift",
+    RECEIVER / "Protocol" / "DMPInputPacket.swift",
     RECEIVER / "Protocol" / "PairingMessage.swift",
     RECEIVER / "Resources" / "en.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "es.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "en.lproj" / "InfoPlist.strings",
     RECEIVER / "Resources" / "es.lproj" / "InfoPlist.strings",
     RECEIVER / "Tests" / "DMPFrameTests.swift",
+    RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
+    RECEIVER / "Tests" / "DMPInputPacketTests.swift",
 ]
 
 errors: list[str] = []
