@@ -395,3 +395,25 @@ impl eframe::App for DisplayMeshApp {
         });
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn explicit_english_language_is_deterministic() {
+        assert_eq!(
+            AppLanguage::English.effective(),
+            EffectiveLanguage::English
+        );
+    }
+
+    #[test]
+    fn explicit_spanish_language_is_deterministic() {
+        assert_eq!(
+            AppLanguage::Spanish.effective(),
+            EffectiveLanguage::Spanish
+        );
+    }
+}
