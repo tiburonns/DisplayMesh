@@ -51,6 +51,12 @@ Telemetry / adaptation
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.
 
+## Capability negotiation
+
+Each peer advertises the codecs, transports, display presets and security features it actually supports. The effective capability set is the intersection of both peers.
+
+The session configuration selected by the user must then be validated against that intersection. DMPv1 does **not** silently replace an unsupported codec, transport, display mode or encryption requirement with another option. The control UI should disable incompatible choices when capabilities are known; if a stale or programmatic request still asks for an unsupported value, setup fails with an explicit error before a virtual display or media stream is created.
+
 ## Codec negotiation
 
 Initial implementation:
