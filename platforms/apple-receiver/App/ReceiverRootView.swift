@@ -10,6 +10,10 @@ struct ReceiverRootView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
+            VideoSurfaceRepresentable(controller: receiver.videoSurface)
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
+
             TouchSurfaceRepresentable(
                 onInput: receiver.captureInput,
                 onPanelDescriptor: receiver.updatePanelDescriptor
@@ -161,7 +165,10 @@ struct ReceiverRootView: View {
 
                 Text(
                     String(
-                        format: NSLocalizedString("pairing.peerMessage", comment: ""),
+                        format: NSLocalizedString(
+                            "pairing.peerMessage",
+                            comment: ""
+                        ),
                         pairing.peerName
                     )
                 )
@@ -174,7 +181,10 @@ struct ReceiverRootView: View {
                     .accessibilityLabel(
                         Text(
                             String(
-                                format: NSLocalizedString("pairing.codeAccessibility", comment: ""),
+                                format: NSLocalizedString(
+                                    "pairing.codeAccessibility",
+                                    comment: ""
+                                ),
                                 pairing.normalizedVerificationCode
                             )
                         )
@@ -230,7 +240,10 @@ struct ReceiverRootView: View {
         case .ready(let port):
             Text(
                 String(
-                    format: NSLocalizedString("receiver.readyPort", comment: ""),
+                    format: NSLocalizedString(
+                        "receiver.readyPort",
+                        comment: ""
+                    ),
                     port
                 )
             )
@@ -253,8 +266,42 @@ struct ReceiverRootView: View {
     }
 
     private var diagnosticsBar: some View {
-        HStack(spacing: 14) {
-            Label("\(receiver.capturedInputSamples)", systemImage: "hand.tap")
+        let metrics = receiver.videoMetrics
+
+        return HStack(spacing: 14) {
+            Label(
+                String(
+                    format: NSLocalizedString("diagnostics.fps", comment: ""),
+                    metrics.framesPerSecond
+                ),
+                systemImage: "gauge.with.dots.needle.67percent"
+            )
+
+            Text(
+                String(
+                    format: NSLocalizedString("diagnostics.decode", comment: ""),
+                    metrics.averageDecodeMilliseconds
+                )
+            )
+
+            Text(
+                String(
+                    format: NSLocalizedString("diagnostics.bitrate", comment: ""),
+                    metrics.megabitsPerSecond
+                )
+            )
+
+            Text(
+                String(
+                    format: NSLocalizedString("diagnostics.dropped", comment: ""),
+                    metrics.droppedFrames
+                )
+            )
+
+            if metrics.hardwareAccelerated == true {
+                Image(systemName: "bolt.fill")
+                    .accessibilityLabel(Text("diagnostics.hardware"))
+            }
 
             if let panel = receiver.panelDescriptor {
                 Text("\(panel.pixelWidth)×\(panel.pixelHeight)")
@@ -265,6 +312,7 @@ struct ReceiverRootView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
         .background(.ultraThinMaterial, in: Capsule())
+        .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("diagnostics.title"))
     }
 }

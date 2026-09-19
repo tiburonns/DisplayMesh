@@ -1,4 +1,5 @@
 import Combine
+import CoreMedia
 import Foundation
 import UIKit
 
@@ -10,12 +11,21 @@ final class ReceiverViewModel: ObservableObject {
     @Published private(set) var sessionAuthorized = false
     @Published private(set) var pendingPairing: PairingRequest?
     @Published private(set) var lastProtocolError: String?
+    @Published private(set) var videoMetrics = ReceiverVideoMetrics()
     @Published var diagnosticsEnabled = false
 
-    private let listener: ReceiverListener
+    let videoSurface = VideoSurfaceController()
 
-    init(listener: ReceiverListener = ReceiverListener()) {
+    private let listener: ReceiverListener
+    private let videoDecoder: H264VideoDecoder
+    private var lastKeyframeRequestTime: TimeInterval = 0
+
+    init(
+        listener: ReceiverListener = ReceiverListener(),
+        videoDecoder: H264VideoDecoder = H264VideoDecoder()
+    ) {
         self.listener = listener
+        self.videoDecoder = videoDecoder
 
         listener.onState = { [weak self] state in
             guard let self else { return }
@@ -26,8 +36,12 @@ final class ReceiverViewModel: ObservableObject {
                 sessionAuthorized = false
                 pendingPairing = nil
                 lastProtocolError = nil
+                videoDecoder.reset()
+                videoSurface.clear()
             case .stopped, .failed:
                 resetAuthorization()
+                videoDecoder.reset()
+                videoSurface.clear()
             default:
                 break
             }
@@ -35,6 +49,22 @@ final class ReceiverViewModel: ObservableObject {
 
         listener.onFrame = { [weak self] frame in
             self?.handle(frame)
+        }
+
+        videoDecoder.onFrame = { [weak self] pixelBuffer, _ in
+            self?.videoSurface.present(pixelBuffer)
+        }
+
+        videoDecoder.onMetrics = { [weak self] metrics in
+            self?.videoMetrics = metrics
+        }
+
+        videoDecoder.onNeedsKeyframe = { [weak self] in
+            self?.requestKeyframe()
+        }
+
+        videoDecoder.onError = { [weak self] message in
+            self?.lastProtocolError = message
         }
     }
 
@@ -61,6 +91,8 @@ final class ReceiverViewModel: ObservableObject {
         listener.stop()
         listenerState = .stopped
         resetAuthorization()
+        videoDecoder.reset()
+        videoSurface.clear()
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
@@ -88,13 +120,17 @@ final class ReceiverViewModel: ObservableObject {
 
         sessionAuthorized = true
         pendingPairing = nil
+        lastProtocolError = nil
         sendPairingResponse(accepted: true)
         sendPanelDescriptorIfAuthorized()
+        requestKeyframe(force: true)
     }
 
     func rejectPairing() {
         sessionAuthorized = false
         pendingPairing = nil
+        videoDecoder.reset()
+        videoSurface.clear()
         sendPairingResponse(accepted: false)
     }
 
@@ -102,13 +138,19 @@ final class ReceiverViewModel: ObservableObject {
         switch frame.type {
         case .hello:
             resetAuthorization()
+            videoDecoder.reset()
+            videoSurface.clear()
 
         case .pairing:
             do {
-                let request = try JSONDecoder().decode(PairingRequest.self, from: frame.payload)
+                let request = try JSONDecoder().decode(
+                    PairingRequest.self,
+                    from: frame.payload
+                )
                 guard request.isValid else {
                     throw PairingValidationError.invalidRequest
                 }
+
                 pendingPairing = request
                 sessionAuthorized = false
                 lastProtocolError = nil
@@ -123,11 +165,28 @@ final class ReceiverViewModel: ObservableObject {
                 lastProtocolError = "Rejected video before pairing authorization"
                 return
             }
-            // Video decode/presentation is the next media-path milestone.
 
-        case .capabilities, .panelDescriptor, .input, .telemetry, .keyframeRequest, .error:
+            do {
+                let packet = try DMPVideoPacket.decode(frame.payload)
+                videoDecoder.submit(packet, sequence: frame.sequence)
+            } catch {
+                lastProtocolError = error.localizedDescription
+                requestKeyframe()
+            }
+
+        case .capabilities, .panelDescriptor, .input, .telemetry,
+             .keyframeRequest, .error:
             break
         }
+    }
+
+    private func requestKeyframe(force: Bool = false) {
+        guard sessionAuthorized else { return }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        guard force || now - lastKeyframeRequestTime >= 0.25 else { return }
+        lastKeyframeRequestTime = now
+        listener.send(type: .keyframeRequest, payload: Data())
     }
 
     private func sendPairingResponse(accepted: Bool) {
@@ -144,7 +203,9 @@ final class ReceiverViewModel: ObservableObject {
     private func sendPanelDescriptorIfAuthorized() {
         guard sessionAuthorized,
               let panelDescriptor,
-              let payload = try? JSONEncoder().encode(panelDescriptor) else { return }
+              let payload = try? JSONEncoder().encode(panelDescriptor) else {
+            return
+        }
 
         listener.send(type: .panelDescriptor, payload: payload)
     }
@@ -152,6 +213,7 @@ final class ReceiverViewModel: ObservableObject {
     private func resetAuthorization() {
         sessionAuthorized = false
         pendingPairing = nil
+        lastKeyframeRequestTime = 0
     }
 }
 
