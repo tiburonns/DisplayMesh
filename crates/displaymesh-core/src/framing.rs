@@ -1,0 +1,195 @@
+use std::fmt;
+
+pub const DMP_MAGIC: [u8; 4] = *b"DMP1";
+pub const DMP_VERSION: u8 = 1;
+pub const DMP_HEADER_LEN: usize = 16;
+pub const DMP_MAX_PAYLOAD_LEN: usize = 16 * 1024 * 1024;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum DmpMessageType {
+    Hello = 0x01,
+    Capabilities = 0x02,
+    PanelDescriptor = 0x03,
+    Pairing = 0x04,
+    Video = 0x10,
+    Input = 0x20,
+    Telemetry = 0x30,
+    KeyframeRequest = 0x31,
+    Error = 0x7f,
+}
+
+impl TryFrom<u8> for DmpMessageType {
+    type Error = DmpFrameError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x01 => Ok(Self::Hello),
+            0x02 => Ok(Self::Capabilities),
+            0x03 => Ok(Self::PanelDescriptor),
+            0x04 => Ok(Self::Pairing),
+            0x10 => Ok(Self::Video),
+            0x20 => Ok(Self::Input),
+            0x30 => Ok(Self::Telemetry),
+            0x31 => Ok(Self::KeyframeRequest),
+            0x7f => Ok(Self::Error),
+            _ => Err(DmpFrameError::UnsupportedMessageType(value)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DmpFrame {
+    pub message_type: DmpMessageType,
+    pub flags: u16,
+    pub sequence: u32,
+    pub payload: Vec<u8>,
+}
+
+impl DmpFrame {
+    pub fn encode(&self) -> Result<Vec<u8>, DmpFrameError> {
+        if self.payload.len() > DMP_MAX_PAYLOAD_LEN {
+            return Err(DmpFrameError::PayloadTooLarge(self.payload.len()));
+        }
+
+        let mut encoded = Vec::with_capacity(DMP_HEADER_LEN + self.payload.len());
+        encoded.extend_from_slice(&DMP_MAGIC);
+        encoded.push(DMP_VERSION);
+        encoded.push(self.message_type as u8);
+        encoded.extend_from_slice(&self.flags.to_be_bytes());
+        encoded.extend_from_slice(&self.sequence.to_be_bytes());
+        encoded.extend_from_slice(&(self.payload.len() as u32).to_be_bytes());
+        encoded.extend_from_slice(&self.payload);
+        Ok(encoded)
+    }
+
+    pub fn decode(buffer: &[u8]) -> Result<Option<(Self, usize)>, DmpFrameError> {
+        if buffer.len() < DMP_HEADER_LEN {
+            return Ok(None);
+        }
+
+        if buffer[0..4] != DMP_MAGIC {
+            return Err(DmpFrameError::InvalidMagic);
+        }
+
+        let version = buffer[4];
+        if version != DMP_VERSION {
+            return Err(DmpFrameError::UnsupportedVersion(version));
+        }
+
+        let message_type = DmpMessageType::try_from(buffer[5])?;
+        let flags = u16::from_be_bytes([buffer[6], buffer[7]]);
+        let sequence = u32::from_be_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]);
+        let payload_len =
+            u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]) as usize;
+
+        if payload_len > DMP_MAX_PAYLOAD_LEN {
+            return Err(DmpFrameError::PayloadTooLarge(payload_len));
+        }
+
+        let total_len = DMP_HEADER_LEN + payload_len;
+        if buffer.len() < total_len {
+            return Ok(None);
+        }
+
+        Ok(Some((
+            Self {
+                message_type,
+                flags,
+                sequence,
+                payload: buffer[DMP_HEADER_LEN..total_len].to_vec(),
+            },
+            total_len,
+        )))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DmpFrameError {
+    InvalidMagic,
+    UnsupportedVersion(u8),
+    UnsupportedMessageType(u8),
+    PayloadTooLarge(usize),
+}
+
+impl fmt::Display for DmpFrameError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidMagic => f.write_str("invalid DMP frame magic"),
+            Self::UnsupportedVersion(version) => {
+                write!(f, "unsupported DMP frame version: {version}")
+            }
+            Self::UnsupportedMessageType(message_type) => {
+                write!(f, "unsupported DMP message type: {message_type:#04x}")
+            }
+            Self::PayloadTooLarge(size) => write!(f, "DMP payload is too large: {size} bytes"),
+        }
+    }
+}
+
+impl std::error::Error for DmpFrameError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn frame_round_trips() {
+        let source = DmpFrame {
+            message_type: DmpMessageType::Telemetry,
+            flags: 0x0102,
+            sequence: 42,
+            payload: b"hello".to_vec(),
+        };
+
+        let encoded = source.encode().unwrap();
+        let (decoded, consumed) = DmpFrame::decode(&encoded).unwrap().unwrap();
+
+        assert_eq!(decoded, source);
+        assert_eq!(consumed, encoded.len());
+    }
+
+    #[test]
+    fn fragmented_header_waits_for_more_bytes() {
+        let source = DmpFrame {
+            message_type: DmpMessageType::Hello,
+            flags: 0,
+            sequence: 1,
+            payload: vec![1, 2, 3],
+        };
+        let encoded = source.encode().unwrap();
+
+        assert_eq!(DmpFrame::decode(&encoded[..8]).unwrap(), None);
+    }
+
+    #[test]
+    fn fragmented_payload_waits_for_more_bytes() {
+        let source = DmpFrame {
+            message_type: DmpMessageType::Hello,
+            flags: 0,
+            sequence: 1,
+            payload: vec![1, 2, 3, 4, 5],
+        };
+        let encoded = source.encode().unwrap();
+
+        assert_eq!(
+            DmpFrame::decode(&encoded[..DMP_HEADER_LEN + 2]).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn invalid_magic_is_rejected() {
+        let mut encoded = DmpFrame {
+            message_type: DmpMessageType::Hello,
+            flags: 0,
+            sequence: 1,
+            payload: Vec::new(),
+        }
+        .encode()
+        .unwrap();
+        encoded[0] = b'X';
+
+        assert_eq!(DmpFrame::decode(&encoded), Err(DmpFrameError::InvalidMagic));
+    }
+}

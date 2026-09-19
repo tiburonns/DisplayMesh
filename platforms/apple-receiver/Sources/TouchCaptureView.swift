@@ -3,24 +3,34 @@ import UIKit
 @MainActor
 final class TouchCaptureView: UIView {
     var onInput: ((ReceiverInputEvent) -> Void)?
+    var onPanelDescriptor: ((PanelDescriptor) -> Void)?
 
     private var contactIDs: [ObjectIdentifier: UInt32] = [:]
     private var nextContactID: UInt32 = 1
+    private var lastPanelDescriptor: PanelDescriptor?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        isMultipleTouchEnabled = true
-        isExclusiveTouch = false
+        configure()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        isMultipleTouchEnabled = true
-        isExclusiveTouch = false
+        configure()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        publishPanelDescriptorIfNeeded()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        publishPanelDescriptorIfNeeded()
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        emit(touches, event: event)
+        emit(touches)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -33,25 +43,38 @@ final class TouchCaptureView: UIView {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        emit(touches, event: event)
+        emit(touches)
         removeContactIDs(for: touches)
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        emit(touches, event: event)
+        emit(touches)
         removeContactIDs(for: touches)
     }
 
-    private func emit(_ touches: Set<UITouch>, event: UIEvent?) {
+    private func configure() {
+        isMultipleTouchEnabled = true
+        isExclusiveTouch = false
+        isOpaque = false
+        backgroundColor = .clear
+    }
+
+    private func publishPanelDescriptorIfNeeded() {
+        guard window != nil else { return }
+        let descriptor = PanelDescriptor.current(for: self)
+        guard descriptor != lastPanelDescriptor else { return }
+        lastPanelDescriptor = descriptor
+        onPanelDescriptor?(descriptor)
+    }
+
+    private func emit(_ touches: Set<UITouch>) {
         for touch in touches {
             emit(touch)
         }
     }
 
     private func emit(_ touch: UITouch) {
-        guard bounds.width > 0, bounds.height > 0 else {
-            return
-        }
+        guard bounds.width > 0, bounds.height > 0 else { return }
 
         let key = ObjectIdentifier(touch)
         let contactID = contactIDs[key] ?? allocateContactID(for: key)
