@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/displaymesh-core",
+    "apps/control",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "UNLICENSED"
+repository = "https://github.com/tiburonns/DisplayMesh"
+
+[workspace.dependencies]
+displaymesh-core = { path = "crates/displaymesh-core" }
+eframe = "0.31.1"
