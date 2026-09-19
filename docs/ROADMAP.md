@@ -13,13 +13,15 @@
 ## M1 — Native display creation
 
 ### macOS
-- [ ] Create/destroy a virtual display
+- [x] Runtime-based virtual-display harness implemented
+- [ ] Validate create/destroy cycle on supported Macs
 - [ ] Enumerate modes
-- [ ] HiDPI modes
+- [ ] HiDPI validation
 - [ ] Extend/mirror selection
 
 ### Windows
-- [ ] Build IddCx sample-derived clean driver skeleton
+- [x] Software-device bootstrap implemented
+- [ ] Build DisplayMesh IddCx driver
 - [ ] Add virtual monitor modes
 - [ ] Install/uninstall development package
 - [ ] Test-sign development driver
