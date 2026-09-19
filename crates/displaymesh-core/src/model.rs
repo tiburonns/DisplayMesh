@@ -174,3 +174,59 @@ impl BackendCapabilities {
         }
     }
 }
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PeerCapabilities {
+    pub codecs: Vec<Codec>,
+    pub transports: Vec<Transport>,
+    pub presets: Vec<DisplayPreset>,
+    pub encryption_supported: bool,
+}
+
+impl PeerCapabilities {
+    pub fn supports_codec(&self, codec: Codec) -> bool {
+        self.codecs.contains(&codec)
+    }
+
+    pub fn supports_transport(&self, transport: Transport) -> bool {
+        self.transports.contains(&transport)
+    }
+
+    pub fn supports_preset(&self, preset: DisplayPreset) -> bool {
+        self.presets.contains(&preset)
+    }
+
+    pub fn intersection(&self, other: &Self) -> Self {
+        Self {
+            codecs: self
+                .codecs
+                .iter()
+                .copied()
+                .filter(|codec| other.codecs.contains(codec))
+                .collect(),
+            transports: self
+                .transports
+                .iter()
+                .copied()
+                .filter(|transport| other.transports.contains(transport))
+                .collect(),
+            presets: self
+                .presets
+                .iter()
+                .copied()
+                .filter(|preset| other.presets.contains(preset))
+                .collect(),
+            encryption_supported: self.encryption_supported && other.encryption_supported,
+        }
+    }
+
+    pub fn development_scaffold() -> Self {
+        Self {
+            codecs: vec![Codec::H264],
+            transports: vec![Transport::Quic, Transport::Tcp],
+            presets: DisplayPreset::PRESETS[..2].to_vec(),
+            encryption_supported: true,
+        }
+    }
+}
