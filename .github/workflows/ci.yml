@@ -28,3 +28,24 @@ jobs:
 
       - name: Test core
         run: cargo test -p displaymesh-core
+
+  macos-native-harness:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile virtual-display harness
+        run: make -C platforms/macos/harness
+
+  windows-bootstrap:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure bootstrap
+        run: cmake -S platforms/windows/bootstrap -B build/windows-bootstrap
+
+      - name: Build bootstrap
+        run: cmake --build build/windows-bootstrap --config Release
