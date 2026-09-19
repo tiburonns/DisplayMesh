@@ -14,8 +14,8 @@ std::wstring gInstanceId;
 void CALLBACK CreationCallback(
     HSWDEVICE,
     HRESULT createResult,
-    PCWSTR deviceInstanceId,
-    PVOID context)
+    PVOID context,
+    PCWSTR deviceInstanceId)
 {
     gCreateResult.store(createResult);
 
@@ -24,7 +24,10 @@ void CALLBACK CreationCallback(
         gInstanceId = deviceInstanceId;
     }
 
-    SetEvent(static_cast<HANDLE>(context));
+    if (context != nullptr)
+    {
+        SetEvent(static_cast<HANDLE>(context));
+    }
 }
 } // namespace
 
