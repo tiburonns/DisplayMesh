@@ -8,3 +8,4 @@ repository.workspace = true
 [dependencies]
 displaymesh-core.workspace = true
 eframe.workspace = true
+sys-locale = "0.3"
