@@ -1,6 +1,8 @@
 # Rust
 /target/
 **/*.rs.bk
+.theos/
+packages/
 
 # macOS
 .DS_Store
