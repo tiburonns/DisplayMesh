@@ -102,6 +102,21 @@ jobs:
       - name: Compile virtual-display harness
         run: make -C platforms/macos/harness
 
+  windows-input-bridge:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configure input bridge
+        run: cmake -S platforms/windows/input-bridge -B build/windows-input-bridge
+
+      - name: Build input bridge
+        run: cmake --build build/windows-input-bridge --config Release
+
+      - name: Test binary input contract
+        run: ctest --test-dir build/windows-input-bridge -C Release --output-on-failure
+
   windows-bootstrap:
     runs-on: windows-latest
 
