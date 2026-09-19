@@ -81,6 +81,18 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             test
 
+  macos-media-harness:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Build low-latency media harness
+        run: swift build --package-path platforms/macos/media-harness
+
+      - name: Test DMP media contract
+        run: swift test --package-path platforms/macos/media-harness
+
   macos-native-harness:
     runs-on: macos-latest
 
