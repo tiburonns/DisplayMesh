@@ -4,7 +4,7 @@ DisplayMesh es un proyecto de pantalla virtual multiplataforma para **macOS y Wi
 
 El objetivo es permitir que una computadora funcione como un monitor secundario real para otra computadora a través de la red local, manteniendo una interfaz y modelo de sesión compartidos y usando backends nativos para cada sistema operativo.
 
-> **`main` actual: 0.1.1.** Estado: desarrollo inicial. La app de control, la negociación de capacidades, el borrador de protocolo y los harnesses nativos de prueba ya existen. La integración real del monitor virtual y el transporte de video siguen siendo hitos activos.
+> **`main` actual: 0.1.2.** Estado: desarrollo inicial. La app de control ahora valida únicamente configuraciones de desarrollo compatibles con las capacidades actuales y ofrece interfaz Sistema/English/Español. La integración real del monitor virtual y el transporte de video siguen siendo hitos activos.
 
 ## Capacidades previstas
 
