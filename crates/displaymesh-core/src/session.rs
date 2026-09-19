@@ -97,6 +97,13 @@ impl SessionConfig {
             ));
         }
 
+        if !compatible.supports_binding(self.connection_medium, self.wire_protocol) {
+            return Err(SessionNegotiationError::UnsupportedBinding {
+                medium: self.connection_medium,
+                protocol: self.wire_protocol,
+            });
+        }
+
         if !compatible.supports_preset(self.preset) {
             return Err(SessionNegotiationError::UnsupportedPreset(self.preset));
         }
@@ -136,6 +143,10 @@ pub enum SessionNegotiationError {
     UnsupportedCodec(Codec),
     UnsupportedConnectionMedium(ConnectionMedium),
     UnsupportedWireProtocol(WireProtocol),
+    UnsupportedBinding {
+        medium: ConnectionMedium,
+        protocol: WireProtocol,
+    },
     UnsupportedPreset(DisplayPreset),
     EncryptionUnavailable,
 }
@@ -154,6 +165,10 @@ impl std::fmt::Display for SessionNegotiationError {
             Self::UnsupportedWireProtocol(protocol) => write!(
                 f,
                 "selected wire protocol is not supported by both peers: {protocol}"
+            ),
+            Self::UnsupportedBinding { medium, protocol } => write!(
+                f,
+                "connection binding is not supported: {medium} over {protocol}"
             ),
             Self::UnsupportedPreset(preset) => write!(
                 f,
@@ -248,6 +263,23 @@ mod tests {
             Err(SessionNegotiationError::UnsupportedConnectionMedium(
                 ConnectionMedium::Usb
             ))
+        );
+    }
+
+    #[test]
+    fn usb_requires_tcp_in_the_initial_binding() {
+        let local = PeerCapabilities::development_scaffold();
+        let remote = PeerCapabilities::development_scaffold();
+        let mut config = SessionConfig::default();
+        config.connection_medium = ConnectionMedium::Usb;
+        config.wire_protocol = WireProtocol::Quic;
+
+        assert_eq!(
+            config.negotiate(&local, &remote),
+            Err(SessionNegotiationError::UnsupportedBinding {
+                medium: ConnectionMedium::Usb,
+                protocol: WireProtocol::Quic,
+            })
         );
     }
 
