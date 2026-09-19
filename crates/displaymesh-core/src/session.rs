@@ -100,9 +100,6 @@ mod tests {
     fn zero_bitrate_is_rejected() {
         let mut config = SessionConfig::default();
         config.bitrate_mbps = 0;
-        assert_eq!(
-            config.validate(),
-            Err(SessionValidationError::ZeroBitrate)
-        );
+        assert_eq!(config.validate(), Err(SessionValidationError::ZeroBitrate));
     }
 }
