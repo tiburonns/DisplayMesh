@@ -57,6 +57,8 @@ Initial acceptance:
 - stale video frames are dropped instead of increasing interaction latency,
 - input has priority over queued video,
 - reconnect does not leak old session state.
+- capture-start failure tears down any virtual display created for that attempt,
+- stopping a session tears down capture before the virtual display and is safe to retry.
 
 Advanced acceptance:
 
