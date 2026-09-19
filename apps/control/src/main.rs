@@ -50,9 +50,7 @@ impl DisplayMeshApp {
                     OperatingSystem::Windows => {
                         "Configuration is valid. Waiting for the Windows IddCx backend."
                     }
-                    OperatingSystem::Unknown => {
-                        "DisplayMesh currently targets macOS and Windows."
-                    }
+                    OperatingSystem::Unknown => "DisplayMesh currently targets macOS and Windows.",
                 }
                 .to_owned();
             }
@@ -116,16 +114,8 @@ impl eframe::App for DisplayMeshApp {
                 .show(ui, |ui| {
                     ui.label("Mode");
                     ui.horizontal(|ui| {
-                        ui.selectable_value(
-                            &mut self.config.mode,
-                            DisplayMode::Extend,
-                            "Extend",
-                        );
-                        ui.selectable_value(
-                            &mut self.config.mode,
-                            DisplayMode::Mirror,
-                            "Mirror",
-                        );
+                        ui.selectable_value(&mut self.config.mode, DisplayMode::Extend, "Extend");
+                        ui.selectable_value(&mut self.config.mode, DisplayMode::Mirror, "Mirror");
                     });
                     ui.end_row();
 
@@ -135,11 +125,7 @@ impl eframe::App for DisplayMeshApp {
                         .show_ui(ui, |ui| {
                             for (index, preset) in DisplayPreset::PRESETS.iter().enumerate() {
                                 if ui
-                                    .selectable_value(
-                                        &mut self.preset_index,
-                                        index,
-                                        preset.name,
-                                    )
+                                    .selectable_value(&mut self.preset_index, index, preset.name)
                                     .clicked()
                                 {
                                     self.config.preset = *preset;
@@ -167,16 +153,8 @@ impl eframe::App for DisplayMeshApp {
                                 Transport::Quic,
                                 "QUIC",
                             );
-                            ui.selectable_value(
-                                &mut self.config.transport,
-                                Transport::Tcp,
-                                "TCP",
-                            );
-                            ui.selectable_value(
-                                &mut self.config.transport,
-                                Transport::Usb,
-                                "USB",
-                            );
+                            ui.selectable_value(&mut self.config.transport, Transport::Tcp, "TCP");
+                            ui.selectable_value(&mut self.config.transport, Transport::Usb, "USB");
                         });
                     ui.end_row();
 
