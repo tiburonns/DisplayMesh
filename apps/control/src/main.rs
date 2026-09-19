@@ -218,17 +218,19 @@ impl eframe::App for DisplayMeshApp {
             .resizable(false)
             .default_width(210.0)
             .show(ctx, |ui| {
-                ui.heading(self.tr("Session", "Sesión"));
+                let session_label = self.tr("Session", "Sesión");
+                let share_label =
+                    self.tr("Share this computer", "Compartir esta computadora");
+                let receive_label =
+                    self.tr("Use as remote display", "Usar como pantalla remota");
+
+                ui.heading(session_label);
                 ui.add_space(8.0);
-                ui.selectable_value(
-                    &mut self.config.role,
-                    Role::Host,
-                    self.tr("Share this computer", "Compartir esta computadora"),
-                );
+                ui.selectable_value(&mut self.config.role, Role::Host, share_label);
                 ui.selectable_value(
                     &mut self.config.role,
                     Role::Receiver,
-                    self.tr("Use as remote display", "Usar como pantalla remota"),
+                    receive_label,
                 );
 
                 ui.add_space(22.0);
@@ -262,17 +264,20 @@ impl eframe::App for DisplayMeshApp {
                 .num_columns(2)
                 .spacing([28.0, 14.0])
                 .show(ui, |ui| {
-                    ui.label(self.tr("Mode", "Modo"));
+                    let mode_label = self.tr("Mode", "Modo");
+                    let extend_label = self.tr("Extend", "Extender");
+                    let mirror_label = self.tr("Mirror", "Duplicar");
+                    ui.label(mode_label);
                     ui.horizontal(|ui| {
                         ui.selectable_value(
                             &mut self.config.mode,
                             DisplayMode::Extend,
-                            self.tr("Extend", "Extender"),
+                            extend_label,
                         );
                         ui.selectable_value(
                             &mut self.config.mode,
                             DisplayMode::Mirror,
-                            self.tr("Mirror", "Duplicar"),
+                            mirror_label,
                         );
                     });
                     ui.end_row();
@@ -346,10 +351,15 @@ impl eframe::App for DisplayMeshApp {
                     });
                     ui.end_row();
 
-                    ui.label(self.tr("Security", "Seguridad"));
+                    let security_label = self.tr("Security", "Seguridad");
+                    let encryption_label = self.tr(
+                        "Require encrypted pairing",
+                        "Requerir emparejamiento cifrado",
+                    );
+                    ui.label(security_label);
                     ui.checkbox(
                         &mut self.config.encryption_required,
-                        self.tr("Require encrypted pairing", "Requerir emparejamiento cifrado"),
+                        encryption_label,
                     );
                     ui.end_row();
                 });
