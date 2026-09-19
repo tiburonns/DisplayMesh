@@ -1,0 +1,295 @@
+import CoreGraphics
+import Foundation
+import ScreenCaptureKit
+
+private struct Options {
+    var listDisplays = false
+    var receiverHost: String?
+    var displayID: CGDirectDisplayID?
+    var framesPerSecond = 60
+    var bitrateMbps = 24
+    var width: Int?
+    var height: Int?
+    var durationSeconds: Int?
+
+    static func parse(_ arguments: [String]) throws -> Options {
+        var options = Options()
+        var index = 1
+
+        while index < arguments.count {
+            let argument = arguments[index]
+
+            func nextValue() throws -> String {
+                guard index + 1 < arguments.count else {
+                    throw CLIError.missingValue(argument)
+                }
+                index += 1
+                return arguments[index]
+            }
+
+            switch argument {
+            case "--list":
+                options.listDisplays = true
+            case "--host":
+                options.receiverHost = try nextValue()
+            case "--display":
+                let raw = try nextValue()
+                guard let value = UInt32(raw) else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.displayID = value
+            case "--fps":
+                let raw = try nextValue()
+                guard let value = Int(raw), (15...240).contains(value) else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.framesPerSecond = value
+            case "--bitrate":
+                let raw = try nextValue()
+                guard let value = Int(raw), (2...200).contains(value) else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.bitrateMbps = value
+            case "--width":
+                let raw = try nextValue()
+                guard let value = Int(raw), value > 0 else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.width = value
+            case "--height":
+                let raw = try nextValue()
+                guard let value = Int(raw), value > 0 else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.height = value
+            case "--seconds":
+                let raw = try nextValue()
+                guard let value = Int(raw), value > 0 else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.durationSeconds = value
+            case "--help", "-h":
+                throw CLIError.help
+            default:
+                throw CLIError.unknownArgument(argument)
+            }
+
+            index += 1
+        }
+
+        return options
+    }
+}
+
+private enum CLIError: Error, LocalizedError {
+    case help
+    case missingValue(String)
+    case invalidValue(String, String)
+    case unknownArgument(String)
+    case receiverRequired
+
+    var errorDescription: String? {
+        switch self {
+        case .help:
+            return nil
+        case .missingValue(let flag):
+            return "Missing value after \(flag)"
+        case .invalidValue(let flag, let value):
+            return "Invalid value for \(flag): \(value)"
+        case .unknownArgument(let argument):
+            return "Unknown argument: \(argument)"
+        case .receiverRequired:
+            return "--host <iPhone-or-iPad-IP> is required unless --list is used"
+        }
+    }
+}
+
+@main
+struct DisplayMeshMacMediaHarness {
+    static func main() async {
+        do {
+            let options = try Options.parse(CommandLine.arguments)
+
+            if options.listDisplays {
+                try await listDisplays()
+                return
+            }
+
+            guard let receiverHost = options.receiverHost else {
+                throw CLIError.receiverRequired
+            }
+
+            try await run(
+                options: options,
+                receiverHost: receiverHost
+            )
+        } catch CLIError.help {
+            printUsage()
+        } catch {
+            fputs("DisplayMesh harness error: \(error.localizedDescription)\n", stderr)
+            printUsage()
+            exit(1)
+        }
+    }
+
+    private static func listDisplays() async throws {
+        let displays = try await DisplayCaptureEncoder.availableDisplays()
+
+        if displays.isEmpty {
+            print("No displays are currently available to ScreenCaptureKit.")
+            return
+        }
+
+        print("Available displays:")
+        for display in displays {
+            print(
+                "  id=\(display.displayID)  \(display.width)x\(display.height)"
+            )
+        }
+    }
+
+    private static func run(
+        options: Options,
+        receiverHost: String
+    ) async throws {
+        let receiver = ReceiverConnection()
+
+        print("Connecting to DisplayMesh receiver at \(receiverHost):49655 …")
+        try await receiver.connect(host: receiverHost)
+
+        let verificationCode = String(
+            format: "%06d",
+            Int.random(in: 0...999_999)
+        )
+
+        try receiver.sendPairingRequest(
+            peerName: Host.current().localizedName ?? "Mac",
+            code: verificationCode
+        )
+
+        print("")
+        print("PAIRING CODE: \(verificationCode)")
+        print("Confirm this code on the iPhone/iPad receiver.")
+        print("")
+
+        let pairing = try await receiver.waitForPairingResponse()
+        guard pairing.accepted else {
+            throw DMPProtocolError.pairingRejected
+        }
+
+        print("Paired with \(pairing.receiverName). Waiting for panel capabilities …")
+        let panel = try await receiver.waitForPanelDescriptor()
+
+        let targetFPS = min(
+            options.framesPerSecond,
+            max(panel.maximumFramesPerSecond, 1)
+        )
+
+        print(
+            "Receiver panel: \(panel.pixelWidth)x\(panel.pixelHeight) " +
+            "@ up to \(panel.maximumFramesPerSecond) Hz, " +
+            "scale \(String(format: "%.2f", panel.nativeScale))"
+        )
+
+        let encoder = DisplayCaptureEncoder()
+        encoder.shouldEncodeFrame = { [weak receiver] in
+            receiver?.canAcceptVideo() ?? false
+        }
+
+        encoder.onPacket = { [weak receiver, weak encoder] packet in
+            guard let receiver else { return false }
+            let accepted = receiver.sendVideoPacket(packet)
+            if !accepted {
+                encoder?.requestKeyframe()
+            }
+            return accepted
+        }
+
+        encoder.onMetrics = { metrics in
+            print(
+                String(
+                    format:
+                        "host %.1f FPS | %.1f Mbps | captured %llu | " +
+                        "drop pre %llu | drop post %llu | keyframes %llu",
+                    metrics.framesPerSecond,
+                    metrics.megabitsPerSecond,
+                    metrics.capturedFrames,
+                    metrics.droppedBeforeEncode,
+                    metrics.droppedAfterEncode,
+                    metrics.keyframes
+                )
+            )
+        }
+
+        encoder.onError = { message in
+            fputs("media: \(message)\n", stderr)
+        }
+
+        receiver.onKeyframeRequest = { [weak encoder] in
+            encoder?.requestKeyframe()
+        }
+
+        receiver.onInput = { payload in
+            print("input: received \(payload.count) bytes")
+        }
+
+        receiver.onErrorMessage = { payload in
+            let message = String(data: payload, encoding: .utf8) ?? "<binary error>"
+            fputs("receiver: \(message)\n", stderr)
+        }
+
+        let capture = try await encoder.start(
+            displayID: options.displayID,
+            width: options.width,
+            height: options.height,
+            framesPerSecond: targetFPS,
+            bitrateMbps: options.bitrateMbps
+        )
+
+        print(
+            "Streaming display \(capture.display.displayID) at " +
+            "\(capture.width)x\(capture.height) @ \(targetFPS) FPS, " +
+            "\(options.bitrateMbps) Mbps."
+        )
+        print("Press Control-C to stop.")
+
+        if let seconds = options.durationSeconds {
+            try await Task.sleep(
+                nanoseconds: UInt64(seconds) * 1_000_000_000
+            )
+            await encoder.stop()
+            receiver.close()
+        } else {
+            while !Task.isCancelled {
+                try await Task.sleep(nanoseconds: 3_600_000_000_000)
+            }
+            await encoder.stop()
+            receiver.close()
+        }
+    }
+
+    private static func printUsage() {
+        print(
+            """
+            DisplayMesh macOS media harness
+
+            Usage:
+              displaymesh-mac-media-harness --list
+              displaymesh-mac-media-harness --host <receiver-ip> [options]
+
+            Options:
+              --display <id>     ScreenCaptureKit display ID (default: first)
+              --fps <15-240>     Target FPS (default: 60, capped by receiver)
+              --bitrate <2-200>  H.264 bitrate in Mbps (default: 24)
+              --width <pixels>   Encoded width (default: captured display width)
+              --height <pixels>  Encoded height (default: captured display height)
+              --seconds <n>      Stop automatically after n seconds
+              --help             Show this help
+
+            The receiver must already be listening in the DisplayMesh
+            iPhone/iPad app. This development harness uses plaintext TCP;
+            production TLS is still a release blocker.
+            """
+        )
+    }
+}

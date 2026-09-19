@@ -1,0 +1,55 @@
+# DisplayMesh macOS Media Harness
+
+This harness is the first end-to-end macOS host media path for DisplayMesh.
+
+It connects to the iPhone/iPad receiver, performs the current six-digit development pairing flow, captures a selected macOS display with ScreenCaptureKit, encodes it as low-delay H.264 using VideoToolbox, wraps each access unit in the DMP video packet format, and sends it to the receiver.
+
+It is intentionally separate from the production host backend while the media path is validated on real hardware.
+
+## What it proves
+
+- ScreenCaptureKit can provide the host frames used by DisplayMesh.
+- The capture path can output NV12 directly.
+- VideoToolbox can consume those frames without a required CPU color conversion.
+- H.264 output is converted from AVCC to DMP Annex-B.
+- SPS/PPS are repeated with keyframes so the receiver can join/recover.
+- Receiver keyframe requests force the next host frame to be an IDR.
+- Capture input is dropped before encoding while the TCP video send is busy instead of building an unbounded media queue.
+
+## Build
+
+```bash
+swift build --package-path platforms/macos/media-harness
+swift test --package-path platforms/macos/media-harness
+```
+
+## Run
+
+First start the DisplayMesh receiver on the iPhone/iPad.
+
+List capturable displays:
+
+```bash
+swift run --package-path platforms/macos/media-harness \
+  displaymesh-mac-media-harness --list
+```
+
+Stream the first display:
+
+```bash
+swift run --package-path platforms/macos/media-harness \
+  displaymesh-mac-media-harness \
+  --host 192.168.1.25 \
+  --fps 60 \
+  --bitrate 24
+```
+
+macOS must grant Screen Recording permission to the harness/Terminal process.
+
+## Current limitations
+
+- Captures an existing display; integration with the DisplayMesh virtual-display backend is still pending.
+- Development transport is plaintext TCP. Production TLS 1.3 remains mandatory before release.
+- Touch packets are received and logged, but host-side pointer/touch injection is not connected yet.
+- USB/usbmux is not connected to this harness yet.
+- Hardware performance claims require physical-device testing.
