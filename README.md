@@ -4,7 +4,7 @@ DisplayMesh is a cross-platform virtual-display project for **macOS and Windows*
 
 The goal is to let one computer act as a real secondary display for another computer over a local network, while keeping the UI and session model shared and the display backends native to each operating system.
 
-> **Current `main`: 0.1.1.** Status: early development. The shared control app, capability negotiation, protocol draft, and native proof harnesses are in place. Native virtual-display integration and video transport remain active implementation milestones.
+> **Current `main`: 0.1.2.** Status: early development. The shared control app now validates only capability-compatible development configurations and supports System/English/Español UI. Native virtual-display integration and video transport remain active implementation milestones.
 
 ## Planned capabilities
 
