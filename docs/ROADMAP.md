@@ -13,6 +13,7 @@
 - [x] Shared DMP framing in Rust and Swift
 - [x] Protocol draft
 - [x] macOS / Windows backend boundaries
+- [x] Managed backend lifecycle with create/capture/stop/destroy rollback tests
 - [x] Product quality gates documented
 - [ ] CI green on macOS and Windows after current transport refactor
 
