@@ -151,6 +151,8 @@ A host backend exposes:
 - inject pointer/keyboard/touch/stylus where supported
 - telemetry
 
+The shared core wraps host backends in a managed lifecycle. Session startup is ordered as virtual-display creation followed by capture. If capture startup fails, the core immediately attempts to destroy the newly created display. Session shutdown stops capture before destroying the display and is idempotent when already idle. Cleanup failures remain visible as a failed lifecycle state rather than being reported as success.
+
 A receiver backend exposes:
 
 - report panel capabilities
