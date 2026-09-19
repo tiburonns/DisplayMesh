@@ -1,0 +1,30 @@
+name: DisplayMeshLegacy
+options:
+  xcodeVersion: "8.3"
+  deploymentTarget:
+    iOS: "9.0"
+settings:
+  base:
+    SDKROOT: iphoneos
+    ARCHS: armv7
+    VALID_ARCHS: armv7
+    ONLY_ACTIVE_ARCH: NO
+    IPHONEOS_DEPLOYMENT_TARGET: "9.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_BITCODE: NO
+targets:
+  DisplayMeshLegacy:
+    type: application
+    platform: iOS
+    deploymentTarget: "9.0"
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiburonns.DisplayMesh.Legacy
+        PRODUCT_NAME: DisplayMesh
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_STYLE: Automatic
+    scheme:
+      gatherCoverageData: false

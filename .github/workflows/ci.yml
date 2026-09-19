@@ -90,6 +90,9 @@ jobs:
       - name: Compile virtual-display harness
         run: make -C platforms/macos/harness
 
+      - name: Test legacy Apple receiver framing
+        run: sh platforms/apple-receiver-legacy/Tests/run.sh
+
   windows-bootstrap:
     runs-on: windows-latest
 

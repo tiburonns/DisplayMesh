@@ -1,0 +1,323 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1B13FA49F42FF769DD50B2A0 /* DMLegacyListener.m in Sources */ = {isa = PBXBuildFile; fileRef = EDB835A406CFEB48B8CD935E /* DMLegacyListener.m */; };
+		253D98270F126971864A5AC7 /* DMLegacyViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FE1870F3B8DE34C73FACADF /* DMLegacyViewController.m */; };
+		397CBE4E0BE7B02CA57BC738 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A3B08108A4A2DB9A5E78FC16 /* main.m */; };
+		929CFE1A59E22FC761F64312 /* DMLegacyAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 040B37D4FFBBC809C970623F /* DMLegacyAppDelegate.m */; };
+		942A875275F709CD99E40204 /* DMLegacyTouchView.m in Sources */ = {isa = PBXBuildFile; fileRef = E73D7D7DF626BC559F9946E3 /* DMLegacyTouchView.m */; };
+		F2E10BFA88801197E319EE04 /* DMLegacyFrameCodec.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A56D466F02035BF0F6AA9E2 /* DMLegacyFrameCodec.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		040B37D4FFBBC809C970623F /* DMLegacyAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DMLegacyAppDelegate.m; sourceTree = "<group>"; };
+		1054926E67EF238A95D4CDBC /* DisplayMeshLegacy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DisplayMeshLegacy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FE1870F3B8DE34C73FACADF /* DMLegacyViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DMLegacyViewController.m; sourceTree = "<group>"; };
+		27ECD70EE18BBAB0E1647024 /* DMLegacyFrameCodec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DMLegacyFrameCodec.h; sourceTree = "<group>"; };
+		29D177A52D24A70820F8AD02 /* DMLegacyAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DMLegacyAppDelegate.h; sourceTree = "<group>"; };
+		2A56D466F02035BF0F6AA9E2 /* DMLegacyFrameCodec.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DMLegacyFrameCodec.m; sourceTree = "<group>"; };
+		A3B08108A4A2DB9A5E78FC16 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		AA89A538350A61A6903B2574 /* DMLegacyViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DMLegacyViewController.h; sourceTree = "<group>"; };
+		AD8BEA8CFA684A8979336627 /* DMLegacyTouchView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DMLegacyTouchView.h; sourceTree = "<group>"; };
+		E73D7D7DF626BC559F9946E3 /* DMLegacyTouchView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DMLegacyTouchView.m; sourceTree = "<group>"; };
+		EDB835A406CFEB48B8CD935E /* DMLegacyListener.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DMLegacyListener.m; sourceTree = "<group>"; };
+		FECD0E4BAEB8C79680A2052F /* DMLegacyListener.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DMLegacyListener.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		4977E9D6153ADB64CB1E69EC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1054926E67EF238A95D4CDBC /* DisplayMeshLegacy.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		85C1F66F3113F4191978632D = {
+			isa = PBXGroup;
+			children = (
+				D8C0915EB500FF424FC43C1E /* Sources */,
+				4977E9D6153ADB64CB1E69EC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D8C0915EB500FF424FC43C1E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				29D177A52D24A70820F8AD02 /* DMLegacyAppDelegate.h */,
+				040B37D4FFBBC809C970623F /* DMLegacyAppDelegate.m */,
+				27ECD70EE18BBAB0E1647024 /* DMLegacyFrameCodec.h */,
+				2A56D466F02035BF0F6AA9E2 /* DMLegacyFrameCodec.m */,
+				FECD0E4BAEB8C79680A2052F /* DMLegacyListener.h */,
+				EDB835A406CFEB48B8CD935E /* DMLegacyListener.m */,
+				AD8BEA8CFA684A8979336627 /* DMLegacyTouchView.h */,
+				E73D7D7DF626BC559F9946E3 /* DMLegacyTouchView.m */,
+				AA89A538350A61A6903B2574 /* DMLegacyViewController.h */,
+				1FE1870F3B8DE34C73FACADF /* DMLegacyViewController.m */,
+				A3B08108A4A2DB9A5E78FC16 /* main.m */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D7C51143A2DBF66E2280CA74 /* DisplayMeshLegacy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1BE6A042798394D9A843968D /* Build configuration list for PBXNativeTarget "DisplayMeshLegacy" */;
+			buildPhases = (
+				8C36FEA4B2383ACD4B973676 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DisplayMeshLegacy;
+			productName = DisplayMeshLegacy;
+			productReference = 1054926E67EF238A95D4CDBC /* DisplayMeshLegacy.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1116767FACDA51FFF43448EB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				TargetAttributes = {
+					D7C51143A2DBF66E2280CA74 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C1C2EF4FFED4FA5104170EF7 /* Build configuration list for PBXProject "DisplayMeshLegacy" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 85C1F66F3113F4191978632D;
+			productRefGroup = 4977E9D6153ADB64CB1E69EC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D7C51143A2DBF66E2280CA74 /* DisplayMeshLegacy */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8C36FEA4B2383ACD4B973676 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				929CFE1A59E22FC761F64312 /* DMLegacyAppDelegate.m in Sources */,
+				F2E10BFA88801197E319EE04 /* DMLegacyFrameCodec.m in Sources */,
+				1B13FA49F42FF769DD50B2A0 /* DMLegacyListener.m in Sources */,
+				942A875275F709CD99E40204 /* DMLegacyTouchView.m in Sources */,
+				253D98270F126971864A5AC7 /* DMLegacyViewController.m in Sources */,
+				397CBE4E0BE7B02CA57BC738 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		666C2330A429F2ADAF0B5CC1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = armv7;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = armv7;
+			};
+			name = Release;
+		};
+		7C5DED69D88BDC3B9A2614A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.DisplayMesh.Legacy;
+				PRODUCT_NAME = DisplayMesh;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8331005BD30DB55BDAF65BCE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.DisplayMesh.Legacy;
+				PRODUCT_NAME = DisplayMesh;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		EB22ABBFDC1A2C594B312BE1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = armv7;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = armv7;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1BE6A042798394D9A843968D /* Build configuration list for PBXNativeTarget "DisplayMeshLegacy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C5DED69D88BDC3B9A2614A0 /* Debug */,
+				8331005BD30DB55BDAF65BCE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C1C2EF4FFED4FA5104170EF7 /* Build configuration list for PBXProject "DisplayMeshLegacy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB22ABBFDC1A2C594B312BE1 /* Debug */,
+				666C2330A429F2ADAF0B5CC1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1116767FACDA51FFF43448EB /* Project object */;
+}
