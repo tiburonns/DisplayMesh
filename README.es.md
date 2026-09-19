@@ -41,7 +41,7 @@ apps/control
             └── DirectComposition / D3D11
 ```
 
-Consulta [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md) y [DMPv1.md](protocol/DMPv1.md).
+Consulta [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [DMPv1.md](protocol/DMPv1.md) y el [plan de aceptación nativa](docs/TESTING.es.md).
 
 ## Compilar la aplicación de control
 
