@@ -58,10 +58,36 @@ int main(int argc, const char *argv[])
         Class settingsClass = NSClassFromString(@"CGVirtualDisplaySettings");
 
         BOOL runtimeAvailable =
-            ClassAndSelectorsAvailable(descriptorClass, @[@"new"]) &&
-            ClassAndSelectorsAvailable(displayClass, @[@"initWithDescriptor:", @"applySettings:", @"displayID"]) &&
-            ClassAndSelectorsAvailable(modeClass, @[@"initWithWidth:height:refreshRate:"]) &&
-            ClassAndSelectorsAvailable(settingsClass, @[@"new"]);
+            ClassAndSelectorsAvailable(
+                descriptorClass,
+                @[
+                    @"new",
+                    @"setName:",
+                    @"setVendorID:",
+                    @"setProductID:",
+                    @"setSerialNum:",
+                    @"setMaxPixelsWide:",
+                    @"setMaxPixelsHigh:",
+                    @"setSizeInMillimeters:",
+                    @"setQueue:"
+                ]) &&
+            ClassAndSelectorsAvailable(
+                displayClass,
+                @[
+                    @"initWithDescriptor:",
+                    @"applySettings:",
+                    @"displayID"
+                ]) &&
+            ClassAndSelectorsAvailable(
+                modeClass,
+                @[@"initWithWidth:height:refreshRate:"]) &&
+            ClassAndSelectorsAvailable(
+                settingsClass,
+                @[
+                    @"new",
+                    @"setModes:",
+                    @"setHiDPI:"
+                ]);
 
         if (!runtimeAvailable) {
             fprintf(stderr,
