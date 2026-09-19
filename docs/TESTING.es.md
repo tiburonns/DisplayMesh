@@ -1,4 +1,4 @@
-# DisplayMesh 0.1.1 — Plan de aceptación nativa
+# DisplayMesh 0.1.2 — Plan de aceptación nativa
 
 **Español** · [English](TESTING.md)
 
