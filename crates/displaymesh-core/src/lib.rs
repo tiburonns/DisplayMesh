@@ -9,7 +9,10 @@ mod framing;
 mod model;
 mod session;
 
-pub use backend::{BackendError, DisplayBackend, NativeBackendStatus, NativeProofLevel};
+pub use backend::{
+    BackendError, BackendLifecycleState, DisplayBackend, ManagedDisplayBackend,
+    NativeBackendStatus, NativeProofLevel,
+};
 pub use framing::{
     DMP_HEADER_LEN, DMP_MAGIC, DMP_MAX_PAYLOAD_LEN, DMP_VERSION, DmpFrame, DmpFrameError,
     DmpMessageType,
