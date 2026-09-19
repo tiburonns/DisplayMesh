@@ -121,23 +121,30 @@ The production H.264 encoder should:
 
 ## Touch input
 
-Touch coordinates are normalized against the receiver presentation surface:
+DMP input frames use a fixed 40-byte binary sample instead of JSON in the interactive path.
 
-- x: 0.0 ... 1.0
-- y: 0.0 ... 1.0
-- independent contact ID
-- phase: began / moved / ended / cancelled
-- timestamp
+| Offset | Size | Field |
+| ---: | ---: | --- |
+| 0 | 1 | input version, currently 1 |
+| 1 | 1 | kind: 1 touch, 2 pencil |
+| 2 | 1 | phase: 1 began, 2 moved, 3 ended, 4 cancelled, 5 hover |
+| 3 | 1 | flags, reserved for compatible extensions |
+| 4 | 4 | contact ID, big endian |
+| 8 | 4 | normalized X, IEEE-754 float32, big endian |
+| 12 | 4 | normalized Y, IEEE-754 float32, big endian |
+| 16 | 4 | normalized pressure, float32 |
+| 20 | 4 | altitude, radians, float32 |
+| 24 | 4 | azimuth, radians, float32 |
+| 28 | 4 | barrel roll, radians, float32; zero when unavailable |
+| 32 | 8 | receiver input timestamp in microseconds, big endian |
 
-Optional stylus fields:
+Coordinates and pressure are validated before transmission and again before injection.
 
-- normalized pressure
-- altitude
-- azimuth
-- barrel roll where available
-- hover/proximity where available
+The fixed layout keeps the high-rate path predictable for coalesced touch and Pencil input and lets native host backends decode a sample without a JSON parser or heap-heavy object model.
 
-Receivers should forward coalesced high-frequency samples when useful, but senders may downsample if necessary to protect overall latency.
+Windows keeps all active contacts in each injected frame. A final location change is emitted as an UPDATE before UP because the Win32 touch injection API requires the UP coordinate to match the preceding update. Pencil currently falls back to the touch path until the dedicated pen injector is integrated.
+
+Receivers should forward coalesced high-frequency samples when useful, but may downsample when the input rate would otherwise compete with control/video latency.
 
 ## Low-latency behavior
 
