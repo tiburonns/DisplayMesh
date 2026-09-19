@@ -1,0 +1,63 @@
+# DisplayMesh 0.1.1 — Plan de aceptación nativa
+
+**Español** · [English](TESTING.md)
+
+DisplayMesh no está listo para release hasta que ambos backends nativos y una ruta de video de extremo a extremo funcionen en hardware real. El CI puede compilar Rust y los harnesses de prueba, pero no puede demostrar el comportamiento privado de pantalla en macOS, la instalación del driver de Windows, encode/decode por GPU ni la latencia interactiva.
+
+## Puerta de monitor virtual en macOS
+
+En cada versión de macOS soportada:
+
+1. Compila `platforms/macos/harness`.
+2. Crea monitores virtuales 1920×1080@60 y 2560×1440@60.
+3. Confirma que aparezcan en Ajustes del Sistema y puedan usarse como escritorio extendido.
+4. Mueve ventanas al monitor y verifica render estable.
+5. Elimina el monitor y confirma que desaparezca sin cerrar sesión ni reiniciar.
+6. Repite crear/eliminar al menos cinco veces.
+7. Prueba HiDPI donde sea compatible.
+
+Cualquier actualización de macOS que cambie o elimine las clases/selectores privados bloquea release hasta revalidar compatibilidad.
+
+## Puerta de monitor virtual en Windows
+
+En un equipo de prueba dedicado:
+
+1. Instala el driver de desarrollo IddCx de DisplayMesh con firma de prueba.
+2. Ejecuta el bootstrap de software device.
+3. Confirma adaptador y monitor virtual sin errores en Administrador de dispositivos.
+4. Valida 1920×1080@60 y los modos adicionales publicados por el driver.
+5. Extiende el escritorio al monitor virtual.
+6. Cierra el bootstrap y confirma salida limpia del monitor.
+7. Desinstala el driver y confirma que no queden dispositivos obsoletos.
+
+Los paquetes de producción no deben requerir el modo de test-signing de Windows.
+
+## Puerta de video
+
+Para combinaciones macOS/Windows como emisor y receptor:
+
+- capturar sólo el monitor virtual previsto
+- H.264 por hardware cuando esté disponible
+- decodificar/renderizar sin copias CPU innecesarias en estado estable
+- mantener relación de aspecto y color
+- recuperarse de desconexión/reconexión
+- mostrar FPS, bitrate, RTT y frames perdidos medidos
+
+Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
+
+## Puerta de sesión/seguridad
+
+- El primer emparejamiento requiere confirmación explícita.
+- Un cambio de identidad invalida la reconexión silenciosa.
+- Codec/transporte/modo incompatible falla explícitamente; sin downgrade silencioso.
+- Las sesiones de red usan transporte cifrado.
+- El input remoto se ignora antes de autenticar/autorizar.
+- Logs compartibles no incluyen secretos, frames, portapapeles ni teclas.
+
+## Puerta de input
+
+Mouse, botones, scroll y teclado deben probarse en macOS→Windows y Windows→macOS antes de marcarse completos. Touch/stylus requieren hardware compatible.
+
+## Resultado
+
+Una build puede llamarse preview utilizable sólo cuando creación del monitor virtual, transporte de video y cierre limpio funcionen en al menos una Mac y una PC Windows soportadas. Una release de producción requiere además firma/notarización/firma de driver adecuadas para cada sistema.
