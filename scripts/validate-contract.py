@@ -53,6 +53,22 @@ if not (ROOT / "platforms/macos/harness/Makefile").exists():
 if not (ROOT / "platforms/windows/bootstrap/CMakeLists.txt").exists():
     raise SystemExit("native contract failed: Windows bootstrap is missing")
 
+legacy_required = [
+    ROOT / "platforms/apple-receiver-legacy/project.yml",
+    ROOT / "platforms/apple-receiver-legacy/Sources/DMLegacyFrameCodec.m",
+    ROOT / "platforms/apple-receiver-legacy/Sources/DMLegacyListener.m",
+    ROOT / "platforms/apple-receiver-legacy/Tests/run.sh",
+    ROOT / "docs/LEGACY_IOS9.md",
+]
+for path in legacy_required:
+    if not path.exists():
+        raise SystemExit(f"legacy receiver contract failed: missing {path.relative_to(ROOT)}")
+
+legacy_doc = (ROOT / "docs/LEGACY_IOS9.md").read_text(encoding="utf-8")
+for term in ["legacy-ios9-jpeg", "must not silently downgrade", "not encrypted"]:
+    if term not in legacy_doc:
+        raise SystemExit(f"legacy receiver contract failed: missing invariant: {term}")
+
 print(
     f"PASS: DisplayMesh {version} documentation, protocol status, "
     "security, and native harness contract"

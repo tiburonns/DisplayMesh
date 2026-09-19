@@ -4,7 +4,7 @@ DisplayMesh es un proyecto de pantalla virtual multiplataforma para **hosts macO
 
 El objetivo es permitir que una computadora cree una pantalla extendida real y la transmita a otra computadora o dispositivo Apple mediante **USB o Wi-Fi**, manteniendo baja latencia, alta resolución e interacción táctil.
 
-> **`main` actual: 0.1.2.** Estado: desarrollo inicial. La app de control ya separa USB/Wi-Fi de QUIC/TCP, valida configuraciones compatibles y ofrece interfaz Sistema/English/Español. La integración nativa de pantalla, el empaquetado del receptor Apple y el video end-to-end siguen siendo hitos activos.
+> **`main` actual: 0.1.3.** Estado: desarrollo inicial. La app de control ya separa USB/Wi-Fi de QUIC/TCP, valida configuraciones compatibles y ofrece interfaz Sistema/English/Español. La integración nativa de pantalla, el empaquetado del receptor Apple y el video end-to-end siguen siendo hitos activos.
 
 ## Requisitos del producto
 
@@ -63,6 +63,8 @@ apps/control
 ```
 
 Consulta [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [DMPv1.md](protocol/DMPv1.md), las [notas del receptor Apple](platforms/apple-receiver/README.md) y el [plan de aceptación nativa](docs/TESTING.es.md).
+
+Para dispositivos de 32 bits limitados a iOS 9, el repositorio incluye además un receptor de compatibilidad Objective-C/UIKit separado en [`platforms/apple-receiver-legacy`](platforms/apple-receiver-legacy/README.md). Su perfil negociado explícitamente `legacy-ios9-jpeg` está documentado en [`docs/LEGACY_IOS9.md`](docs/LEGACY_IOS9.md); es un fallback sin cifrado para USB/LAN de confianza, no una degradación silenciosa de DMPv1 normal.
 
 ## Compilar la aplicación de control
 
