@@ -10,9 +10,10 @@
 - [x] Separate USB/Wi-Fi medium from QUIC/TCP protocol
 - [x] Reject invalid USB + QUIC binding
 - [x] Shared touch capability/event model
+- [x] Shared DMP framing in Rust and Swift
 - [x] Protocol draft
 - [x] macOS / Windows backend boundaries
-- [x] Apple receiver source scaffold
+- [x] Product quality gates documented
 - [ ] CI green on macOS and Windows after current transport refactor
 
 ## M1 — Native display creation
@@ -38,9 +39,14 @@
 - [x] UIKit multitouch capture scaffold
 - [x] Apple Pencil pressure/altitude/azimuth capture scaffold
 - [x] Bonjour/TCP listener scaffold
-- [ ] Xcode application target
-- [ ] Full-screen receiver UI
-- [ ] Rotation-driven panel renegotiation
+- [x] XcodeGen application target
+- [x] Full-screen receiver UI
+- [x] System / English / Español localization
+- [x] Rotation-driven panel descriptor refresh
+- [x] Receiver-side six-digit pairing approval UI
+- [x] Receiver protocol framing tests
+- [ ] Hardware H.264 decode/presentation
+- [ ] Signed device build / TestFlight validation
 
 ## M2 — Video path
 
@@ -62,7 +68,8 @@
 - [ ] macOS usbmux host transport
 - [ ] Windows usbmux-compatible host transport
 - [ ] USB device discovery
-- [ ] Pairing
+- [ ] Host-side pairing request + identity persistence
+- [ ] End-to-end pairing
 - [ ] Adaptive bitrate
 - [ ] Adaptive stream raster
 - [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
@@ -70,7 +77,7 @@
 ## M4 — Touch and input
 
 - [x] Normalized multitouch data model
-- [ ] iOS/iPadOS coalesced touch transport
+- [x] iOS/iPadOS coalesced touch capture
 - [ ] One-finger pointer/click/drag on macOS
 - [ ] Two-finger scroll on macOS
 - [ ] Windows real touch injection where deployment permits
@@ -86,10 +93,16 @@
 - [x] Control UI in Español
 - [x] Control UI follows system language
 - [x] Persist explicit language preference
-- [ ] Apple receiver English/Español/System
-- [ ] First-run permissions
-- [ ] Diagnostics
-- [ ] Latency/FPS/bitrate overlay
+- [x] Apple receiver English / Español / System
+- [x] Apple receiver localization parity validation
+- [x] Explicit receiver-side pairing confirmation
+- [x] Development security state shown truthfully in UI
+- [x] Apple receiver reproducible project generation
+- [ ] Apple receiver CI build confirmed green
+- [ ] First-run permission education
+- [ ] Production TLS 1.3 transport
+- [ ] Secure peer identity persistence
+- [ ] Diagnostics with RTT/FPS/bitrate/decode time
 - [ ] Automatic updates
 - [ ] macOS signing/notarization
 - [ ] Windows app signing
