@@ -173,12 +173,11 @@ final class H264VideoDecoder {
         let decodeGeneration = generation
         inFlightFrames += 1
 
-        var infoFlags = VTDecodeInfoFlags()
+        var infoFlags = VTDecodeInfoFlags(rawValue: 0)
         let status = VTDecompressionSessionDecodeFrame(
             session,
             sampleBuffer: sampleBuffer,
             flags: VTDecodeFrameFlags(rawValue: 1 << 0),
-            frameOptions: nil,
             infoFlagsOut: &infoFlags
         ) { [weak self] status, infoFlags, imageBuffer, presentationTimeStamp, _ in
             guard let self else { return }
@@ -494,7 +493,7 @@ final class H264VideoDecoder {
             session,
             key: kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
             allocator: kCFAllocatorDefault,
-            propertyValueOut: &value
+            valueOut: &value
         )
 
         if status == noErr, let number = value as? NSNumber {
