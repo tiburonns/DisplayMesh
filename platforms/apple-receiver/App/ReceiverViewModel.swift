@@ -104,10 +104,14 @@ final class ReceiverViewModel: ObservableObject {
 
     func captureInput(_ event: ReceiverInputEvent) {
         capturedInputSamples &+= 1
-        guard sessionAuthorized,
-              let payload = try? JSONEncoder().encode(event) else { return }
+        guard sessionAuthorized else { return }
 
-        listener.send(type: .input, payload: payload)
+        do {
+            let payload = try DMPInputSample(event: event).encoded()
+            listener.send(type: .input, payload: payload)
+        } catch {
+            lastProtocolError = error.localizedDescription
+        }
     }
 
     func acceptPairing() {
