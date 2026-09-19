@@ -8,7 +8,9 @@ mod model;
 mod session;
 
 pub use model::{
-    BackendCapabilities, Codec, Device, DisplayMode, DisplayPreset, OperatingSystem, Role,
-    Transport,
+    BackendCapabilities, Codec, Device, DisplayMode, DisplayPreset, OperatingSystem, PeerCapabilities,
+    Role, Transport,
 };
-pub use session::{SessionConfig, SessionPhase, SessionValidationError};
+pub use session::{
+    NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
+};
