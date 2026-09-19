@@ -241,6 +241,21 @@ impl PeerCapabilities {
         self.wire_protocols.contains(&protocol)
     }
 
+    pub fn supports_binding(
+        &self,
+        medium: ConnectionMedium,
+        protocol: WireProtocol,
+    ) -> bool {
+        if !self.supports_connection_medium(medium) || !self.supports_wire_protocol(protocol) {
+            return false;
+        }
+
+        match medium {
+            ConnectionMedium::Usb => protocol == WireProtocol::Tcp,
+            ConnectionMedium::Wifi | ConnectionMedium::Ethernet => true,
+        }
+    }
+
     pub fn supports_preset(&self, preset: DisplayPreset) -> bool {
         self.presets.contains(&preset)
     }
