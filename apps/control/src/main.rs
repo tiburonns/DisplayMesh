@@ -1,6 +1,6 @@
 use displaymesh_core::{
-    Codec, DisplayMode, DisplayPreset, NativeBackendStatus, NativeProofLevel, OperatingSystem,
-    PeerCapabilities, Role, SessionConfig, SessionPhase, Transport,
+    Codec, ConnectionMedium, DisplayMode, DisplayPreset, NativeBackendStatus, NativeProofLevel,
+    OperatingSystem, PeerCapabilities, Role, SessionConfig, SessionPhase, WireProtocol,
 };
 use eframe::egui;
 use sys_locale::get_locale;
@@ -171,7 +171,9 @@ impl DisplayMeshApp {
                 self.message = match OperatingSystem::current() {
                     OperatingSystem::MacOS => self.tr(
                         &format!(
-                            "Configuration is compatible with the current development scaffold: {} / {}x{}@{} / {} Mbps. The macOS native backend still has to be connected before a real session can start.",
+                            "Configuration is compatible with the current development scaffold: {} / {} / {} / {}x{}@{} / {} Mbps. The macOS native backend still has to be connected before a real session can start.",
+                            session.connection_medium,
+                            session.wire_protocol,
                             session.codec,
                             session.preset.width,
                             session.preset.height,
@@ -179,7 +181,9 @@ impl DisplayMeshApp {
                             session.bitrate_mbps
                         ),
                         &format!(
-                            "La configuración es compatible con el scaffold actual de desarrollo: {} / {}x{}@{} / {} Mbps. El backend nativo de macOS todavía debe conectarse antes de iniciar una sesión real.",
+                            "La configuración es compatible con el scaffold actual de desarrollo: {} / {} / {} / {}x{}@{} / {} Mbps. El backend nativo de macOS todavía debe conectarse antes de iniciar una sesión real.",
+                            session.connection_medium,
+                            session.wire_protocol,
                             session.codec,
                             session.preset.width,
                             session.preset.height,
@@ -189,7 +193,9 @@ impl DisplayMeshApp {
                     ),
                     OperatingSystem::Windows => self.tr(
                         &format!(
-                            "Configuration is compatible with the current development scaffold: {} / {}x{}@{} / {} Mbps. The Windows IddCx backend still has to be connected before a real session can start.",
+                            "Configuration is compatible with the current development scaffold: {} / {} / {} / {}x{}@{} / {} Mbps. The Windows IddCx backend still has to be connected before a real session can start.",
+                            session.connection_medium,
+                            session.wire_protocol,
                             session.codec,
                             session.preset.width,
                             session.preset.height,
@@ -197,7 +203,9 @@ impl DisplayMeshApp {
                             session.bitrate_mbps
                         ),
                         &format!(
-                            "La configuración es compatible con el scaffold actual de desarrollo: {} / {}x{}@{} / {} Mbps. El backend IddCx de Windows todavía debe conectarse antes de iniciar una sesión real.",
+                            "La configuración es compatible con el scaffold actual de desarrollo: {} / {} / {} / {}x{}@{} / {} Mbps. El backend IddCx de Windows todavía debe conectarse antes de iniciar una sesión real.",
+                            session.connection_medium,
+                            session.wire_protocol,
                             session.codec,
                             session.preset.width,
                             session.preset.height,
@@ -318,6 +326,10 @@ impl eframe::App for DisplayMeshApp {
                 "Base de control compartida para los backends nativos de macOS y Windows.",
             ));
             ui.label(self.tr(
+                "USB and Wi-Fi are first-class connection modes. iPhone/iPad receivers are designed for native Retina resolution and touch/stylus input.",
+                "USB y Wi-Fi son modos de conexión de primera clase. Los receptores iPhone/iPad están diseñados para resolución Retina nativa y entrada táctil/stylus.",
+            ));
+            ui.label(self.tr(
                 "Only combinations supported by the current development capability scaffold can validate successfully.",
                 "Sólo las combinaciones soportadas por las capacidades actuales de desarrollo pueden validarse correctamente.",
             ));
@@ -385,19 +397,43 @@ impl eframe::App for DisplayMeshApp {
                         });
                     ui.end_row();
 
-                    ui.label(self.tr("Transport", "Transporte"));
-                    egui::ComboBox::from_id_salt("transport")
-                        .selected_text(self.config.transport.to_string())
+                    ui.label(self.tr("Connection", "Conexión"));
+                    egui::ComboBox::from_id_salt("connection_medium")
+                        .selected_text(self.config.connection_medium.to_string())
                         .show_ui(ui, |ui| {
                             let capabilities = PeerCapabilities::development_scaffold();
-                            for transport in [Transport::Quic, Transport::Tcp, Transport::Usb] {
+                            for medium in [
+                                ConnectionMedium::Wifi,
+                                ConnectionMedium::Usb,
+                                ConnectionMedium::Ethernet,
+                            ] {
                                 ui.add_enabled_ui(
-                                    capabilities.supports_transport(transport),
+                                    capabilities.supports_connection_medium(medium),
                                     |ui| {
                                         ui.selectable_value(
-                                            &mut self.config.transport,
-                                            transport,
-                                            transport.to_string(),
+                                            &mut self.config.connection_medium,
+                                            medium,
+                                            medium.to_string(),
+                                        );
+                                    },
+                                );
+                            }
+                        });
+                    ui.end_row();
+
+                    ui.label(self.tr("Wire protocol", "Protocolo"));
+                    egui::ComboBox::from_id_salt("wire_protocol")
+                        .selected_text(self.config.wire_protocol.to_string())
+                        .show_ui(ui, |ui| {
+                            let capabilities = PeerCapabilities::development_scaffold();
+                            for protocol in [WireProtocol::Quic, WireProtocol::Tcp] {
+                                ui.add_enabled_ui(
+                                    capabilities.supports_wire_protocol(protocol),
+                                    |ui| {
+                                        ui.selectable_value(
+                                            &mut self.config.wire_protocol,
+                                            protocol,
+                                            protocol.to_string(),
                                         );
                                     },
                                 );
