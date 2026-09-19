@@ -9,6 +9,8 @@ readme_en = (ROOT / "README.md").read_text(encoding="utf-8")
 readme_es = (ROOT / "README.es.md").read_text(encoding="utf-8")
 protocol = (ROOT / "protocol/DMPv1.md").read_text(encoding="utf-8")
 security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+testing_en = (ROOT / "docs/TESTING.md").read_text(encoding="utf-8")
+testing_es = (ROOT / "docs/TESTING.es.md").read_text(encoding="utf-8")
 
 match = re.search(r'^version = "([0-9]+\.[0-9]+\.[0-9]+)", cargo, re.MULTILINE)
 if not match:
@@ -19,6 +21,11 @@ if f"**Current `main`: {version}.**" not in readme_en:
     raise SystemExit("release contract failed: English README version is stale")
 if f"**`main` actual: {version}.**" not in readme_es:
     raise SystemExit("release contract failed: Spanish README version is stale")
+
+if not testing_en.startswith(f"# DisplayMesh {version} "):
+    raise SystemExit("release contract failed: English native test plan is stale")
+if not testing_es.startswith(f"# DisplayMesh {version} "):
+    raise SystemExit("release contract failed: Spanish native test plan is stale")
 
 if "Status: **draft**" not in protocol:
     raise SystemExit("protocol contract failed: DMPv1 must remain explicitly draft until interoperability is implemented")
