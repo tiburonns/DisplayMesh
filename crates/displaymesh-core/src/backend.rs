@@ -144,7 +144,9 @@ impl<B: DisplayBackend> ManagedDisplayBackend<B> {
                 }
             }
             BackendLifecycleState::Failed => {
-                let _ = self.backend.stop_capture();
+                // Failed currently means teardown of a created virtual display
+                // did not complete. Capture may never have started, so cleanup
+                // retries only the resource known to remain allocated.
                 let result = self.backend.destroy_virtual_display();
                 self.state = if result.is_ok() {
                     BackendLifecycleState::Idle
@@ -301,6 +303,10 @@ mod tests {
         assert_eq!(managed.state(), BackendLifecycleState::Failed);
         assert_eq!(managed.stop(), Err(BackendError::NativeFailure));
         assert_eq!(managed.state(), BackendLifecycleState::Failed);
+        assert_eq!(
+            managed.backend().calls,
+            vec!["create", "start_capture", "destroy", "destroy"]
+        );
     }
 
     #[test]
