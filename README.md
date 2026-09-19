@@ -41,7 +41,7 @@ apps/control
             └── DirectComposition / D3D11
 ```
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md) and [DMPv1.md](protocol/DMPv1.md).
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [DMPv1.md](protocol/DMPv1.md), and the [native acceptance plan](docs/TESTING.md).
 
 ## Build the shared control app
 
