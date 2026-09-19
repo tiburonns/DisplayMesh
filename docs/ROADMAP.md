@@ -60,7 +60,7 @@
 - [x] Control UI in English
 - [x] Control UI in Español
 - [x] Control UI follows system language
-- [ ] Persist explicit language preference
+- [x] Persist explicit language preference
 - [ ] First-run permissions
 - [ ] Diagnostics
 - [ ] Automatic updates
