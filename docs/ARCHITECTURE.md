@@ -2,9 +2,12 @@
 
 ## Principle
 
-DisplayMesh uses a shared product layer and native media/display layers.
+DisplayMesh uses a shared product/protocol layer and native display/media layers.
 
-Trying to implement the virtual monitor itself in a cross-platform UI framework would make the project less reliable. macOS and Windows expose fundamentally different display-extension mechanisms.
+The product has two primary roles:
+
+1. **Host** — macOS or Windows creates a real virtual display, captures it and encodes it.
+2. **Receiver** — macOS, Windows, iPhone or iPad decodes and presents the display and may send input back.
 
 ## Shared layer
 
@@ -15,12 +18,30 @@ The Rust workspace owns:
 - capability negotiation
 - settings
 - protocol model
+- touch/input model
+- connection binding model
 - product UI
 - transport orchestration
 
-It must not directly depend on private macOS declarations or Windows Driver Kit headers.
+It must not directly depend on private macOS declarations, UIKit or Windows Driver Kit headers.
 
-## macOS backend
+## Connection model
+
+Connection medium and wire protocol are separate concepts.
+
+Initial valid bindings:
+
+| Medium | Protocol |
+| --- | --- |
+| Wi-Fi / LAN | QUIC or TCP |
+| Ethernet | QUIC or TCP |
+| USB to iPhone/iPad | TCP through usbmux |
+
+USB to Apple mobile devices uses the same application-level receiver endpoint as Wi-Fi. On USB, the host reaches that TCP port through the Apple device multiplexing path.
+
+This allows one DMP session layer while preserving transport-specific discovery and latency behavior.
+
+## macOS host backend
 
 Target pipeline:
 
@@ -31,68 +52,109 @@ ScreenCaptureKit
     ↓
 CVPixelBuffer / IOSurface
     ↓
-VideoToolbox encoder
+VideoToolbox H.264 real-time encoder
     ↓
 DMP transport
-
-DMP transport
-    ↓
-VideoToolbox decoder
-    ↓
-Metal renderer
 ```
 
 The virtual-display implementation is isolated because the practical mechanism may depend on APIs that are not App-Store-safe.
 
-## Windows backend
+Input returned from an iPhone/iPad initially maps touch gestures to pointer/drag/scroll. DMP still preserves multitouch and Pencil metadata so richer mappings remain possible.
+
+## Windows host backend
 
 Target pipeline:
 
 ```text
 IddCx indirect display driver
     ↓
-DXGI / D3D11 capture
+DirectX swap chain / D3D11
     ↓
 Media Foundation hardware encoder
     ↓
 DMP transport
-
-DMP transport
-    ↓
-Media Foundation hardware decoder
-    ↓
-D3D11 renderer
 ```
 
 The IddCx driver is a separate package and has its own signing/deployment lifecycle.
 
-## Boundaries
+For touch input, Windows is the preferred target for true multi-contact system injection when the required system capability/deployment model is available. Pointer fallback remains required.
 
-A native backend will expose a small interface to the shared application:
+## iPhone / iPad receiver
 
-- enumerate physical displays
-- create virtual display
-- destroy virtual display
-- start capture
-- stop capture
-- encode/decode capabilities
-- inject pointer
-- inject keyboard
-- inject touch/stylus where supported
-- report telemetry
+Target pipeline:
 
-## Performance targets
+```text
+Wi-Fi Bonjour or USB usbmux tunnel
+    ↓
+DMP session
+    ↓
+H.264 hardware decoder
+    ↓
+Metal / AVSampleBufferDisplayLayer presentation
+    ↓
+UIKit multitouch + Apple Pencil capture
+    ↓
+DMP input return channel
+```
 
-First usable target:
+The receiver announces:
 
-- 1080p60 on ordinary LAN
-- 1440p60 on modern hardware
-- interactive pointer latency
-- zero unnecessary CPU-side frame copies in steady state
+- physical pixel dimensions
+- native scale
+- orientation
+- maximum refresh rate
+- touch capabilities
+- Pencil capabilities
 
-Later target:
+The host should use this data to build a virtual display that matches the receiving panel instead of assuming a generic 1080p/1440p mode.
 
-- 1440p120
+## Low-latency rules
+
+DisplayMesh optimizes for interaction latency rather than perfect frame delivery:
+
+- hardware encode/decode in steady state
+- no avoidable CPU readback of GPU frames
+- bounded video queue
+- drop stale non-key frames before accumulating latency
+- immediate keyframe request after decoder loss
+- input/control priority over video backlog
+- `TCP_NODELAY` for interactive TCP sessions
+- bitrate reduction before queue growth
+- adaptive stream raster when the network cannot sustain native panel pixels
+
+## Resolution / refresh targets
+
+Initial usable target:
+
+- 1080p60
+- 1440p60
+- native Retina logical geometry
+- interactive touch latency
+
+Advanced target:
+
 - 4K60
-- multiple simultaneous virtual displays
+- 1440p120 / native 120 Hz receiver modes
 - HDR
+- multiple simultaneous receivers
+
+High refresh rate is negotiated end-to-end: virtual display, capture, encoder, transport, decoder and receiving panel must all support the requested refresh rate.
+
+## Native backend boundary
+
+A host backend exposes:
+
+- enumerate displays
+- create/destroy virtual display
+- start/stop capture
+- encode capability reporting
+- inject pointer/keyboard/touch/stylus where supported
+- telemetry
+
+A receiver backend exposes:
+
+- report panel capabilities
+- accept video/control connection
+- decode/present frames
+- capture touch/stylus
+- report decode/display telemetry
