@@ -1,6 +1,6 @@
 use displaymesh_core::{
-    Codec, DisplayMode, DisplayPreset, OperatingSystem, PeerCapabilities, Role, SessionConfig,
-    SessionPhase, Transport,
+    Codec, DisplayMode, DisplayPreset, NativeBackendStatus, NativeProofLevel, OperatingSystem,
+    PeerCapabilities, Role, SessionConfig, SessionPhase, Transport,
 };
 use eframe::egui;
 use sys_locale::get_locale;
@@ -29,6 +29,25 @@ enum AppLanguage {
 }
 
 impl AppLanguage {
+    const STORAGE_KEY: &'static str = "displaymesh.language";
+
+    const fn as_key(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::English => "english",
+            Self::Spanish => "spanish",
+        }
+    }
+
+    fn from_key(value: &str) -> Option<Self> {
+        match value {
+            "system" => Some(Self::System),
+            "english" => Some(Self::English),
+            "spanish" => Some(Self::Spanish),
+            _ => None,
+        }
+    }
+
     fn effective(self) -> EffectiveLanguage {
         match self {
             Self::English => EffectiveLanguage::English,
@@ -63,7 +82,13 @@ impl DisplayMeshApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         cc.egui_ctx.set_visuals(egui::Visuals::dark());
 
-        let language = AppLanguage::System;
+        let language = cc
+            .storage
+            .and_then(|storage| storage.get_string(AppLanguage::STORAGE_KEY))
+            .as_deref()
+            .and_then(AppLanguage::from_key)
+            .unwrap_or(AppLanguage::System);
+
         let mut app = Self {
             config: SessionConfig::default(),
             phase: SessionPhase::Idle,
@@ -82,6 +107,37 @@ impl DisplayMeshApp {
         match self.language.effective() {
             EffectiveLanguage::English => english.to_owned(),
             EffectiveLanguage::Spanish => spanish.to_owned(),
+        }
+    }
+
+    fn backend_summary(&self) -> String {
+        let status = NativeBackendStatus::current_development();
+
+        let proof = match status.proof_level {
+            NativeProofLevel::VirtualDisplayHarness => self.tr(
+                "macOS virtual-display proof harness is available.",
+                "El harness de prueba de pantalla virtual de macOS está disponible.",
+            ),
+            NativeProofLevel::DriverBootstrap => self.tr(
+                "Windows software-device bootstrap is available; the IddCx driver is not integrated yet.",
+                "El bootstrap de software device de Windows está disponible; el driver IddCx todavía no está integrado.",
+            ),
+            NativeProofLevel::None => self.tr(
+                "No native display proof is available on this platform.",
+                "No existe una prueba nativa de pantalla para esta plataforma.",
+            ),
+        };
+
+        if status.can_start_real_session() {
+            self.tr(
+                &format!("{proof} Native backend is connected to the control app."),
+                &format!("{proof} El backend nativo está conectado a la app de control."),
+            )
+        } else {
+            self.tr(
+                &format!("{proof} It is not connected to the control app yet, so real display sessions remain disabled."),
+                &format!("{proof} Todavía no está conectado a la app de control, por lo que las sesiones reales siguen deshabilitadas."),
+            )
         }
     }
 
@@ -194,6 +250,13 @@ impl DisplayMeshApp {
 }
 
 impl eframe::App for DisplayMeshApp {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        storage.set_string(
+            AppLanguage::STORAGE_KEY,
+            self.language.as_key().to_owned(),
+        );
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.add_space(10.0);
@@ -390,6 +453,8 @@ impl eframe::App for DisplayMeshApp {
             ui.add_space(16.0);
             ui.group(|ui| {
                 ui.label(self.tr("Backend status", "Estado del backend"));
+                ui.label(self.backend_summary());
+                ui.add_space(6.0);
                 ui.monospace(&self.message);
             });
         });
@@ -415,5 +480,20 @@ mod tests {
             AppLanguage::Spanish.effective(),
             EffectiveLanguage::Spanish
         );
+    }
+
+    #[test]
+    fn language_storage_keys_round_trip() {
+        for language in [
+            AppLanguage::System,
+            AppLanguage::English,
+            AppLanguage::Spanish,
+        ] {
+            assert_eq!(
+                AppLanguage::from_key(language.as_key()),
+                Some(language)
+            );
+        }
+        assert_eq!(AppLanguage::from_key("unknown"), None);
     }
 }
