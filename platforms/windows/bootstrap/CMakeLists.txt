@@ -1,0 +1,9 @@
+cmake_minimum_required(VERSION 3.21)
+
+project(DisplayMeshWindowsBootstrap LANGUAGES CXX)
+
+add_executable(DisplayMeshWindowsBootstrap main.cpp)
+
+target_compile_features(DisplayMeshWindowsBootstrap PRIVATE cxx_std_20)
+target_compile_definitions(DisplayMeshWindowsBootstrap PRIVATE UNICODE _UNICODE)
+target_link_libraries(DisplayMeshWindowsBootstrap PRIVATE Swdevice)
