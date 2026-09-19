@@ -6,6 +6,7 @@
 - [x] Shared Rust domain model
 - [x] Cross-platform control application
 - [x] Session configuration validation
+- [x] Deterministic peer capability intersection and session negotiation
 - [x] Protocol draft
 - [x] macOS / Windows backend boundaries
 - [ ] CI green on macOS and Windows
