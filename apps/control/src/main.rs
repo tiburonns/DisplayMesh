@@ -428,7 +428,10 @@ impl eframe::App for DisplayMeshApp {
                             let capabilities = PeerCapabilities::development_scaffold();
                             for protocol in [WireProtocol::Quic, WireProtocol::Tcp] {
                                 ui.add_enabled_ui(
-                                    capabilities.supports_wire_protocol(protocol),
+                                    capabilities.supports_binding(
+                                        self.config.connection_medium,
+                                        protocol,
+                                    ),
                                     |ui| {
                                         ui.selectable_value(
                                             &mut self.config.wire_protocol,
