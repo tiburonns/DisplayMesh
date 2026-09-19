@@ -1,0 +1,75 @@
+# DisplayMesh Roadmap
+
+## M0 — Foundation
+
+- [x] Repository structure
+- [x] Shared Rust domain model
+- [x] Cross-platform control application
+- [x] Session configuration validation
+- [x] Protocol draft
+- [x] macOS / Windows backend boundaries
+- [ ] CI green on macOS and Windows
+
+## M1 — Native display creation
+
+### macOS
+- [ ] Create/destroy a virtual display
+- [ ] Enumerate modes
+- [ ] HiDPI modes
+- [ ] Extend/mirror selection
+
+### Windows
+- [ ] Build IddCx sample-derived clean driver skeleton
+- [ ] Add virtual monitor modes
+- [ ] Install/uninstall development package
+- [ ] Test-sign development driver
+
+## M2 — Local video path
+
+- [ ] macOS ScreenCaptureKit capture
+- [ ] Windows DXGI capture
+- [ ] macOS VideoToolbox H.264
+- [ ] Windows Media Foundation H.264
+- [ ] Metal receiver
+- [ ] D3D11 receiver
+- [ ] End-to-end local loopback test
+
+## M3 — Network sessions
+
+- [ ] mDNS discovery
+- [ ] Pairing
+- [ ] QUIC + TLS 1.3
+- [ ] Capability negotiation
+- [ ] Adaptive bitrate
+- [ ] Reconnect
+
+## M4 — Input
+
+- [ ] Mouse
+- [ ] Keyboard
+- [ ] Scroll
+- [ ] Touch
+- [ ] Stylus
+- [ ] Clipboard
+
+## M5 — Product quality
+
+- [ ] English
+- [ ] Español
+- [ ] System language
+- [ ] First-run permissions
+- [ ] Diagnostics
+- [ ] Automatic updates
+- [ ] macOS signing/notarization
+- [ ] Windows app signing
+- [ ] Windows driver production signing
+
+## M6 — Advanced
+
+- [ ] 120 Hz
+- [ ] HEVC
+- [ ] AV1
+- [ ] HDR
+- [ ] Audio
+- [ ] Multi-display sessions
+- [ ] Optional third-party protocol compatibility
