@@ -1,0 +1,52 @@
+"action.settings" = "Settings";
+"action.startReceiver" = "Start Receiver";
+"action.stopReceiver" = "Stop Receiver";
+"action.disconnect" = "Disconnect";
+"action.done" = "Done";
+"action.allow" = "Allow";
+"action.reject" = "Reject";
+
+"status.stopped" = "Stopped";
+"status.starting" = "Starting";
+"status.ready" = "Ready";
+"status.waiting" = "Waiting";
+"status.connected" = "Connected";
+"status.failed" = "Error";
+
+"receiver.title" = "Use this device as a display";
+"receiver.subtitle" = "Connect DisplayMesh on your Mac or PC over Wi-Fi or USB.";
+"receiver.readyPort" = "Listening on port %d";
+"receiver.localNetworkHint" = "DisplayMesh will advertise this device on your local network.";
+
+"pairing.verifyTitle" = "Verify this computer";
+"pairing.peerMessage" = "Confirm that the code below matches the code shown on %@.";
+"pairing.codeAccessibility" = "Verification code %@";
+"pairing.waitingTitle" = "Waiting for verification";
+"pairing.waitingMessage" = "A connected computer must request pairing before this display can be used.";
+
+"diagnostics.title" = "DisplayMesh diagnostics";
+
+"settings.title" = "Settings";
+"settings.language.section" = "Language";
+"settings.language.label" = "App Language";
+"settings.language.system" = "System";
+"settings.language.english" = "English";
+"settings.language.spanish" = "Spanish";
+
+"settings.connection.section" = "Connection";
+"settings.connection.port" = "DMP Port";
+"settings.connection.service" = "Bonjour Service";
+"settings.connection.explanation" = "Wi-Fi uses the local network. USB will reuse the same DMP session through an Apple device tunnel.";
+
+"settings.security.section" = "Security";
+"settings.security.pairingRequired" = "Pairing confirmation required";
+"settings.security.pairingExplanation" = "A new computer cannot control this device until you verify its six-digit code and approve the connection.";
+"settings.security.transportDevelopment" = "Transport encryption is not enabled in this development build";
+"settings.security.transportExplanation" = "Do not treat the current TCP development transport as production-secure. TLS 1.3 remains a release blocker.";
+
+"settings.diagnostics.section" = "Diagnostics";
+"settings.diagnostics.toggle" = "Show live diagnostics";
+
+"settings.about.section" = "About";
+"settings.about.protocol" = "Protocol";
+"settings.about.version" = "Version";

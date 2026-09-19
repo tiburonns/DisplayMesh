@@ -20,10 +20,18 @@ struct ReceiverRootView: View {
             VStack(spacing: 16) {
                 topBar
                 Spacer()
-                if !isConnected { onboardingCard }
-                else if !receiver.sessionAuthorized { pairingCard }
+
+                if !isConnected {
+                    onboardingCard
+                } else if !receiver.sessionAuthorized {
+                    pairingCard
+                }
+
                 Spacer()
-                if receiver.diagnosticsEnabled { diagnosticsBar }
+
+                if receiver.diagnosticsEnabled {
+                    diagnosticsBar
+                }
             }
             .padding()
         }
@@ -34,7 +42,9 @@ struct ReceiverRootView: View {
                 .environment(\.locale, languageStore.selection.locale)
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .background { receiver.stopReceiver() }
+            if phase == .background {
+                receiver.stopReceiver()
+            }
         }
     }
 
@@ -47,7 +57,10 @@ struct ReceiverRootView: View {
         HStack(spacing: 12) {
             statusBadge
             Spacer()
-            Button { showingSettings = true } label: {
+
+            Button {
+                showingSettings = true
+            } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.headline)
                     .frame(width: 44, height: 44)
@@ -60,7 +73,10 @@ struct ReceiverRootView: View {
 
     private var statusBadge: some View {
         HStack(spacing: 8) {
-            Circle().fill(statusColor).frame(width: 9, height: 9)
+            Circle()
+                .fill(statusColor)
+                .frame(width: 9, height: 9)
+
             switch receiver.listenerState {
             case .stopped: Text("status.stopped")
             case .starting: Text("status.starting")
@@ -94,7 +110,9 @@ struct ReceiverRootView: View {
                 .symbolRenderingMode(.hierarchical)
 
             VStack(spacing: 7) {
-                Text("receiver.title").font(.title2.bold())
+                Text("receiver.title")
+                    .font(.title2.bold())
+
                 Text("receiver.subtitle")
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -103,7 +121,9 @@ struct ReceiverRootView: View {
 
             listenerDetail
 
-            Button { receiver.startReceiver() } label: {
+            Button {
+                receiver.startReceiver()
+            } label: {
                 Label("action.startReceiver", systemImage: "play.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -113,46 +133,117 @@ struct ReceiverRootView: View {
             .disabled(receiver.isListening)
 
             if receiver.isListening {
-                Button("action.stopReceiver") { receiver.stopReceiver() }
-                    .buttonStyle(.bordered)
+                Button("action.stopReceiver") {
+                    receiver.stopReceiver()
+                }
+                .buttonStyle(.bordered)
             }
         }
         .padding(28)
         .frame(maxWidth: 520)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
+        )
         .accessibilityElement(children: .contain)
     }
 
+    @ViewBuilder
     private var pairingCard: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 38))
                 .symbolRenderingMode(.hierarchical)
-            Text("pairing.title").font(.title3.bold())
-            Text("pairing.message")
+
+            if let pairing = receiver.pendingPairing {
+                Text("pairing.verifyTitle")
+                    .font(.title3.bold())
+
+                Text(
+                    String(
+                        format: NSLocalizedString("pairing.peerMessage", comment: ""),
+                        pairing.peerName
+                    )
+                )
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("action.disconnect") { receiver.stopReceiver() }
-                .buttonStyle(.bordered)
+
+                Text(pairing.normalizedVerificationCode)
+                    .font(.system(.largeTitle, design: .monospaced, weight: .bold))
+                    .tracking(5)
+                    .accessibilityLabel(
+                        Text(
+                            String(
+                                format: NSLocalizedString("pairing.codeAccessibility", comment: ""),
+                                pairing.normalizedVerificationCode
+                            )
+                        )
+                    )
+
+                HStack {
+                    Button("action.reject", role: .destructive) {
+                        receiver.rejectPairing()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("action.allow") {
+                        receiver.acceptPairing()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else {
+                ProgressView()
+                    .controlSize(.large)
+
+                Text("pairing.waitingTitle")
+                    .font(.title3.bold())
+
+                Text("pairing.waitingMessage")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            if let protocolError = receiver.lastProtocolError {
+                Text(protocolError)
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button("action.disconnect") {
+                receiver.stopReceiver()
+            }
+            .buttonStyle(.bordered)
         }
         .padding(24)
-        .frame(maxWidth: 500)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .frame(maxWidth: 520)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+        )
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder
     private var listenerDetail: some View {
         switch receiver.listenerState {
         case .ready(let port):
-            Text(String(format: NSLocalizedString("receiver.readyPort", comment: ""), port))
-                .font(.footnote.monospacedDigit())
-                .foregroundStyle(.secondary)
+            Text(
+                String(
+                    format: NSLocalizedString("receiver.readyPort", comment: ""),
+                    port
+                )
+            )
+            .font(.footnote.monospacedDigit())
+            .foregroundStyle(.secondary)
+
         case .waiting(let message), .failed(let message):
             Text(message)
                 .font(.footnote.monospaced())
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
                 .multilineTextAlignment(.center)
+
         default:
             Text("receiver.localNetworkHint")
                 .font(.footnote)
@@ -164,6 +255,7 @@ struct ReceiverRootView: View {
     private var diagnosticsBar: some View {
         HStack(spacing: 14) {
             Label("\(receiver.capturedInputSamples)", systemImage: "hand.tap")
+
             if let panel = receiver.panelDescriptor {
                 Text("\(panel.pixelWidth)×\(panel.pixelHeight)")
                 Text("\(panel.maximumFramesPerSecond) Hz")

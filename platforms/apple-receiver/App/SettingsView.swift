@@ -17,22 +17,45 @@ struct SettingsView: View {
                 }
 
                 Section("settings.connection.section") {
-                    LabeledContent("settings.connection.port", value: "\(ReceiverListener.port.rawValue)")
-                    LabeledContent("settings.connection.service", value: "_displaymesh._tcp")
+                    LabeledContent(
+                        "settings.connection.port",
+                        value: "\(ReceiverListener.port.rawValue)"
+                    )
+                    LabeledContent(
+                        "settings.connection.service",
+                        value: "_displaymesh._tcp"
+                    )
                     Text("settings.connection.explanation")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
                 Section("settings.security.section") {
-                    Label("settings.security.locked", systemImage: "lock.shield")
-                    Text("settings.security.explanation")
+                    Label(
+                        "settings.security.pairingRequired",
+                        systemImage: "person.badge.shield.checkmark"
+                    )
+
+                    Text("settings.security.pairingExplanation")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Label(
+                        "settings.security.transportDevelopment",
+                        systemImage: "exclamationmark.shield"
+                    )
+                    .foregroundStyle(.orange)
+
+                    Text("settings.security.transportExplanation")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
                 Section("settings.diagnostics.section") {
-                    Toggle("settings.diagnostics.toggle", isOn: $receiver.diagnosticsEnabled)
+                    Toggle(
+                        "settings.diagnostics.toggle",
+                        isOn: $receiver.diagnosticsEnabled
+                    )
                 }
 
                 Section("settings.about.section") {
@@ -43,16 +66,26 @@ struct SettingsView: View {
             .navigationTitle("settings.title")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("action.done") { dismiss() }
+                    Button("action.done") {
+                        dismiss()
+                    }
                 }
             }
         }
     }
 
     private var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        if let version, let build { return "\(version) (\(build))" }
+        let version = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String
+        let build = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleVersion"
+        ) as? String
+
+        if let version, let build {
+            return "\(version) (\(build))"
+        }
+
         return version ?? "—"
     }
 }
