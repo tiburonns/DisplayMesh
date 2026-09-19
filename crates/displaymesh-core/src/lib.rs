@@ -8,12 +8,11 @@ mod backend;
 mod model;
 mod session;
 
-pub use backend::{
-    BackendError, DisplayBackend, NativeBackendStatus, NativeProofLevel,
-};
+pub use backend::{BackendError, DisplayBackend, NativeBackendStatus, NativeProofLevel};
 pub use model::{
-    BackendCapabilities, Codec, Device, DisplayMode, DisplayPreset, OperatingSystem, PeerCapabilities,
-    Role, Transport,
+    BackendCapabilities, Codec, ConnectionMedium, Device, DisplayMode, DisplayPreset,
+    OperatingSystem, PeerCapabilities, Role, TouchCapabilities, TouchPhase, TouchPoint,
+    WireProtocol,
 };
 pub use session::{
     NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
