@@ -17,6 +17,35 @@ final class DMPVideoPacketTests: XCTestCase {
         )
     }
 
+    func testRejectsUnsupportedFlags() {
+        var payload = Data(repeating: 0, count: DMPVideoPacket.headerSize + 1)
+        payload[0] = DMPVideoCodec.h264.rawValue
+        payload[1] = 0x80
+        payload[DMPVideoPacket.headerSize] = 1
+
+        XCTAssertThrowsError(try DMPVideoPacket.decode(payload)) { error in
+            XCTAssertEqual(
+                error as? DMPVideoPacketError,
+                .unsupportedFlags(0x80)
+            )
+        }
+    }
+
+    func testRejectsNonZeroReservedHeader() {
+        var payload = Data(repeating: 0, count: DMPVideoPacket.headerSize + 1)
+        payload[0] = DMPVideoCodec.h264.rawValue
+        payload[2] = 0x12
+        payload[3] = 0x34
+        payload[DMPVideoPacket.headerSize] = 1
+
+        XCTAssertThrowsError(try DMPVideoPacket.decode(payload)) { error in
+            XCTAssertEqual(
+                error as? DMPVideoPacketError,
+                .reservedHeaderNonZero(0x1234)
+            )
+        }
+    }
+
     func testRejectsUnknownCodec() {
         var payload = Data(repeating: 0, count: DMPVideoPacket.headerSize + 1)
         payload[0] = 0xff
