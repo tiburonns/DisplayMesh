@@ -4,7 +4,7 @@ DisplayMesh is a cross-platform virtual-display project for **macOS and Windows 
 
 The goal is to let a computer create a real extended display and stream it to another computer or Apple mobile device over **USB or Wi-Fi**, while preserving low latency, high resolution and interactive touch input.
 
-> **Current `main`: 0.2.0-development.** The Apple receiver now includes the real low-latency H.264 receive path (DMP video packet → Annex-B parser → VideoToolbox → NV12 → Metal), bounded decoder work, keyframe recovery, live FPS/bitrate/decode diagnostics, and EN/ES/System UI. Host-side capture/encode and end-to-end hardware validation are the active blockers before this can be called a usable external monitor.
+> **Current `main`: 0.2.1.** The Apple receiver now includes the real low-latency H.264 receive path (DMP video packet → Annex-B parser → VideoToolbox → NV12 → Metal), bounded decoder work, keyframe recovery, live FPS/bitrate/decode diagnostics, and EN/ES/System UI. Host-side capture/encode and end-to-end hardware validation are the active blockers before this can be called a usable external monitor. DMP video parsing now rejects unsupported flag bits and non-zero reserved header bytes consistently in Rust and the Apple receiver.
 
 ## Product requirements
 
