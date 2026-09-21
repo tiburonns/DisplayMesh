@@ -102,6 +102,9 @@ jobs:
       - name: Compile virtual-display harness
         run: make -C platforms/macos/harness
 
+      - name: Validate macOS session orchestrator
+        run: bash -n scripts/run-macos-virtual-session.sh
+
   windows-input-bridge:
     runs-on: windows-latest
 
