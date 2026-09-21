@@ -28,6 +28,7 @@
 - [ ] HiDPI validation
 - [ ] Extend/mirror selection
 - [ ] Dynamic receiver-native panel mode
+- [x] Developer orchestration path from macOS virtual display into the media receiver
 
 ### Windows host
 - [x] Software-device bootstrap implemented
@@ -66,6 +67,7 @@
 - [x] Receiver keyframe recovery
 - [ ] Host emits DMP video packets with SPS/PPS + IDR recovery frames
 - [ ] End-to-end local loopback test
+- [x] Scripted macOS virtual-display → ScreenCaptureKit → H.264 → Apple receiver path
 - [ ] 1080p60 hardware acceptance
 - [ ] 1440p60 hardware acceptance
 
