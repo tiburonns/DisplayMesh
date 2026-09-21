@@ -106,3 +106,14 @@ open DisplayMeshReceiver.xcodeproj
 ## Repository policy
 
 DisplayMesh is an independent implementation. Do not copy OpenDisplay branding, artwork, or source code into this repository. Interoperability work should be based on public protocol/API documentation and clean implementation boundaries.
+
+
+## macOS developer end-to-end path
+
+A developer orchestration script now joins the virtual-display proof harness with the ScreenCaptureKit/VideoToolbox media harness:
+
+```bash
+scripts/run-macos-virtual-session.sh --host <iphone-or-ipad-ip>
+```
+
+It creates a temporary DisplayMesh virtual display, captures that exact display, encodes low-latency H.264, streams it to the Apple receiver, and tears the virtual display down on exit. This is a development integration path only: transport is still plaintext TCP and production host integration/TLS remain release blockers.
