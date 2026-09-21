@@ -4,7 +4,7 @@ DisplayMesh es un proyecto de pantalla virtual multiplataforma para **hosts macO
 
 El objetivo es permitir que una computadora cree una pantalla extendida real y la transmita a otra computadora o dispositivo Apple mediante **USB o Wi-Fi**, manteniendo baja latencia, alta resolución e interacción táctil.
 
-> **`main` actual: 0.2.0-development.** El receptor Apple ya incluye la ruta real de recepción H.264 de baja latencia (paquete DMP → parser Annex-B → VideoToolbox → NV12 → Metal), trabajo de decoder acotado, recuperación por keyframe, diagnósticos en vivo de FPS/bitrate/decode e interfaz Sistema/English/Español. La captura/encode del host y la validación end-to-end en hardware siguen siendo los bloqueadores antes de llamarlo un monitor externo utilizable.
+> **`main` actual: 0.2.1.** El receptor Apple ya incluye la ruta real de recepción H.264 de baja latencia (paquete DMP → parser Annex-B → VideoToolbox → NV12 → Metal), trabajo de decoder acotado, recuperación por keyframe, diagnósticos en vivo de FPS/bitrate/decode e interfaz Sistema/English/Español. La captura/encode del host y la validación end-to-end en hardware siguen siendo los bloqueadores antes de llamarlo un monitor externo utilizable. El parser de video DMP ahora rechaza bits de flags no soportados y bytes reservados distintos de cero de forma consistente en Rust y en el receptor Apple.
 
 ## Requisitos del producto
 
