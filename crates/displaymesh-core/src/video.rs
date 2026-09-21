@@ -82,6 +82,14 @@ impl DmpVideoPacket {
         }
 
         let codec = DmpVideoCodec::try_from(payload[0])?;
+        if payload[1] & !DmpVideoFlags::KEYFRAME != 0 {
+            return Err(DmpVideoPacketError::UnsupportedFlags(payload[1]));
+        }
+        if payload[2] != 0 || payload[3] != 0 {
+            return Err(DmpVideoPacketError::ReservedHeaderNonZero(
+                u16::from_be_bytes([payload[2], payload[3]]),
+            ));
+        }
         let flags = DmpVideoFlags::new(payload[1]);
         let pts_micros = u64::from_be_bytes([
             payload[4], payload[5], payload[6], payload[7],
@@ -109,6 +117,8 @@ impl DmpVideoPacket {
 pub enum DmpVideoPacketError {
     HeaderTooShort(usize),
     UnsupportedCodec(u8),
+    UnsupportedFlags(u8),
+    ReservedHeaderNonZero(u16),
     EmptyBitstream,
 }
 
@@ -120,6 +130,12 @@ impl fmt::Display for DmpVideoPacketError {
             }
             Self::UnsupportedCodec(codec) => {
                 write!(f, "unsupported DMP video codec: {codec:#04x}")
+            }
+            Self::UnsupportedFlags(flags) => {
+                write!(f, "unsupported DMP video flags: {flags:#04x}")
+            }
+            Self::ReservedHeaderNonZero(value) => {
+                write!(f, "DMP video reserved header must be zero: {value:#06x}")
             }
             Self::EmptyBitstream => f.write_str("DMP video packet has an empty bitstream"),
         }
@@ -173,6 +189,33 @@ mod tests {
         assert_eq!(
             DmpVideoPacket::decode(&payload),
             Err(DmpVideoPacketError::EmptyBitstream)
+        );
+    }
+
+    #[test]
+    fn unsupported_video_flags_are_rejected() {
+        let mut payload = vec![0_u8; DMP_VIDEO_HEADER_LEN + 1];
+        payload[0] = DmpVideoCodec::H264 as u8;
+        payload[1] = 0b1000_0000;
+        payload[DMP_VIDEO_HEADER_LEN] = 1;
+
+        assert_eq!(
+            DmpVideoPacket::decode(&payload),
+            Err(DmpVideoPacketError::UnsupportedFlags(0b1000_0000))
+        );
+    }
+
+    #[test]
+    fn nonzero_reserved_video_header_is_rejected() {
+        let mut payload = vec![0_u8; DMP_VIDEO_HEADER_LEN + 1];
+        payload[0] = DmpVideoCodec::H264 as u8;
+        payload[2] = 0x12;
+        payload[3] = 0x34;
+        payload[DMP_VIDEO_HEADER_LEN] = 1;
+
+        assert_eq!(
+            DmpVideoPacket::decode(&payload),
+            Err(DmpVideoPacketError::ReservedHeaderNonZero(0x1234))
         );
     }
 
