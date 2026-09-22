@@ -1,0 +1,52 @@
+# Roadmap de DisplayMesh
+
+**[English](ROADMAP.md) · Español**
+
+## M0 — Base
+
+- [x] Estructura del repositorio y dominio Rust compartido.
+- [x] Validación/negociación de sesión y capacidades.
+- [x] Separación medio USB/Wi‑Fi de protocolo QUIC/TCP.
+- [x] Framing DMP, modelo de touch, controlador adaptativo y lifecycle de backends.
+- [x] Gates de calidad documentados.
+- [ ] CI verde en todos los jobs host/receiver.
+
+## M1 — Pantalla nativa
+
+### macOS
+- [x] Harness de pantalla virtual por runtime.
+- [x] Ruta de desarrollo desde pantalla virtual hacia media receiver.
+- [ ] Validación física create/destroy, modos, HiDPI, extend/mirror y panel dinámico.
+
+### Windows
+- [x] Bootstrap de Software Device.
+- [ ] Driver IddCx, modos, instalación/desinstalación y firma de desarrollo.
+
+### iPhone/iPad receiver
+- [x] Descriptor de panel, multitouch/Pencil, Bonjour/TCP, UI, EN/ES/Sistema, pairing, H.264 decode y Metal NV12.
+- [ ] Validación física de decode y build firmado/TestFlight.
+
+## M2 — Video end-to-end
+
+- [x] Receiver H.264/Metal y harness de media macOS.
+- [ ] Backends productivos completos de captura/encode macOS/Windows.
+- [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
+
+## M3 — USB + red
+
+- [ ] Discovery productivo, QUIC/TLS, TCP/TLS, usbmux macOS/Windows, pairing host, handoff Wi‑Fi↔USB.
+- [x] Motor de bitrate/raster adaptativo; falta conectarlo a telemetría/encoders reales.
+
+## M4 — Input
+
+- [x] Modelo multitouch y captura iOS.
+- [ ] Mapping productivo macOS, touch Windows final, Pencil, teclado y clipboard.
+
+## M5 — Calidad de producto
+
+- [x] EN/ES/Sistema, pairing explícito, estado de seguridad visible y proyecto reproducible del receiver.
+- [ ] Primer uso/permisos, TLS 1.3, identidad persistente segura, telemetría E2E, updates y firma/notarización.
+
+## M6 — Avanzado
+
+120 Hz, 4K60, HEVC, AV1, HDR, audio y multi-display permanecen planificados.
