@@ -115,6 +115,17 @@ if settings.is_file():
         if claim in settings_text:
             errors.append(f"development receiver makes unsupported security claim: {claim}")
 
+workflow = ROOT / ".github" / "workflows" / "ci.yml"
+if workflow.is_file():
+    workflow_text = workflow.read_text(encoding="utf-8")
+    for required_token in (
+        "Build Release receiver for iOS Simulator",
+        "Build Release receiver for iPhoneOS",
+        "SWIFT_TREAT_WARNINGS_AS_ERRORS=YES",
+    ):
+        if required_token not in workflow_text:
+            errors.append(f"receiver CI is missing required token: {required_token}")
+
 if errors:
     print("Apple receiver validation failed:")
     for error in errors:

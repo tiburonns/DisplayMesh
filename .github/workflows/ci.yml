@@ -67,15 +67,29 @@ jobs:
         working-directory: platforms/apple-receiver
         run: xcodegen generate
 
-      - name: Build receiver for iOS Simulator
+      - name: Build Release receiver for iOS Simulator
         working-directory: platforms/apple-receiver
         run: |
           xcodebuild \
             -project DisplayMeshReceiver.xcodeproj \
             -scheme DisplayMeshReceiver \
+            -configuration Release \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
+            build
+
+      - name: Build Release receiver for iPhoneOS
+        working-directory: platforms/apple-receiver
+        run: |
+          xcodebuild \
+            -project DisplayMeshReceiver.xcodeproj \
+            -scheme DisplayMeshReceiver \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
             build
 
       - name: Run receiver unit tests
