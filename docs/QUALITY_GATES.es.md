@@ -25,4 +25,6 @@ Debe crear/destruir la pantalla virtual de forma limpia, capturar sólo la panta
 
 ## Release
 
-No se considera release-ready mientras falten validaciones de hardware del backend nativo, transporte seguro, firma/entitlements y pruebas de latencia/resolución anunciadas.
+El receiver Apple debe compilar en **Release** para iOS Simulator e iPhoneOS tratando warnings como errores, además de pasar sus tests de protocolo/video/input y validación de recursos.
+
+No se considera release-ready el producto completo mientras falten validaciones de hardware del backend nativo, transporte seguro, firma/entitlements y pruebas de latencia/resolución anunciadas. El receiver puede usarse como candidato de **Internal TestFlight** bajo las limitaciones documentadas.

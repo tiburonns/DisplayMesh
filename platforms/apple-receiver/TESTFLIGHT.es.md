@@ -22,6 +22,10 @@ El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo 
 - Repetir 1440p60 en hardware compatible.
 - Probar background/foreground y recuperación del idle timer.
 
+## Preflight local
+
+Ejecuta `./platforms/apple-receiver/preflight-testflight.sh` desde la raíz. Valida recursos, regenera el proyecto, ejecuta unit tests y compila Release para Simulator e iPhoneOS tratando warnings como errores.
+
 ## Archive
 
 Genera el proyecto con XcodeGen 2.46.0, ábrelo en Xcode 26+, selecciona tu Team de pago, Archive, Validate App y súbelo a **Internal TestFlight**.

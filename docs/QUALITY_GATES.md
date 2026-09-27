@@ -73,7 +73,7 @@ Before a release candidate:
 - macOS native harness builds,
 - Windows bootstrap/driver checks pass,
 - Apple receiver project generates reproducibly,
-- Apple receiver simulator build passes,
+- Apple receiver Release builds pass for iOS Simulator and iPhoneOS with warnings treated as errors,
 - protocol framing tests pass on both implementations,
 - app version and protocol version are documented,
 - release notes distinguish implemented features from roadmap items.
