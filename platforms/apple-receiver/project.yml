@@ -4,7 +4,7 @@ options:
   bundleIdPrefix: com.tiburonns
   deploymentTarget:
     iOS: "17.0"
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.0"
   createIntermediateGroups: true
 
 settings:
@@ -13,8 +13,8 @@ settings:
     SWIFT_STRICT_CONCURRENCY: targeted
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     PRODUCT_NAME: DisplayMesh
-    CURRENT_PROJECT_VERSION: 1
-    MARKETING_VERSION: 0.2.0
+    CURRENT_PROJECT_VERSION: 2
+    MARKETING_VERSION: 0.2.1
 
 targets:
   DisplayMeshReceiver:
@@ -36,6 +36,7 @@ targets:
       path: Generated/Info.plist
       properties:
         CFBundleDisplayName: DisplayMesh
+        ITSAppUsesNonExemptEncryption: false
         NSLocalNetworkUsageDescription: DisplayMesh uses your local network to connect this iPhone or iPad as an external display.
         NSBonjourServices:
           - _displaymesh._tcp

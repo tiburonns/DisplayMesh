@@ -84,3 +84,8 @@ macOS target behavior:
 - disable Nagle for TCP interactive sessions
 - adapt bitrate before allowing large queues
 - target 60 FPS first, then 120 FPS on supported iPad Pro hardware
+
+
+## TestFlight preflight
+
+See [TESTFLIGHT.md](TESTFLIGHT.md) for the internal receiver acceptance path.

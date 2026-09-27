@@ -22,6 +22,7 @@ required_files = [
     RECEIVER / "Resources" / "es.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "en.lproj" / "InfoPlist.strings",
     RECEIVER / "Resources" / "es.lproj" / "InfoPlist.strings",
+    RECEIVER / "Resources" / "PrivacyInfo.xcprivacy",
     RECEIVER / "Tests" / "DMPFrameTests.swift",
     RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
@@ -81,9 +82,30 @@ if project.is_file():
         "NSBonjourServices",
         "_displaymesh._tcp",
         "NSLocalNetworkUsageDescription",
+        "ITSAppUsesNonExemptEncryption: false",
+        "MARKETING_VERSION: 0.2.1",
+        "CURRENT_PROJECT_VERSION: 2",
     ):
         if required_token not in project_text:
             errors.append(f"project.yml is missing required token: {required_token}")
+
+privacy = RECEIVER / "Resources" / "PrivacyInfo.xcprivacy"
+if privacy.is_file():
+    import plistlib
+    with privacy.open("rb") as handle:
+        manifest = plistlib.load(handle)
+    if manifest.get("NSPrivacyTracking") is not False:
+        errors.append("receiver privacy manifest must declare tracking=false")
+    reasons = {
+        item.get("NSPrivacyAccessedAPIType"): set(item.get("NSPrivacyAccessedAPITypeReasons", []))
+        for item in manifest.get("NSPrivacyAccessedAPITypes", [])
+    }
+    if "CA92.1" not in reasons.get("NSPrivacyAccessedAPICategoryUserDefaults", set()):
+        errors.append("receiver privacy manifest is missing UserDefaults reason CA92.1")
+
+root_readme = ROOT / "README.md"
+if root_readme.is_file() and "Current `main`: 0.2.1" not in root_readme.read_text(encoding="utf-8"):
+    errors.append("root README version does not match receiver 0.2.1")
 
 settings = RECEIVER / "App" / "SettingsView.swift"
 if settings.is_file():

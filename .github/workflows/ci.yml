@@ -10,20 +10,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Validate repository contract
+        run: python3 scripts/validate-contract.py
+      - name: Validate Apple receiver resources
+        run: python3 scripts/validate-apple-receiver.py
+
   rust:
+    needs: contract
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-
-      - name: Validate repository contract
-        run: python3 scripts/validate-contract.py
-
-      - name: Validate Apple receiver resources
-        run: python3 scripts/validate-apple-receiver.py
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
@@ -44,6 +48,7 @@ jobs:
         run: cargo test --workspace
 
   apple-receiver:
+    needs: contract
     runs-on: macos-latest
 
     steps:
@@ -52,8 +57,11 @@ jobs:
       - name: Validate receiver resources
         run: python3 scripts/validate-apple-receiver.py
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install pinned XcodeGen
+        run: |
+          curl --fail --location --silent --show-error             https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip             --output "$RUNNER_TEMP/xcodegen.zip"
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP/xcodegen"
+          echo "$RUNNER_TEMP/xcodegen/xcodegen/bin" >> "$GITHUB_PATH"
 
       - name: Generate Xcode project
         working-directory: platforms/apple-receiver
@@ -82,6 +90,7 @@ jobs:
             test
 
   macos-media-harness:
+    needs: contract
     runs-on: macos-latest
 
     steps:
@@ -94,6 +103,7 @@ jobs:
         run: swift test --package-path platforms/macos/media-harness
 
   macos-native-harness:
+    needs: contract
     runs-on: macos-latest
 
     steps:
@@ -106,6 +116,7 @@ jobs:
         run: bash -n scripts/run-macos-virtual-session.sh
 
   windows-input-bridge:
+    needs: contract
     runs-on: windows-latest
 
     steps:
@@ -121,6 +132,7 @@ jobs:
         run: ctest --test-dir build/windows-input-bridge -C Release --output-on-failure
 
   windows-bootstrap:
+    needs: contract
     runs-on: windows-latest
 
     steps:
