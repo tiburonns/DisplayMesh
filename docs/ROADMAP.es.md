@@ -54,3 +54,11 @@
 ## M6 — Avanzado
 
 120 Hz, 4K60, HEVC, AV1, HDR, audio y multi-display permanecen planificados.
+
+
+## Robustez DMP añadida
+
+- [x] Presupuestos de payload DMP por tipo validados desde el header
+- [x] Gate de fase/autorización en el receiver
+- [x] Intentos de pairing malformado acotados por conexión
+- [x] Flags reservados de input rechazados

@@ -53,6 +53,23 @@ if not (ROOT / "platforms/macos/harness/Makefile").exists():
 if not (ROOT / "platforms/windows/bootstrap/CMakeLists.txt").exists():
     raise SystemExit("native contract failed: Windows bootstrap is missing")
 
+framing = (ROOT / "crates/displaymesh-core/src/framing.rs").read_text(encoding="utf-8")
+for token in ["maximum_payload_len", "PayloadTooLargeForType", "InvalidPayloadLength"]:
+    if token not in framing:
+        raise SystemExit(f"protocol hardening contract failed: framing missing {token}")
+
+input_source = (ROOT / "crates/displaymesh-core/src/input.rs").read_text(encoding="utf-8")
+if "UnsupportedFlags" not in input_source:
+    raise SystemExit("protocol hardening contract failed: reserved input flags are not rejected")
+
+receiver_gate = ROOT / "platforms/apple-receiver/Sources/ReceiverProtocolGate.swift"
+if not receiver_gate.exists():
+    raise SystemExit("receiver admission contract failed: ReceiverProtocolGate.swift is missing")
+gate_source = receiver_gate.read_text(encoding="utf-8")
+for token in [".pairing", ".video", "authorized"]:
+    if token not in gate_source:
+        raise SystemExit(f"receiver admission contract failed: gate missing {token}")
+
 identity_store = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/HostIdentityStore.swift"
 if not identity_store.exists():
     raise SystemExit("security contract failed: macOS host identity store is missing")

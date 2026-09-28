@@ -66,3 +66,9 @@ La conexión TCP de desarrollo actúa como frontera de sesión: cada dirección 
 ## Estado
 
 La arquitectura describe tanto componentes implementados como objetivos. Consulta `ROADMAP.es.md` para distinguir claramente lo disponible de lo pendiente.
+
+
+## Admisión y robustez de protocolo
+
+La ruta TCP de desarrollo reinicia secuencias DMP por conexión, rechaza gaps/replays y aplica límites de payload por tipo **desde el header**, antes de reservar el cuerpo completo. Input mantiene 40 bytes exactos y flags reservados en cero; keyframe request exige payload vacío. El receiver Apple sólo acepta pairing antes de autorizar y corta frames fuera de fase o intentos malformados repetidos.
+
