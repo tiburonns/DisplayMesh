@@ -28,6 +28,8 @@ required_files = [
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
     RECEIVER / "Tests" / "PairingIdentityTests.swift",
     RECEIVER / "Sources" / "TrustedPeerStore.swift",
+    RECEIVER / "Sources" / "ReceiverProtocolGate.swift",
+    RECEIVER / "Tests" / "ReceiverProtocolGateTests.swift",
 ]
 
 errors: list[str] = []
@@ -125,6 +127,9 @@ if frame_source.is_file():
         "DMPSequenceTracker",
         "ReceiverTelemetry",
         "unexpectedSequence",
+        "maximumPayloadSize",
+        "invalidPayloadLength",
+        "payloadTooLargeForMessage",
     ):
         if required_token not in frame_text:
             errors.append(f"receiver protocol hardening is missing token: {required_token}")
@@ -138,6 +143,9 @@ if view_model.is_file():
         "PairingValidationError.expired",
         "sendReceiverHello",
         "trustedPeerStore",
+        "maximumInvalidPairingAttempts",
+        "ReceiverProtocolGate.permits",
+        "disconnectCurrent",
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
@@ -163,6 +171,8 @@ if pairing_source.is_file():
         "isAuthentic",
         "ReceiverHello",
         "identityFingerprint",
+        "challenge: Data",
+        "isValid(expectedChallenge:",
     ):
         if required_token not in pairing_text:
             errors.append(f"signed pairing contract is missing token: {required_token}")

@@ -84,12 +84,6 @@ for token in ["ReceiverHello", "P256.Signing.PublicKey", "isAuthentic"]:
     if token not in pairing_text:
         raise SystemExit(f"security contract failed: signed receiver pairing missing {token}")
 
-print(
-    f"PASS: DisplayMesh {version} documentation, protocol status, "
-    "security, and native harness contract"
-)
-
-
 feedback = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverFeedbackController.swift"
 if not feedback.exists():
     raise SystemExit("adaptive feedback contract failed: ReceiverFeedbackController.swift is missing")
@@ -107,3 +101,18 @@ main_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMedia
 for token in ["ReceiverFeedbackController(", "encoder.setBitrate(mbps: bitrate)"]:
     if token not in main_source:
         raise SystemExit(f"adaptive bitrate integration failed: missing {token}")
+
+
+encoder_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/DisplayCaptureEncoder.swift").read_text(encoding="utf-8")
+for token in ["alreadyRunning", "setBitrate(mbps:", "didStopWithError"]:
+    if token not in encoder_source:
+        raise SystemExit(f"media lifecycle contract failed: missing {token}")
+
+identity_text = identity_store.read_text(encoding="utf-8")
+if "kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly" not in identity_text:
+    raise SystemExit("security contract failed: host identity must remain device-only in Keychain")
+
+print(
+    f"PASS: DisplayMesh {version} documentation, protocol hardening, "
+    "session admission, adaptive feedback, and native harness contract"
+)
