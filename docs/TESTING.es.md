@@ -48,7 +48,9 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 
 ## Puerta de sesión/seguridad
 
-- El primer emparejamiento requiere confirmación explícita y expira si queda sin responder.
+- Un peer recién conectado tiene 10 segundos para presentar un pairing firmado válido; de lo contrario el receiver cierra la conexión.
+- El primer emparejamiento requiere confirmación explícita y la ventana de aprobación expira tras 30 segundos si queda sin responder.
+- Rechazar o expirar pairing cierra la conexión actual; un nuevo intento empieza con secuencia de transporte y challenge nuevos.
 - La espera de pairing y descriptor de panel termina con timeout en vez de quedar colgada indefinidamente.
 - Cada conexión TCP reinicia la secuencia DMP en 1; frames duplicados, repetidos o con saltos se rechazan.
 - Payloads de control sobredimensionados se rechazan desde el header antes de almacenar el cuerpo.

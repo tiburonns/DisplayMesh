@@ -138,6 +138,9 @@ view_model = RECEIVER / "App" / "ReceiverViewModel.swift"
 if view_model.is_file():
     view_model_text = view_model.read_text(encoding="utf-8")
     for required_token in (
+        "admissionTimeoutTask",
+        "scheduleAdmissionTimeout",
+        "PairingValidationError.admissionExpired",
         "pairingTimeoutTask",
         "sendTelemetryIfNeeded",
         "PairingValidationError.expired",

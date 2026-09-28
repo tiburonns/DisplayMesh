@@ -192,7 +192,9 @@ The receiver pairing response echoes the active receiver challenge, and the host
 ## Security
 
 - TLS 1.3 is required for normal remote sessions.
-- First pairing requires explicit user confirmation; an unanswered development pairing request expires instead of remaining authorized indefinitely.
+- A connected development peer must present a valid signed pairing request within 10 seconds or the receiver closes the connection.
+- First pairing requires explicit user confirmation; once a valid request is shown, the approval window expires after 30 seconds instead of remaining pending indefinitely.
+- Pairing rejection/expiry closes that transport connection so a retry starts with a fresh challenge and sequence space.
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.

@@ -48,7 +48,9 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 
 ## Session/security gate
 
-- First pairing requires explicit confirmation and expires if it is left unanswered.
+- A newly connected peer has 10 seconds to present a valid signed pairing request; otherwise the receiver closes the connection.
+- First pairing requires explicit confirmation and the approval window expires after 30 seconds if it is left unanswered.
+- Rejecting or expiring pairing closes the current connection; a retry starts a fresh transport sequence and receiver challenge.
 - Pairing and receiver-panel waits fail with bounded timeouts instead of hanging indefinitely.
 - Every TCP connection restarts DMP sequence numbers at 1; duplicate, replayed or skipped frames are rejected.
 - Oversized control payloads are rejected from the DMP header before the body is buffered.
