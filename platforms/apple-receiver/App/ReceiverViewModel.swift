@@ -136,7 +136,15 @@ final class ReceiverViewModel: ObservableObject {
             return
         }
 
-        trustedPeerStore.trust(request)
+        guard trustedPeerStore.trust(request) else {
+            lastProtocolError =
+                trustedPeerStore.lastErrorDescription
+                ?? "Could not persist DisplayMesh trusted identity"
+            sessionAuthorized = false
+            sendPairingResponse(accepted: false)
+            rotateReceiverChallenge()
+            return
+        }
         trustedPeerCount = trustedPeerStore.count
 
         pairingTimeoutTask?.cancel()
@@ -242,8 +250,14 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func forgetTrustedPeers() {
-        trustedPeerStore.forgetAll()
-        trustedPeerCount = 0
+        if trustedPeerStore.forgetAll() {
+            trustedPeerCount = 0
+            lastProtocolError = nil
+        } else {
+            lastProtocolError =
+                trustedPeerStore.lastErrorDescription
+                ?? "Could not clear DisplayMesh trusted identities"
+        }
     }
 
     private func rotateReceiverChallenge() {
