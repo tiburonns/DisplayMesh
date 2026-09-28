@@ -53,6 +53,20 @@ if not (ROOT / "platforms/macos/harness/Makefile").exists():
 if not (ROOT / "platforms/windows/bootstrap/CMakeLists.txt").exists():
     raise SystemExit("native contract failed: Windows bootstrap is missing")
 
+identity_store = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/HostIdentityStore.swift"
+if not identity_store.exists():
+    raise SystemExit("security contract failed: macOS host identity store is missing")
+identity_text = identity_store.read_text(encoding="utf-8")
+for token in ["P256.Signing.PrivateKey", "SecItemCopyMatching", "SecItemAdd"]:
+    if token not in identity_text:
+        raise SystemExit(f"security contract failed: host identity store missing {token}")
+
+receiver_pairing = ROOT / "platforms/apple-receiver/Protocol/PairingMessage.swift"
+pairing_text = receiver_pairing.read_text(encoding="utf-8")
+for token in ["ReceiverHello", "P256.Signing.PublicKey", "isAuthentic"]:
+    if token not in pairing_text:
+        raise SystemExit(f"security contract failed: signed receiver pairing missing {token}")
+
 print(
     f"PASS: DisplayMesh {version} documentation, protocol status, "
     "security, and native harness contract"

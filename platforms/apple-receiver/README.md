@@ -15,7 +15,7 @@ The receiver is not a simple screen mirror. It must support:
 - Apple Pencil pressure, altitude and azimuth when available
 - scroll gestures
 - automatic panel capability reporting
-- encrypted pairing
+- challenge-bound signed pairing with persistent host identity
 - automatic reconnect
 
 ## Connection model
@@ -85,6 +85,10 @@ macOS target behavior:
 - adapt bitrate before allowing large queues
 - target 60 FPS first, then 120 FPS on supported iPad Pro hardware
 
+
+## Current security boundary
+
+The 0.2.2 development receiver verifies a P-256 signature from the macOS host against a fresh per-connection challenge and remembers accepted host public keys. This authenticates the host identity during pairing, but the current media/control transport remains plaintext TCP. Production still requires encrypted authenticated transport and receiver identity authentication.
 
 ## TestFlight preflight
 

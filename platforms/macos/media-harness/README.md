@@ -2,7 +2,7 @@
 
 This harness is the first end-to-end macOS host media path for DisplayMesh.
 
-It connects to the iPhone/iPad receiver, performs the current six-digit development pairing flow, captures a selected macOS display with ScreenCaptureKit, encodes it as low-delay H.264 using VideoToolbox, wraps each access unit in the DMP video packet format, and sends it to the receiver.
+It connects to the iPhone/iPad receiver, waits for a fresh receiver challenge, signs the six-digit pairing request with a persistent P-256 identity stored in macOS Keychain, captures a selected macOS display with ScreenCaptureKit, encodes it as low-delay H.264 using VideoToolbox, wraps each access unit in the DMP video packet format, and sends it to the receiver.
 
 It is intentionally separate from the production host backend while the media path is validated on real hardware.
 
@@ -14,6 +14,7 @@ It is intentionally separate from the production host backend while the media pa
 - H.264 output is converted from AVCC to DMP Annex-B.
 - SPS/PPS are repeated with keyframes so the receiver can join/recover.
 - Receiver keyframe requests force the next host frame to be an IDR.
+- The host identity persists in Keychain and every pairing request is challenge-bound and signed.
 - Capture input is dropped before encoding while the TCP video send is busy instead of building an unbounded media queue.
 - Binary DMP touch samples map one finger to pointer/click/drag and two fingers to scrolling.
 - The gesture state machine releases an active mouse button before entering two-finger scroll and never turns the remaining finger into an accidental click.
