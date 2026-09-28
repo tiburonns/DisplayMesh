@@ -105,11 +105,45 @@ impl DmpFrame {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DmpSequenceTracker {
+    expected: u32,
+}
+
+impl Default for DmpSequenceTracker {
+    fn default() -> Self {
+        Self { expected: 1 }
+    }
+}
+
+impl DmpSequenceTracker {
+    pub const fn expected(&self) -> u32 {
+        self.expected
+    }
+
+    pub fn accept(&mut self, sequence: u32) -> Result<(), DmpFrameError> {
+        if sequence != self.expected {
+            return Err(DmpFrameError::UnexpectedSequence {
+                expected: self.expected,
+                received: sequence,
+            });
+        }
+
+        self.expected = self.expected.wrapping_add(1);
+        Ok(())
+    }
+
+    pub fn reset(&mut self) {
+        self.expected = 1;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DmpFrameError {
     InvalidMagic,
     UnsupportedVersion(u8),
     UnsupportedMessageType(u8),
     PayloadTooLarge(usize),
+    UnexpectedSequence { expected: u32, received: u32 },
 }
 
 impl fmt::Display for DmpFrameError {
@@ -123,6 +157,10 @@ impl fmt::Display for DmpFrameError {
                 write!(f, "unsupported DMP message type: {message_type:#04x}")
             }
             Self::PayloadTooLarge(size) => write!(f, "DMP payload is too large: {size} bytes"),
+            Self::UnexpectedSequence { expected, received } => write!(
+                f,
+                "unexpected DMP sequence: expected {expected}, received {received}"
+            ),
         }
     }
 }
@@ -176,6 +214,42 @@ mod tests {
             DmpFrame::decode(&encoded[..DMP_HEADER_LEN + 2]).unwrap(),
             None
         );
+    }
+
+    #[test]
+    fn sequence_tracker_rejects_gaps_and_replays() {
+        let mut tracker = DmpSequenceTracker::default();
+
+        tracker.accept(1).unwrap();
+        tracker.accept(2).unwrap();
+
+        assert_eq!(
+            tracker.accept(2),
+            Err(DmpFrameError::UnexpectedSequence {
+                expected: 3,
+                received: 2,
+            })
+        );
+
+        tracker.reset();
+        assert_eq!(tracker.expected(), 1);
+        tracker.accept(1).unwrap();
+        assert_eq!(
+            tracker.accept(3),
+            Err(DmpFrameError::UnexpectedSequence {
+                expected: 2,
+                received: 3,
+            })
+        );
+    }
+
+    #[test]
+    fn sequence_tracker_wraps_without_panicking() {
+        let mut tracker = DmpSequenceTracker { expected: u32::MAX };
+        tracker.accept(u32::MAX).unwrap();
+        assert_eq!(tracker.expected(), 0);
+        tracker.accept(0).unwrap();
+        assert_eq!(tracker.expected(), 1);
     }
 
     #[test]

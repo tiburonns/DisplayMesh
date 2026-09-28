@@ -34,6 +34,40 @@ final class DMPFrameTests: XCTestCase {
         XCTAssertEqual(try decoder.nextFrame(), frame)
     }
 
+    func testSequenceTrackerRejectsReplayAndGap() throws {
+        var tracker = DMPSequenceTracker()
+
+        try tracker.accept(1)
+        try tracker.accept(2)
+
+        XCTAssertThrowsError(try tracker.accept(2))
+        tracker.reset()
+        try tracker.accept(1)
+        XCTAssertThrowsError(try tracker.accept(3))
+    }
+
+    func testTelemetryRoundTrip() throws {
+        let source = ReceiverTelemetry(
+            metrics: ReceiverVideoMetrics(
+                receivedFrames: 12,
+                decodedFrames: 10,
+                droppedFrames: 2,
+                framesPerSecond: 59.4,
+                megabitsPerSecond: 18.2,
+                averageDecodeMilliseconds: 3.1,
+                hardwareAccelerated: true,
+                lastSequence: 99
+            )
+        )
+
+        let encoded = try JSONEncoder().encode(source)
+        let decoded = try JSONDecoder().decode(
+            ReceiverTelemetry.self,
+            from: encoded
+        )
+        XCTAssertEqual(decoded, source)
+    }
+
     func testPairingRequiresSixDigitsAndMatchingProtocol() {
         XCTAssertTrue(
             PairingRequest(

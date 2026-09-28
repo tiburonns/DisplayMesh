@@ -17,6 +17,7 @@ enum DMPFrameError: Error, Equatable, LocalizedError {
     case unsupportedVersion(UInt8)
     case unsupportedMessageType(UInt8)
     case payloadTooLarge(Int)
+    case unexpectedSequence(expected: UInt32, received: UInt32)
 
     var errorDescription: String? {
         switch self {
@@ -28,6 +29,8 @@ enum DMPFrameError: Error, Equatable, LocalizedError {
             return "Unsupported DMP message type: \(rawValue)"
         case .payloadTooLarge(let size):
             return "DMP payload exceeds the maximum allowed size: \(size)"
+        case .unexpectedSequence(let expected, let received):
+            return "Unexpected DMP sequence: expected \(expected), received \(received)"
         }
     }
 }
@@ -57,6 +60,50 @@ struct DMPFrame: Equatable {
         data.appendBigEndian(UInt32(payload.count))
         data.append(payload)
         return data
+    }
+}
+
+struct DMPSequenceTracker {
+    private(set) var expected: UInt32 = 1
+
+    mutating func accept(_ sequence: UInt32) throws {
+        guard sequence == expected else {
+            throw DMPFrameError.unexpectedSequence(
+                expected: expected,
+                received: sequence
+            )
+        }
+        expected &+= 1
+    }
+
+    mutating func reset() {
+        expected = 1
+    }
+}
+
+struct ReceiverTelemetry: Codable, Equatable {
+    static let version = 1
+
+    let protocolVersion: Int
+    let receivedFrames: UInt64
+    let decodedFrames: UInt64
+    let droppedFrames: UInt64
+    let framesPerSecond: Double
+    let megabitsPerSecond: Double
+    let averageDecodeMilliseconds: Double
+    let hardwareAccelerated: Bool?
+    let lastVideoSequence: UInt32?
+
+    init(metrics: ReceiverVideoMetrics) {
+        protocolVersion = Self.version
+        receivedFrames = metrics.receivedFrames
+        decodedFrames = metrics.decodedFrames
+        droppedFrames = metrics.droppedFrames
+        framesPerSecond = metrics.framesPerSecond
+        megabitsPerSecond = metrics.megabitsPerSecond
+        averageDecodeMilliseconds = metrics.averageDecodeMilliseconds
+        hardwareAccelerated = metrics.hardwareAccelerated
+        lastVideoSequence = metrics.lastSequence
     }
 }
 
