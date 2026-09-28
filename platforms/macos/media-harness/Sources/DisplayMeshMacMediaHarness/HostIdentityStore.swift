@@ -124,6 +124,7 @@ enum HostIdentityStore {
         ]
         let attributes: [CFString: Any] = [
             kSecValueData: data,
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
 
         let updateStatus = SecItemUpdate(
@@ -141,6 +142,8 @@ enum HostIdentityStore {
 
         var insert = query
         insert[kSecValueData] = data
+        insert[kSecAttrAccessible] =
+            kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 
         let addStatus = SecItemAdd(
             insert as CFDictionary,

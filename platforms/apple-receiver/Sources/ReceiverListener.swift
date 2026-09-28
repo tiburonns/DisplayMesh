@@ -57,6 +57,25 @@ final class ReceiverListener {
         newListener.start(queue: queue)
     }
 
+    func disconnectCurrent() {
+        queue.async { [weak self] in
+            guard let self, let activeConnection = connection else { return }
+
+            connection = nil
+            activeConnection.stateUpdateHandler = nil
+            activeConnection.cancel()
+            decoder = DMPFrameDecoder()
+            incomingSequence.reset()
+            nextSequence = 1
+
+            if listener != nil {
+                publish(.ready(port: Self.port.rawValue))
+            } else {
+                publish(.stopped)
+            }
+        }
+    }
+
     func stop() {
         queue.async { [weak self] in
             guard let self else { return }

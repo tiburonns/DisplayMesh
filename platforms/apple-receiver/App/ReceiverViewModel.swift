@@ -25,6 +25,8 @@ final class ReceiverViewModel: ObservableObject {
     private var lastTelemetrySentTime: TimeInterval = 0
     private var pairingTimeoutTask: Task<Void, Never>?
     private var receiverChallenge: Data?
+    private var invalidPairingAttempts = 0
+    private static let maximumInvalidPairingAttempts = 3
 
     init(
         listener: ReceiverListener = ReceiverListener(),
@@ -44,12 +46,14 @@ final class ReceiverViewModel: ObservableObject {
             switch state {
             case .connected:
                 resetAuthorization()
+                invalidPairingAttempts = 0
                 lastProtocolError = nil
                 videoDecoder.reset()
                 videoSurface.clear()
                 sendReceiverHello()
             case .stopped, .failed:
                 resetAuthorization()
+                invalidPairingAttempts = 0
                 videoDecoder.reset()
                 videoSurface.clear()
             default:
@@ -153,6 +157,7 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = true
+        invalidPairingAttempts = 0
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
         receiverChallenge = nil
@@ -175,6 +180,20 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     private func handle(_ frame: DMPFrame) {
+        guard ReceiverProtocolGate.permits(
+            frame.type,
+            authorized: sessionAuthorized
+        ) else {
+            lastProtocolError =
+                "Rejected unexpected DMP \(frame.type) frame " +
+                (sessionAuthorized ? "after authorization" : "before authorization")
+            listener.disconnectCurrent()
+            resetAuthorization()
+            videoDecoder.reset()
+            videoSurface.clear()
+            return
+        }
+
         switch frame.type {
         case .hello:
             lastProtocolError = "Unexpected host hello frame"
@@ -207,7 +226,8 @@ final class ReceiverViewModel: ObservableObject {
                     lastProtocolError =
                         PairingValidationError.identityChanged.localizedDescription
                     sendPairingResponse(accepted: false)
-                    rotateReceiverChallenge()
+                    listener.disconnectCurrent()
+                    resetAuthorization()
 
                 case .trusted:
                     pendingPairing = request
@@ -224,12 +244,7 @@ final class ReceiverViewModel: ObservableObject {
                     schedulePairingTimeout()
                 }
             } catch {
-                pendingPairing = nil
-                pendingPeerPreviouslyTrusted = false
-                sessionAuthorized = false
-                lastProtocolError = error.localizedDescription
-                sendPairingResponse(accepted: false)
-                rotateReceiverChallenge()
+                recordInvalidPairing(error)
             }
 
         case .video:
@@ -246,10 +261,34 @@ final class ReceiverViewModel: ObservableObject {
                 requestKeyframe()
             }
 
-        case .capabilities, .panelDescriptor, .input, .telemetry,
-             .keyframeRequest, .error:
+        case .capabilities:
+            break
+
+        case .error:
+            lastProtocolError =
+                String(data: frame.payload, encoding: .utf8)
+                ?? "DisplayMesh host reported a binary protocol error"
+
+        case .panelDescriptor, .input, .telemetry, .keyframeRequest:
             break
         }
+    }
+
+    private func recordInvalidPairing(_ error: Error) {
+        invalidPairingAttempts += 1
+        pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
+        sessionAuthorized = false
+        lastProtocolError = error.localizedDescription
+        sendPairingResponse(accepted: false)
+
+        guard invalidPairingAttempts < Self.maximumInvalidPairingAttempts else {
+            listener.disconnectCurrent()
+            resetAuthorization()
+            return
+        }
+
+        rotateReceiverChallenge()
     }
 
     private func requestKeyframe(force: Bool = false) {
