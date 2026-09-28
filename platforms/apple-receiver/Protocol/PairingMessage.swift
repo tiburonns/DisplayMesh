@@ -156,4 +156,11 @@ struct PairingResponse: Codable, Equatable {
     let accepted: Bool
     let receiverName: String
     let protocolVersion: Int
+    let challenge: Data
+
+    func isValid(expectedChallenge: Data) -> Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && challenge.count == ReceiverHello.challengeSize
+            && challenge == expectedChallenge
+    }
 }

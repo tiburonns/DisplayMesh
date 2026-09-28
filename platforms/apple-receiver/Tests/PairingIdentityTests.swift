@@ -113,3 +113,26 @@ final class PairingIdentityTests: XCTestCase {
         XCTAssertEqual(store.status(for: changed), .identityChanged)
     }
 }
+
+
+extension PairingIdentityTests {
+    func testPairingResponseIsBoundToActiveChallenge() throws {
+        let challenge = try ReceiverHello.make().challenge
+        let response = PairingResponse(
+            accepted: true,
+            receiverName: "Test iPad",
+            protocolVersion: Int(DMPFrame.version),
+            challenge: challenge
+        )
+
+        XCTAssertTrue(
+            response.isValid(expectedChallenge: challenge)
+        )
+
+        var different = challenge
+        different[0] ^= 0xFF
+        XCTAssertFalse(
+            response.isValid(expectedChallenge: different)
+        )
+    }
+}

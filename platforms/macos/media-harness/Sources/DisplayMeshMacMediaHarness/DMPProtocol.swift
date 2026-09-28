@@ -70,6 +70,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case timeout(String)
     case invalidReceiverHello
     case invalidReceiverTelemetry
+    case invalidPairingResponse
+    case invalidSessionPhase(String)
     case invalidPairingRequest
 
     var errorDescription: String? {
@@ -110,6 +112,10 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver sent an invalid DisplayMesh hello challenge"
         case .invalidReceiverTelemetry:
             return "The receiver sent invalid DisplayMesh telemetry"
+        case .invalidPairingResponse:
+            return "The receiver pairing response does not match the active challenge"
+        case .invalidSessionPhase(let detail):
+            return "Unexpected DMP frame for session phase: \(detail)"
         case .invalidPairingRequest:
             return "The DisplayMesh pairing request is invalid"
         }
@@ -382,10 +388,17 @@ struct PairingRequest: Codable, Equatable {
     }
 }
 
-struct PairingResponse: Codable {
+struct PairingResponse: Codable, Equatable {
     let accepted: Bool
     let receiverName: String
     let protocolVersion: Int
+    let challenge: Data
+
+    func isValid(expectedChallenge: Data) -> Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && challenge.count == ReceiverHello.challengeSize
+            && challenge == expectedChallenge
+    }
 }
 
 struct ReceiverPanelDescriptor: Codable {

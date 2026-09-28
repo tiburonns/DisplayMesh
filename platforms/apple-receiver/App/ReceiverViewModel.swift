@@ -160,9 +160,9 @@ final class ReceiverViewModel: ObservableObject {
         invalidPairingAttempts = 0
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
-        receiverChallenge = nil
         lastProtocolError = nil
         sendPairingResponse(accepted: true)
+        receiverChallenge = nil
         sendPanelDescriptorIfAuthorized()
         requestKeyframe(force: true)
     }
@@ -336,10 +336,16 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     private func sendPairingResponse(accepted: Bool) {
+        guard let receiverChallenge else {
+            lastProtocolError = "DisplayMesh pairing response has no active challenge"
+            return
+        }
+
         let response = PairingResponse(
             accepted: accepted,
             receiverName: UIDevice.current.name,
-            protocolVersion: Int(DMPFrame.version)
+            protocolVersion: Int(DMPFrame.version),
+            challenge: receiverChallenge
         )
 
         guard let payload = try? JSONEncoder().encode(response) else { return }

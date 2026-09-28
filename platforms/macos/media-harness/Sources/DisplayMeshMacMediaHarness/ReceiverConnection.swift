@@ -21,6 +21,7 @@ final class ReceiverConnection {
     private var nextSequence: UInt32 = 1
     private var videoSendInFlight = false
     private var connectionReady = false
+    private var protocolPhase: HostReceiverPhase = .awaitingHello
 
     private var receiverHello: ReceiverHello?
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
@@ -156,7 +157,13 @@ final class ReceiverConnection {
         guard request.hasValidShape else {
             throw DMPProtocolError.invalidPairingRequest
         }
+        guard protocolPhase == .readyToPair else {
+            throw DMPProtocolError.invalidSessionPhase(
+                "pairing request while \(protocolPhase)"
+            )
+        }
 
+        protocolPhase = .awaitingPairingResponse
         let payload = try JSONEncoder().encode(request)
         send(type: .pairing, payload: payload)
     }
@@ -361,7 +368,7 @@ final class ReceiverConnection {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
                         try incomingSequence.accept(frame.sequence)
-                        handle(frame)
+                        try handle(frame)
                     }
                 } catch {
                     handleTransportFailure(error, connection: activeConnection)
@@ -386,7 +393,16 @@ final class ReceiverConnection {
         }
     }
 
-    private func handle(_ frame: DMPFrame) {
+    private func handle(_ frame: DMPFrame) throws {
+        guard HostProtocolGate.permits(
+            frame.type,
+            phase: protocolPhase
+        ) else {
+            throw DMPProtocolError.invalidSessionPhase(
+                "\(protocolPhase) received \(frame.type)"
+            )
+        }
+
         switch frame.type {
         case .hello:
             do {
@@ -399,6 +415,7 @@ final class ReceiverConnection {
                 }
 
                 receiverHello = hello
+                protocolPhase = .readyToPair
                 helloWaitToken = nil
                 helloContinuation?.resume(returning: hello)
                 helloContinuation = nil
@@ -419,7 +436,14 @@ final class ReceiverConnection {
                         UInt8(clamping: response.protocolVersion)
                     )
                 }
+                guard let challenge = receiverHello?.challenge,
+                      response.isValid(expectedChallenge: challenge) else {
+                    throw DMPProtocolError.invalidPairingResponse
+                }
                 pairingResponse = response
+                protocolPhase = response.accepted
+                    ? .awaitingPanel
+                    : .readyToPair
                 pairingWaitToken = nil
                 pairingContinuation?.resume(returning: response)
                 pairingContinuation = nil
@@ -436,6 +460,7 @@ final class ReceiverConnection {
                     from: frame.payload
                 )
                 panelDescriptor = panel
+                protocolPhase = .streaming
                 panelWaitToken = nil
                 panelContinuation?.resume(returning: panel)
                 panelContinuation = nil
@@ -510,6 +535,7 @@ final class ReceiverConnection {
         incomingSequence.reset()
         nextSequence = 1
         receiverHello = nil
+        protocolPhase = .awaitingHello
         helloWaitToken = nil
         pairingResponse = nil
         panelDescriptor = nil
