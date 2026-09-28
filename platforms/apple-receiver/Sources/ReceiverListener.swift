@@ -119,7 +119,14 @@ final class ReceiverListener {
     }
 
     private func accept(_ newConnection: NWConnection) {
-        connection?.cancel()
+        // Never let an unsolicited second peer evict an active session.
+        // The current receiver intentionally supports one transport connection
+        // at a time; the user must end it before another peer can connect.
+        guard connection == nil else {
+            newConnection.cancel()
+            return
+        }
+
         connection = newConnection
         decoder = DMPFrameDecoder()
         incomingSequence.reset()

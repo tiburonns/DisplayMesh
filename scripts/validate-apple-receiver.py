@@ -178,6 +178,27 @@ if workflow.is_file():
         if required_token not in workflow_text:
             errors.append(f"receiver CI is missing required token: {required_token}")
 
+listener_source = (ROOT / "platforms/apple-receiver/Sources/ReceiverListener.swift").read_text(
+    encoding="utf-8"
+)
+if "guard connection == nil else" not in listener_source:
+    errors.append(
+        "receiver transport must reject a second connection instead of evicting the active peer"
+    )
+
+root_view_source = (ROOT / "platforms/apple-receiver/App/ReceiverRootView.swift").read_text(
+    encoding="utf-8"
+)
+for required_token in [
+    "resumeReceiverWhenActive",
+    "case .background:",
+    "case .active:",
+]:
+    if required_token not in root_view_source:
+        errors.append(
+            f"receiver lifecycle recovery is missing required token: {required_token}"
+        )
+
 if errors:
     print("Apple receiver validation failed:")
     for error in errors:

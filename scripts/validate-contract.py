@@ -61,6 +61,36 @@ for token in ["P256.Signing.PrivateKey", "SecItemCopyMatching", "SecItemAdd"]:
     if token not in identity_text:
         raise SystemExit(f"security contract failed: host identity store missing {token}")
 
+session_model = (ROOT / "crates/displaymesh-core/src/session.rs").read_text(encoding="utf-8")
+capability_model = (ROOT / "crates/displaymesh-core/src/model.rs").read_text(encoding="utf-8")
+for token in [
+    "pub const fn development_scaffold() -> Self",
+    "encryption_required: false",
+]:
+    if token not in session_model:
+        raise SystemExit(f"security contract failed: session development scaffold missing {token}")
+for token in [
+    "connection_media: vec![ConnectionMedium::Wifi]",
+    "wire_protocols: vec![WireProtocol::Tcp]",
+    "encryption_supported: false",
+]:
+    if token not in capability_model:
+        raise SystemExit(f"security contract failed: development capabilities missing {token}")
+
+adaptive_controller = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverAdaptiveController.swift"
+adaptive_tests = ROOT / "platforms/macos/media-harness/Tests/DisplayMeshMacMediaHarnessTests/ReceiverAdaptiveControllerTests.swift"
+if not adaptive_controller.exists() or not adaptive_tests.exists():
+    raise SystemExit("adaptive contract failed: macOS receiver adaptation source/tests are missing")
+
+media_main = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/main.swift").read_text(encoding="utf-8")
+for token in [
+    "ReceiverAdaptiveController(",
+    "encoder?.setBitrate",
+    "decision.requestKeyframe",
+]:
+    if token not in media_main:
+        raise SystemExit(f"adaptive contract failed: macOS media harness missing {token}")
+
 receiver_pairing = ROOT / "platforms/apple-receiver/Protocol/PairingMessage.swift"
 pairing_text = receiver_pairing.read_text(encoding="utf-8")
 for token in ["ReceiverHello", "P256.Signing.PublicKey", "isAuthentic"]:

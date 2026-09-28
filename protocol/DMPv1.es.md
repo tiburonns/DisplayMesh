@@ -43,6 +43,8 @@ En TCP, cada dirección reinicia la secuencia DMP en **1** al establecer una con
 
 El receiver autorizado devuelve al host, a cadencia limitada, telemetría de decode: FPS, bitrate recibido, tiempo medio de decode, frames descartados, estado de aceleración por hardware y última secuencia de video observada. Esta telemetría no contiene secretos de pairing, contenido de pantalla ni payloads de input.
 
+La ruta de desarrollo macOS ya usa esos FPS/tiempos de decode/descartes para reducir o recuperar de forma acotada el bitrate de VideoToolbox. Un estrés severo también solicita un keyframe de recuperación. El cambio dinámico de raster sigue pendiente.
+
 Las solicitudes de pairing y la espera del descriptor del panel usan timeouts acotados para evitar sesiones colgadas.
 
 ### Handshake de identidad de desarrollo
@@ -50,5 +52,9 @@ Las solicitudes de pairing y la espera del descriptor del panel usan timeouts ac
 El binding Apple/macOS actual comienza con un challenge aleatorio de 32 bytes creado por el receiver. El host conserva UUID y clave P-256 en Keychain y firma un payload canónico con versión, peer ID/nombre, código de seis dígitos, challenge y clave pública. El receiver verifica firma/challenge antes de mostrar aprobación. Si un peer ID conocido llega con otra clave pública, se rechaza hasta borrar la confianza.
 
 Esto autentica únicamente la **identidad del host de desarrollo**; no sustituye TLS 1.3 ni autentica todavía el receiver ante el host.
+
+El scaffold compartido de capacidades de desarrollo anuncia deliberadamente sólo la ruta implementada de extremo a extremo: **H.264 sobre TCP sin cifrar por Wi‑Fi/LAN**. Reporta cifrado como no disponible. La configuración de producción `SessionConfig::default()` sigue exigiendo cifrado, por lo que debe fallar contra el scaffold de desarrollo en lugar de fingir una sesión segura.
+
+Una segunda conexión entrante no puede expulsar la conexión activa del receiver; otro peer debe esperar hasta que la sesión actual termine.
 
 La especificación sigue siendo un contrato de desarrollo: transporte TLS/QUIC, identidad persistente y aceptación end-to-end permanecen sujetos a los gates del roadmap.

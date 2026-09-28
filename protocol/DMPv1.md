@@ -161,13 +161,15 @@ DMPv1 prefers freshness over perfect delivery.
 - decode/render telemetry feeds adaptation
 - an authorized receiver reports decode FPS, bitrate, decode time, dropped-frame count, hardware-decoder state and the last observed video sequence to the host at a bounded cadence
 
-DisplayMesh's adaptive controller treats bitrate as the first quality lever. Persistent congestion may then step the encoded stream raster through 100%, 85%, 75% and 67%. Resolution recovery happens before aggressive bitrate upshifts and requires a recovery keyframe.
+DisplayMesh's adaptive controller treats bitrate as the first quality lever. The macOS development path now consumes receiver FPS/decode/drop telemetry and applies bounded bitrate reductions/recovery to VideoToolbox. Severe receiver stress also requests a recovery keyframe. Persistent congestion may later step the encoded stream raster through 100%, 85%, 75% and 67%; dynamic raster application remains a separate implementation milestone.
 
 ## Development identity handshake
 
 The current Apple/macOS development binding starts with a receiver-generated 32-byte random challenge. The host keeps a stable UUID and P-256 signing key in Keychain and signs a canonical pairing payload containing the protocol version, peer ID/name, six-digit verification code, challenge and public key. The receiver verifies the signature and challenge before showing the approval UI. A known peer ID arriving with a different public key is rejected until trust is explicitly cleared.
 
 This authenticates the development **host identity only**. It does not replace the TLS 1.3 requirement or authenticate the receiver to the host.
+
+The shared development capability scaffold intentionally advertises only the implemented end-to-end path: **H.264 over plaintext TCP on Wi-Fi/LAN**. It reports encryption as unsupported. Production-oriented `SessionConfig::default()` still requires encryption, so it must fail against the development scaffold instead of falsely reporting a secure negotiated session.
 
 ## Security
 
@@ -176,6 +178,7 @@ This authenticates the development **host identity only**. It does not replace t
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.
+- A second inbound peer cannot evict the active receiver transport connection; a new peer must wait until the current connection ends.
 - USB does not disable authentication merely because a cable is present.
 
 ## Capability negotiation

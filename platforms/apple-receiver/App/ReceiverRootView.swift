@@ -5,6 +5,7 @@ struct ReceiverRootView: View {
     @EnvironmentObject private var receiver: ReceiverViewModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingSettings = false
+    @State private var resumeReceiverWhenActive = false
 
     var body: some View {
         ZStack {
@@ -46,8 +47,24 @@ struct ReceiverRootView: View {
                 .environment(\.locale, languageStore.selection.locale)
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .background {
-                receiver.stopReceiver()
+            switch phase {
+            case .background:
+                resumeReceiverWhenActive = receiver.isListening
+                if resumeReceiverWhenActive {
+                    receiver.stopReceiver()
+                }
+
+            case .active:
+                if resumeReceiverWhenActive {
+                    resumeReceiverWhenActive = false
+                    receiver.startReceiver()
+                }
+
+            case .inactive:
+                break
+
+            @unknown default:
+                break
             }
         }
     }
