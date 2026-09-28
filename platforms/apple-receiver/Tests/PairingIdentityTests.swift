@@ -74,6 +74,7 @@ final class PairingIdentityTests: XCTestCase {
             privateKey: P256.Signing.PrivateKey()
         )
 
+        XCTAssertTrue(store.isOperational)
         XCTAssertEqual(store.status(for: first), .new)
         XCTAssertTrue(store.trust(first))
         XCTAssertEqual(store.status(for: first), .trusted)

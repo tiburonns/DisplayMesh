@@ -147,6 +147,10 @@ final class TrustedPeerStore {
         peers.count
     }
 
+    var isOperational: Bool {
+        lastErrorDescription == nil
+    }
+
     func status(for request: PairingRequest) -> PeerTrustStatus {
         guard let record = peers.first(
             where: { $0.peerID == request.peerID }

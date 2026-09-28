@@ -35,6 +35,7 @@ final class ReceiverViewModel: ObservableObject {
         self.videoDecoder = videoDecoder
         self.trustedPeerStore = trustedPeerStore
         self.trustedPeerCount = trustedPeerStore.count
+        self.lastProtocolError = trustedPeerStore.lastErrorDescription
 
         listener.onState = { [weak self] state in
             guard let self else { return }
@@ -133,6 +134,8 @@ final class ReceiverViewModel: ObservableObject {
             pendingPairing = nil
             pendingPeerPreviouslyTrusted = false
             sessionAuthorized = false
+            sendPairingResponse(accepted: false)
+            rotateReceiverChallenge()
             return
         }
 
@@ -189,6 +192,13 @@ final class ReceiverViewModel: ObservableObject {
                     throw PairingValidationError.invalidSignature
                 }
 
+                guard trustedPeerStore.isOperational else {
+                    throw PairingValidationError.trustStoreUnavailable(
+                        trustedPeerStore.lastErrorDescription
+                            ?? "Unknown Keychain error"
+                    )
+                }
+
                 switch trustedPeerStore.status(for: request) {
                 case .identityChanged:
                     pendingPairing = nil
@@ -218,6 +228,8 @@ final class ReceiverViewModel: ObservableObject {
                 pendingPeerPreviouslyTrusted = false
                 sessionAuthorized = false
                 lastProtocolError = error.localizedDescription
+                sendPairingResponse(accepted: false)
+                rotateReceiverChallenge()
             }
 
         case .video:
@@ -345,6 +357,7 @@ private enum PairingValidationError: LocalizedError {
     case invalidRequest
     case invalidSignature
     case identityChanged
+    case trustStoreUnavailable(String)
     case expired
 
     var errorDescription: String? {
@@ -355,6 +368,8 @@ private enum PairingValidationError: LocalizedError {
             return "DisplayMesh pairing identity could not be verified"
         case .identityChanged:
             return "This computer's DisplayMesh identity changed. Forget trusted computers before pairing it again."
+        case .trustStoreUnavailable(let detail):
+            return "DisplayMesh cannot verify trusted computers: \(detail)"
         case .expired:
             return "DisplayMesh pairing request expired"
         }
