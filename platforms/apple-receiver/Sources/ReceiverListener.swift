@@ -101,9 +101,10 @@ final class ReceiverListener {
                 sequence: nextSequence,
                 payload: payload
             )
-            nextSequence &+= 1
 
             guard let data = try? frame.encoded() else { return }
+            nextSequence &+= 1
+
             connection.send(
                 content: data,
                 completion: .contentProcessed { [weak self, weak connection] error in

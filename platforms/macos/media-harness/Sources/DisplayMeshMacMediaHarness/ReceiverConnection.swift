@@ -277,8 +277,10 @@ final class ReceiverConnection {
             }
 
             do {
-                let frame = try makeFrame(type: .video, payload: payload)
-                let data = try frame.encoded()
+                let data = try makeEncodedFrame(
+                    type: .video,
+                    payload: payload
+                )
 
                 activeConnection.send(
                     content: data,
@@ -309,9 +311,12 @@ final class ReceiverConnection {
             guard let self, let activeConnection = connection else { return }
 
             do {
-                let frame = try makeFrame(type: type, payload: payload)
+                let data = try makeEncodedFrame(
+                    type: type,
+                    payload: payload
+                )
                 activeConnection.send(
-                    content: try frame.encoded(),
+                    content: data,
                     completion: .contentProcessed { [weak self, weak activeConnection] error in
                         guard let self, let error, let activeConnection else { return }
                         queue.async {
@@ -328,18 +333,19 @@ final class ReceiverConnection {
         }
     }
 
-    private func makeFrame(
+    private func makeEncodedFrame(
         type: DMPMessageType,
         payload: Data
-    ) throws -> DMPFrame {
+    ) throws -> Data {
         let frame = DMPFrame(
             type: type,
             flags: 0,
             sequence: nextSequence,
             payload: payload
         )
+        let encoded = try frame.encoded()
         nextSequence &+= 1
-        return frame
+        return encoded
     }
 
     private func receiveNext(on activeConnection: NWConnection) {

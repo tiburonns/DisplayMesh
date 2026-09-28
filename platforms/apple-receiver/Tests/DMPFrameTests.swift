@@ -46,6 +46,51 @@ final class DMPFrameTests: XCTestCase {
         XCTAssertThrowsError(try tracker.accept(3))
     }
 
+    func testPairingPayloadBudgetRejectsHeaderBeforeBodyArrives() {
+        let header = Data([
+            0x44, 0x4D, 0x50, 0x31,
+            DMPFrame.version,
+            DMPMessageType.pairing.rawValue,
+            0, 0,
+            0, 0, 0, 1,
+            0, 0, 0x80, 0,
+        ])
+
+        var decoder = DMPFrameDecoder()
+        decoder.append(header)
+
+        XCTAssertThrowsError(try decoder.nextFrame()) { error in
+            XCTAssertEqual(
+                error as? DMPFrameError,
+                .payloadTooLargeForMessage(
+                    type: DMPMessageType.pairing.rawValue,
+                    size: 32 * 1024,
+                    maximum: 16 * 1024
+                )
+            )
+        }
+    }
+
+    func testExactPayloadBudgetsRejectMalformedInteractiveFrames() {
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .input,
+                flags: 0,
+                sequence: 1,
+                payload: Data(repeating: 0, count: 39)
+            ).encoded()
+        )
+
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .keyframeRequest,
+                flags: 0,
+                sequence: 1,
+                payload: Data([1])
+            ).encoded()
+        )
+    }
+
     func testTelemetryRoundTrip() throws {
         let source = ReceiverTelemetry(
             metrics: ReceiverVideoMetrics(
