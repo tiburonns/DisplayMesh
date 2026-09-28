@@ -12,6 +12,20 @@ Responsibilities:
 - Windows input injection
 - telemetry
 
+## DMP protocol foundation
+
+`protocol/` contains the native C++ DMPv1 framing foundation for the Windows path. It currently validates the fixed 16-byte header, protocol/message IDs, per-message payload budgets, exact input/keyframe sizes, and per-connection sequence progression. It is deliberately transport-agnostic; the Windows network/media service still needs to be integrated.
+
+Build and test:
+
+```powershell
+cmake -S platforms/windows/protocol -B build/windows-protocol
+cmake --build build/windows-protocol --config Release
+ctest --test-dir build/windows-protocol -C Release --output-on-failure
+```
+
+The input bridge also rejects reserved DMPv1 input flags instead of silently accepting undefined extensions.
+
 ## Software-device bootstrap
 
 `bootstrap/` contains a small Windows SDK application that creates the DisplayMesh software device with `SwDeviceCreate`.

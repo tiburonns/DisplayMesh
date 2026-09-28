@@ -54,3 +54,20 @@ DisplayMesh is intended for devices and networks the user controls or is authori
 ## Current development identity boundary
 
 DisplayMesh 0.2.2 authenticates the **macOS development host identity** during pairing with P-256 signatures and a fresh receiver challenge. This prevents silent host-key substitution after trust has been recorded, but it does **not** make the current plaintext TCP media session production-secure: the receiver does not yet present a cryptographically authenticated identity to the host and media/control transport is not yet encrypted.
+
+
+## Development protocol guardrails
+
+The plaintext development binding is **not** a secure production transport. While it remains in use for engineering validation, DMP now applies defense-in-depth guardrails:
+
+- message-specific payload budgets are rejected from the frame header before buffering the body;
+- input/keyframe payload sizes are exact and reserved input flags are rejected;
+- sequence gaps/replays close the transport session;
+- a receiver connection has a bounded admission window and malformed pairing attempts are bounded;
+- frames outside the current authorization/session phase are rejected;
+- stale pairing responses are bound to and rejected against the active receiver challenge;
+- a second LAN peer cannot replace an already active receiver connection;
+- Bonjour advertises a generic DisplayMesh service name instead of the user-configured device name;
+- host identity and receiver trust records use device-only Keychain accessibility.
+
+These controls reduce attack surface during development but do **not** satisfy the production TLS 1.3 requirement.

@@ -70,3 +70,11 @@
 - [x] VideoToolbox puede ajustar bitrate durante la sesión con histéresis
 - [ ] Integrar RTT / cola de envío / pérdida con el controlador adaptativo compartido
 - [ ] Aplicar cambios adaptativos de raster sin cambiar la geometría lógica
+
+
+## Base Windows reforzada
+
+- [x] framing DMP C++ con secuencia y límites de payload
+- [x] decoder Windows de input rechaza flags reservados
+- [ ] integrar framing DMP al servicio Windows de red/media
+- [ ] implementar driver IddCx real y pipeline Media Foundation

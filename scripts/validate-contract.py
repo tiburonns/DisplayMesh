@@ -112,7 +112,33 @@ identity_text = identity_store.read_text(encoding="utf-8")
 if "kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly" not in identity_text:
     raise SystemExit("security contract failed: host identity must remain device-only in Keychain")
 
+
+
+windows_protocol = ROOT / "platforms/windows/protocol"
+for relative in [
+    "DmpFrame.h",
+    "DmpFrame.cpp",
+    "CMakeLists.txt",
+    "tests/DmpFrameTests.cpp",
+]:
+    if not (windows_protocol / relative).exists():
+        raise SystemExit(f"windows protocol contract failed: missing {relative}")
+
+windows_frame = (windows_protocol / "DmpFrame.cpp").read_text(encoding="utf-8")
+for token in ["ValidatePayloadSize", "DmpSequenceTracker::Accept", "kDmpMaximumPayloadSize"]:
+    if token not in windows_frame:
+        raise SystemExit(f"windows protocol contract failed: missing {token}")
+
+windows_input = (ROOT / "platforms/windows/input-bridge/DmpInput.cpp").read_text(encoding="utf-8")
+if 'payload[3] != 0' not in windows_input:
+    raise SystemExit("windows input contract failed: reserved DMP flags are not rejected")
+
+workflow_source = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+for token in ["windows-protocol:", "Test DMP framing contract"]:
+    if token not in workflow_source:
+        raise SystemExit(f"windows CI contract failed: missing {token}")
+
 print(
-    f"PASS: DisplayMesh {version} documentation, protocol hardening, "
-    "session admission, adaptive feedback, and native harness contract"
+    f"PASS: DisplayMesh {version} protocol/session/media contracts, "
+    "Windows framing foundation, and native harness scaffolds"
 )
