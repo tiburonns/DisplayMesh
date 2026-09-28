@@ -76,6 +76,23 @@ final class DMPProtocolTests: XCTestCase {
         )
     }
 
+    func testPairingShapeRejectsFormattedCode() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(
+            repeating: 0x5A,
+            count: ReceiverHello.challengeSize
+        )
+        let request = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123 456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+
+        XCTAssertFalse(request.hasValidShape)
+    }
+
     func testVideoPacketHeaderMatchesDMPContract() throws {
         let packet = DMPVideoPacket(
             presentationTimeMicroseconds: 1_234_567,

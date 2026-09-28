@@ -228,12 +228,15 @@ struct PairingRequest: Codable, Equatable {
     }
 
     var hasValidShape: Bool {
-        protocolVersion == Int(DMPFrame.version)
+        let peerNameBytes = peerName.utf8.count
+        return protocolVersion == Int(DMPFrame.version)
+            && (1...128).contains(peerNameBytes)
+            && verificationCode == normalizedVerificationCode
             && normalizedVerificationCode.count == 6
             && UUID(uuidString: peerID) != nil
             && challenge.count == ReceiverHello.challengeSize
-            && !identityPublicKey.isEmpty
-            && !signature.isEmpty
+            && identityPublicKey.count == 65
+            && signature.count == 64
     }
 
     func isAuthentic(expectedChallenge: Data) -> Bool {

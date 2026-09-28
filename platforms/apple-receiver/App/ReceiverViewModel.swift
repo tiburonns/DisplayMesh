@@ -262,9 +262,16 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func forgetTrustedPeers() {
+        let shouldRevokeCurrentSession =
+            sessionAuthorized || pendingPairing != nil
+
         if trustedPeerStore.forgetAll() {
             trustedPeerCount = 0
             lastProtocolError = nil
+
+            if shouldRevokeCurrentSession {
+                stopReceiver()
+            }
         } else {
             lastProtocolError =
                 trustedPeerStore.lastErrorDescription

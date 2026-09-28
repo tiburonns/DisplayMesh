@@ -408,6 +408,11 @@ final class ReceiverConnection {
                     PairingResponse.self,
                     from: frame.payload
                 )
+                guard response.protocolVersion == Int(DMPFrame.version) else {
+                    throw DMPProtocolError.unsupportedVersion(
+                        UInt8(clamping: response.protocolVersion)
+                    )
+                }
                 pairingResponse = response
                 pairingWaitToken = nil
                 pairingContinuation?.resume(returning: response)

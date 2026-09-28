@@ -30,6 +30,29 @@ final class PairingIdentityTests: XCTestCase {
         )
     }
 
+    func testPairingShapeRejectsFormattedOrOversizedFields() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let hello = try ReceiverHello.make()
+
+        let formattedCode = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123 456",
+            challenge: hello.challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(formattedCode.hasValidShape)
+
+        let oversizedName = try PairingRequest.signed(
+            peerName: String(repeating: "M", count: 129),
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: hello.challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(oversizedName.hasValidShape)
+    }
+
     func testTamperedPairingCodeInvalidatesSignature() throws {
         let privateKey = P256.Signing.PrivateKey()
         let hello = try ReceiverHello.make()
