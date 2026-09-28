@@ -303,9 +303,10 @@ struct PairingRequest: Codable, Equatable {
 
     var normalizedVerificationCode: String {
         String(
-            verificationCode.utf8
-                .filter { (48...57).contains($0) }
-                .map { Character(UnicodeScalar($0)) }
+            decoding: verificationCode.utf8.filter {
+                (48...57).contains($0)
+            },
+            as: UTF8.self
         )
     }
 
