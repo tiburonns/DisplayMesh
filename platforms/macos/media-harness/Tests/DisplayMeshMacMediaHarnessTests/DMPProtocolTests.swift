@@ -52,6 +52,29 @@ final class DMPProtocolTests: XCTestCase {
         )
     }
 
+    func testSignedPairingAuthenticatesForReceiverChallenge() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(repeating: 0xA5, count: ReceiverHello.challengeSize)
+        let request = try PairingRequest.signed(
+            peerName: "Test Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+
+        XCTAssertTrue(request.hasValidShape)
+        XCTAssertTrue(
+            request.isAuthentic(expectedChallenge: challenge)
+        )
+
+        var wrongChallenge = challenge
+        wrongChallenge[0] ^= 0xFF
+        XCTAssertFalse(
+            request.isAuthentic(expectedChallenge: wrongChallenge)
+        )
+    }
+
     func testVideoPacketHeaderMatchesDMPContract() throws {
         let packet = DMPVideoPacket(
             presentationTimeMicroseconds: 1_234_567,

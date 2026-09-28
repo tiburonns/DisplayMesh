@@ -157,19 +157,31 @@ struct DisplayMeshMacMediaHarness {
         print("Connecting to DisplayMesh receiver at \(receiverHost):49655 …")
         try await receiver.connect(host: receiverHost)
 
+        let hello = try await receiver.waitForReceiverHello()
+        guard hello.isValid else {
+            throw DMPProtocolError.invalidReceiverHello
+        }
+
+        let identity = try HostIdentityStore.loadOrCreate()
         let verificationCode = String(
             format: "%06d",
             Int.random(in: 0...999_999)
         )
-
-        try receiver.sendPairingRequest(
+        let request = try identity.makePairingRequest(
             peerName: Host.current().localizedName ?? "Mac",
-            code: verificationCode
+            verificationCode: verificationCode,
+            challenge: hello.challenge
         )
+
+        try receiver.sendPairingRequest(request)
 
         print("")
         print("PAIRING CODE: \(verificationCode)")
-        print("Confirm this code on the iPhone/iPad receiver.")
+        print(
+            "HOST IDENTITY: " +
+            identity.fingerprint.uppercased()
+        )
+        print("Confirm both values on the iPhone/iPad receiver.")
         print("")
 
         let pairing = try await receiver.waitForPairingResponse()

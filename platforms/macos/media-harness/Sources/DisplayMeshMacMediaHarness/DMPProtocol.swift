@@ -23,6 +23,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case pairingRejected
     case unexpectedSequence(expected: UInt32, received: UInt32)
     case timeout(String)
+    case invalidReceiverHello
+    case invalidPairingRequest
 
     var errorDescription: String? {
         switch self {
@@ -44,6 +46,10 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "Unexpected DMP sequence: expected \(expected), received \(received)"
         case .timeout(let operation):
             return "Timed out waiting for \(operation)"
+        case .invalidReceiverHello:
+            return "The receiver sent an invalid DisplayMesh hello challenge"
+        case .invalidPairingRequest:
+            return "The DisplayMesh pairing request is invalid"
         }
     }
 }
