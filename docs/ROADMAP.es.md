@@ -45,6 +45,9 @@
 ## M5 — Calidad de producto
 
 - [x] EN/ES/Sistema, pairing explícito, estado de seguridad visible y proyecto reproducible del receiver.
+- [x] Guard de secuencia/replay por conexión DMP.
+- [x] Timeouts de pairing y descriptor de panel en la ruta de desarrollo macOS.
+- [x] Telemetría de decode del receiver enviada al host de desarrollo macOS.
 - [ ] Primer uso/permisos, TLS 1.3, identidad persistente segura, telemetría E2E, updates y firma/notarización.
 
 ## M6 — Avanzado

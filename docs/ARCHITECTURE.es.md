@@ -59,6 +59,10 @@ El receiver anuncia píxeles físicos, escala, orientación, refresh máximo y c
 
 Hardware encode/decode, colas acotadas, descarte de frames viejos, prioridad para input/control, `TCP_NODELAY`, reducción de bitrate antes de acumular cola y raster adaptativo sin cambiar la geometría lógica.
 
+## Robustez de sesión
+
+La conexión TCP de desarrollo actúa como frontera de sesión: cada dirección reinicia su secuencia DMP en 1, un gap/replay invalida la conexión, pairing y descriptor de panel usan timeouts acotados, y el receiver devuelve telemetría de decode al host para la futura adaptación end-to-end.
+
 ## Estado
 
 La arquitectura describe tanto componentes implementados como objetivos. Consulta `ROADMAP.es.md` para distinguir claramente lo disponible de lo pendiente.
