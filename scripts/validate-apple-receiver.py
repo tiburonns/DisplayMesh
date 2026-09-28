@@ -26,6 +26,8 @@ required_files = [
     RECEIVER / "Tests" / "DMPFrameTests.swift",
     RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
+    RECEIVER / "Tests" / "PairingIdentityTests.swift",
+    RECEIVER / "Sources" / "TrustedPeerStore.swift",
 ]
 
 errors: list[str] = []
@@ -82,7 +84,6 @@ if project.is_file():
         "NSBonjourServices",
         "_displaymesh._tcp",
         "NSLocalNetworkUsageDescription",
-        "ITSAppUsesNonExemptEncryption: false",
         "MARKETING_VERSION: 0.2.1",
         "CURRENT_PROJECT_VERSION: 2",
         "SWIFT_STRICT_CONCURRENCY: targeted",
@@ -134,9 +135,23 @@ if view_model.is_file():
         "pairingTimeoutTask",
         "sendTelemetryIfNeeded",
         "PairingValidationError.expired",
+        "sendReceiverHello",
+        "trustedPeerStore",
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
+
+pairing_source = RECEIVER / "Protocol" / "PairingMessage.swift"
+if pairing_source.is_file():
+    pairing_text = pairing_source.read_text(encoding="utf-8")
+    for required_token in (
+        "P256.Signing.PublicKey",
+        "isAuthentic",
+        "ReceiverHello",
+        "identityFingerprint",
+    ):
+        if required_token not in pairing_text:
+            errors.append(f"signed pairing contract is missing token: {required_token}")
 
 workflow = ROOT / ".github" / "workflows" / "ci.yml"
 if workflow.is_file():

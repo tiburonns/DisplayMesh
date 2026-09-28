@@ -10,6 +10,8 @@ final class ReceiverViewModel: ObservableObject {
     @Published private(set) var capturedInputSamples: UInt64 = 0
     @Published private(set) var sessionAuthorized = false
     @Published private(set) var pendingPairing: PairingRequest?
+    @Published private(set) var pendingPeerPreviouslyTrusted = false
+    @Published private(set) var trustedPeerCount: Int
     @Published private(set) var lastProtocolError: String?
     @Published private(set) var videoMetrics = ReceiverVideoMetrics()
     @Published var diagnosticsEnabled = false
@@ -18,16 +20,21 @@ final class ReceiverViewModel: ObservableObject {
 
     private let listener: ReceiverListener
     private let videoDecoder: H264VideoDecoder
+    private let trustedPeerStore: TrustedPeerStore
     private var lastKeyframeRequestTime: TimeInterval = 0
     private var lastTelemetrySentTime: TimeInterval = 0
     private var pairingTimeoutTask: Task<Void, Never>?
+    private var receiverChallenge: Data?
 
     init(
         listener: ReceiverListener = ReceiverListener(),
-        videoDecoder: H264VideoDecoder = H264VideoDecoder()
+        videoDecoder: H264VideoDecoder = H264VideoDecoder(),
+        trustedPeerStore: TrustedPeerStore = TrustedPeerStore()
     ) {
         self.listener = listener
         self.videoDecoder = videoDecoder
+        self.trustedPeerStore = trustedPeerStore
+        self.trustedPeerCount = trustedPeerStore.count
 
         listener.onState = { [weak self] state in
             guard let self else { return }
@@ -39,6 +46,7 @@ final class ReceiverViewModel: ObservableObject {
                 lastProtocolError = nil
                 videoDecoder.reset()
                 videoSurface.clear()
+                sendReceiverHello()
             case .stopped, .failed:
                 resetAuthorization()
                 videoDecoder.reset()
@@ -118,17 +126,25 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func acceptPairing() {
-        guard let request = pendingPairing, request.isValid else {
-            lastProtocolError = "Invalid pairing request"
+        guard let request = pendingPairing,
+              let receiverChallenge,
+              request.isAuthentic(expectedChallenge: receiverChallenge) else {
+            lastProtocolError = PairingValidationError.invalidRequest.localizedDescription
             pendingPairing = nil
+            pendingPeerPreviouslyTrusted = false
             sessionAuthorized = false
             return
         }
+
+        trustedPeerStore.trust(request)
+        trustedPeerCount = trustedPeerStore.count
 
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = true
         pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
+        receiverChallenge = nil
         lastProtocolError = nil
         sendPairingResponse(accepted: true)
         sendPanelDescriptorIfAuthorized()
@@ -140,6 +156,7 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask = nil
         sessionAuthorized = false
         pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
         videoDecoder.reset()
         videoSurface.clear()
         sendPairingResponse(accepted: false)
@@ -148,9 +165,7 @@ final class ReceiverViewModel: ObservableObject {
     private func handle(_ frame: DMPFrame) {
         switch frame.type {
         case .hello:
-            resetAuthorization()
-            videoDecoder.reset()
-            videoSurface.clear()
+            lastProtocolError = "Unexpected host hello frame"
 
         case .pairing:
             do {
@@ -158,16 +173,39 @@ final class ReceiverViewModel: ObservableObject {
                     PairingRequest.self,
                     from: frame.payload
                 )
-                guard request.isValid else {
-                    throw PairingValidationError.invalidRequest
+                guard let receiverChallenge,
+                      request.isAuthentic(
+                          expectedChallenge: receiverChallenge
+                      ) else {
+                    throw PairingValidationError.invalidSignature
                 }
 
-                pendingPairing = request
-                sessionAuthorized = false
-                lastProtocolError = nil
-                schedulePairingTimeout()
+                switch trustedPeerStore.status(for: request) {
+                case .identityChanged:
+                    pendingPairing = nil
+                    pendingPeerPreviouslyTrusted = false
+                    sessionAuthorized = false
+                    lastProtocolError =
+                        PairingValidationError.identityChanged.localizedDescription
+                    sendPairingResponse(accepted: false)
+
+                case .trusted:
+                    pendingPairing = request
+                    pendingPeerPreviouslyTrusted = true
+                    sessionAuthorized = false
+                    lastProtocolError = nil
+                    schedulePairingTimeout()
+
+                case .new:
+                    pendingPairing = request
+                    pendingPeerPreviouslyTrusted = false
+                    sessionAuthorized = false
+                    lastProtocolError = nil
+                    schedulePairingTimeout()
+                }
             } catch {
                 pendingPairing = nil
+                pendingPeerPreviouslyTrusted = false
                 sessionAuthorized = false
                 lastProtocolError = error.localizedDescription
             }
@@ -199,6 +237,23 @@ final class ReceiverViewModel: ObservableObject {
         guard force || now - lastKeyframeRequestTime >= 0.25 else { return }
         lastKeyframeRequestTime = now
         listener.send(type: .keyframeRequest, payload: Data())
+    }
+
+    func forgetTrustedPeers() {
+        trustedPeerStore.forgetAll()
+        trustedPeerCount = 0
+    }
+
+    private func sendReceiverHello() {
+        do {
+            let hello = try ReceiverHello.make()
+            receiverChallenge = hello.challenge
+            let payload = try JSONEncoder().encode(hello)
+            listener.send(type: .hello, payload: payload)
+        } catch {
+            receiverChallenge = nil
+            lastProtocolError = error.localizedDescription
+        }
     }
 
     private func sendPairingResponse(accepted: Bool) {
@@ -236,6 +291,7 @@ final class ReceiverViewModel: ObservableObject {
     private func expirePairing() {
         guard pendingPairing != nil, !sessionAuthorized else { return }
         pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
         pairingTimeoutTask = nil
         lastProtocolError = PairingValidationError.expired.localizedDescription
         sendPairingResponse(accepted: false)
@@ -256,6 +312,8 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask = nil
         sessionAuthorized = false
         pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
+        receiverChallenge = nil
         lastKeyframeRequestTime = 0
         lastTelemetrySentTime = 0
     }
@@ -263,12 +321,18 @@ final class ReceiverViewModel: ObservableObject {
 
 private enum PairingValidationError: LocalizedError {
     case invalidRequest
+    case invalidSignature
+    case identityChanged
     case expired
 
     var errorDescription: String? {
         switch self {
         case .invalidRequest:
             return "Invalid DisplayMesh pairing request"
+        case .invalidSignature:
+            return "DisplayMesh pairing identity could not be verified"
+        case .identityChanged:
+            return "This computer's DisplayMesh identity changed. Forget trusted computers before pairing it again."
         case .expired:
             return "DisplayMesh pairing request expired"
         }

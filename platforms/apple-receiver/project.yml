@@ -36,7 +36,6 @@ targets:
       path: Generated/Info.plist
       properties:
         CFBundleDisplayName: DisplayMesh
-        ITSAppUsesNonExemptEncryption: false
         NSLocalNetworkUsageDescription: DisplayMesh uses your local network to connect this iPhone or iPad as an external display.
         NSBonjourServices:
           - _displaymesh._tcp

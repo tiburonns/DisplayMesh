@@ -40,6 +40,20 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
+                    LabeledContent(
+                        "settings.security.trustedPeers",
+                        value: "\(receiver.trustedPeerCount)"
+                    )
+
+                    if receiver.trustedPeerCount > 0 {
+                        Button(
+                            "settings.security.forgetTrustedPeers",
+                            role: .destructive
+                        ) {
+                            receiver.forgetTrustedPeers()
+                        }
+                    }
+
                     Label(
                         "settings.security.transportDevelopment",
                         systemImage: "exclamationmark.shield"

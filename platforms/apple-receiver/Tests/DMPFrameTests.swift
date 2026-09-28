@@ -68,21 +68,13 @@ final class DMPFrameTests: XCTestCase {
         XCTAssertEqual(decoded, source)
     }
 
-    func testPairingRequiresSixDigitsAndMatchingProtocol() {
-        XCTAssertTrue(
-            PairingRequest(
-                peerName: "Mac",
-                verificationCode: "123456",
-                protocolVersion: Int(DMPFrame.version)
-            ).isValid
-        )
+    func testReceiverHelloHasExpectedChallengeSize() throws {
+        let hello = try ReceiverHello.make()
 
-        XCTAssertFalse(
-            PairingRequest(
-                peerName: "Mac",
-                verificationCode: "12345",
-                protocolVersion: Int(DMPFrame.version)
-            ).isValid
+        XCTAssertTrue(hello.isValid)
+        XCTAssertEqual(
+            hello.challenge.count,
+            ReceiverHello.challengeSize
         )
     }
 }
