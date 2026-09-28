@@ -169,6 +169,8 @@ The current Apple/macOS development binding starts with a receiver-generated 32-
 
 This authenticates the development **host identity only**. It does not replace the TLS 1.3 requirement or authenticate the receiver to the host.
 
+The shared development capability scaffold intentionally advertises only the implemented end-to-end path: **H.264 over plaintext TCP on Wi-Fi/LAN**. It reports encryption as unsupported. Production-oriented `SessionConfig::default()` still requires encryption, so it must fail against the development scaffold instead of falsely reporting a secure negotiated session.
+
 ## Security
 
 - TLS 1.3 is required for normal remote sessions.

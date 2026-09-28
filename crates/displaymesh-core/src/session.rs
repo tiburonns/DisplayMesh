@@ -55,6 +55,23 @@ impl Default for SessionConfig {
 }
 
 impl SessionConfig {
+    /// Configuration for the current plaintext TCP development harness.
+    ///
+    /// This is intentionally separate from `Default`, which remains
+    /// production-safe and requires encrypted transport.
+    pub const fn development_scaffold() -> Self {
+        Self {
+            role: Role::Host,
+            mode: DisplayMode::Extend,
+            codec: Codec::H264,
+            connection_medium: ConnectionMedium::Wifi,
+            wire_protocol: WireProtocol::Tcp,
+            preset: DisplayPreset::PRESETS[1],
+            bitrate_mbps: 24,
+            encryption_required: false,
+        }
+    }
+
     pub fn validate(&self) -> Result<(), SessionValidationError> {
         if self.bitrate_mbps == 0 {
             return Err(SessionValidationError::ZeroBitrate);
@@ -120,7 +137,7 @@ impl SessionConfig {
             wire_protocol: self.wire_protocol,
             preset: self.preset,
             bitrate_mbps: self.bitrate_mbps,
-            encrypted: self.encryption_required,
+            encryption_required: self.encryption_required,
         })
     }
 }
@@ -134,7 +151,11 @@ pub struct NegotiatedSession {
     pub wire_protocol: WireProtocol,
     pub preset: DisplayPreset,
     pub bitrate_mbps: u16,
-    pub encrypted: bool,
+    /// Security requirement agreed by the capability negotiation.
+    ///
+    /// This does not claim that a concrete transport has already completed
+    /// TLS/QUIC handshaking; platform transports must prove that separately.
+    pub encryption_required: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -220,8 +241,20 @@ mod tests {
     }
 
     #[test]
-    fn matching_peers_negotiate_requested_session() {
+    fn production_default_rejects_plaintext_development_scaffold() {
         let config = SessionConfig::default();
+        let local = PeerCapabilities::development_scaffold();
+        let remote = PeerCapabilities::development_scaffold();
+
+        assert_eq!(
+            config.negotiate(&local, &remote),
+            Err(SessionNegotiationError::EncryptionUnavailable)
+        );
+    }
+
+    #[test]
+    fn development_scaffold_negotiates_plaintext_tcp_without_claiming_encryption() {
+        let config = SessionConfig::development_scaffold();
         let local = PeerCapabilities::development_scaffold();
         let remote = PeerCapabilities::development_scaffold();
 
@@ -229,9 +262,9 @@ mod tests {
 
         assert_eq!(negotiated.codec, Codec::H264);
         assert_eq!(negotiated.connection_medium, ConnectionMedium::Wifi);
-        assert_eq!(negotiated.wire_protocol, WireProtocol::Quic);
+        assert_eq!(negotiated.wire_protocol, WireProtocol::Tcp);
         assert_eq!(negotiated.preset, DisplayPreset::PRESETS[1]);
-        assert!(negotiated.encrypted);
+        assert!(!negotiated.encryption_required);
     }
 
     #[test]

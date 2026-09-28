@@ -7,6 +7,7 @@
 - [x] Cross-platform control application
 - [x] Session configuration validation
 - [x] Deterministic peer capability intersection and session negotiation
+- [x] Production-safe session defaults separated from truthful plaintext development capabilities
 - [x] Separate USB/Wi-Fi medium from QUIC/TCP protocol
 - [x] Reject invalid USB + QUIC binding
 - [x] Shared touch capability/event model

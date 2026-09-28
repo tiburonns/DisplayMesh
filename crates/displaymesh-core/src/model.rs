@@ -299,17 +299,17 @@ impl PeerCapabilities {
         }
     }
 
+    /// Capabilities implemented by the current end-to-end development path.
+    ///
+    /// Keep this deliberately conservative. Planned transports must not be
+    /// advertised here until the concrete host/receiver path exists.
     pub fn development_scaffold() -> Self {
         Self {
             codecs: vec![Codec::H264],
-            connection_media: vec![
-                ConnectionMedium::Wifi,
-                ConnectionMedium::Usb,
-                ConnectionMedium::Ethernet,
-            ],
-            wire_protocols: vec![WireProtocol::Quic, WireProtocol::Tcp],
+            connection_media: vec![ConnectionMedium::Wifi],
+            wire_protocols: vec![WireProtocol::Tcp],
             presets: DisplayPreset::PRESETS[..2].to_vec(),
-            encryption_supported: true,
+            encryption_supported: false,
             touch: TouchCapabilities::apple_receiver(),
         }
     }
@@ -337,5 +337,30 @@ impl TouchPoint {
         (0.0..=1.0).contains(&self.normalized_x)
             && (0.0..=1.0).contains(&self.normalized_y)
             && (0.0..=1.0).contains(&self.pressure)
+    }
+}
+
+
+#[cfg(test)]
+mod development_capability_tests {
+    use super::*;
+
+    #[test]
+    fn development_scaffold_advertises_only_implemented_transport() {
+        let capabilities = PeerCapabilities::development_scaffold();
+
+        assert_eq!(capabilities.codecs, vec![Codec::H264]);
+        assert_eq!(capabilities.connection_media, vec![ConnectionMedium::Wifi]);
+        assert_eq!(capabilities.wire_protocols, vec![WireProtocol::Tcp]);
+        assert!(!capabilities.encryption_supported);
+        assert!(capabilities.supports_binding(
+            ConnectionMedium::Wifi,
+            WireProtocol::Tcp
+        ));
+        assert!(!capabilities.supports_binding(
+            ConnectionMedium::Wifi,
+            WireProtocol::Quic
+        ));
+        assert!(!capabilities.supports_connection_medium(ConnectionMedium::Usb));
     }
 }

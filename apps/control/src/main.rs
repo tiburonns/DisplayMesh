@@ -90,7 +90,7 @@ impl DisplayMeshApp {
             .unwrap_or(AppLanguage::System);
 
         let mut app = Self {
-            config: SessionConfig::default(),
+            config: SessionConfig::development_scaffold(),
             phase: SessionPhase::Idle,
             preset_index: 1,
             message: String::new(),
@@ -230,7 +230,7 @@ impl DisplayMeshApp {
     }
 
     fn reset(&mut self) {
-        self.config = SessionConfig::default();
+        self.config = SessionConfig::development_scaffold();
         self.preset_index = 1;
         self.phase = SessionPhase::Idle;
         self.message = self.tr(
@@ -330,8 +330,8 @@ impl eframe::App for DisplayMeshApp {
                 "USB y Wi-Fi son modos de conexión de primera clase. Los receptores iPhone/iPad están diseñados para resolución Retina nativa y entrada táctil/stylus.",
             ));
             ui.label(self.tr(
-                "Only combinations supported by the current development capability scaffold can validate successfully.",
-                "Sólo las combinaciones soportadas por las capacidades actuales de desarrollo pueden validarse correctamente.",
+                "The development validator advertises only the transport that exists end to end today: H.264 over plaintext TCP on Wi-Fi/LAN. Production defaults still require encrypted transport.",
+                "El validador de desarrollo sólo anuncia el transporte que existe de extremo a extremo hoy: H.264 sobre TCP sin cifrar por Wi-Fi/LAN. La configuración de producción sigue exigiendo transporte cifrado.",
             ));
             ui.add_space(18.0);
 
@@ -455,8 +455,8 @@ impl eframe::App for DisplayMeshApp {
 
                     let security_label = self.tr("Security", "Seguridad");
                     let encryption_label = self.tr(
-                        "Require encrypted pairing",
-                        "Requerir emparejamiento cifrado",
+                        "Require encrypted transport",
+                        "Requerir transporte cifrado",
                     );
                     ui.label(security_label);
                     ui.checkbox(

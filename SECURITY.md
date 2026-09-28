@@ -30,6 +30,7 @@ A production DisplayMesh session must satisfy all of the following:
 - First pairing requires explicit user confirmation.
 - The current Apple/macOS development pairing path signs the receiver challenge with a persistent P-256 host key stored in macOS Keychain; accepted receiver-side host trust records are also persisted in Keychain.
 - The receiver rejects a changed public key for a known peer ID until the user explicitly clears trust.
+- The shared development capability model must report plaintext TCP as unencrypted and must not advertise QUIC/USB until those concrete end-to-end transports exist.
 - A peer identity change invalidates silent reconnect.
 - Remote input is rejected until the peer is authenticated and authorized.
 - Session configuration is negotiated from capabilities; unsupported codec, transport, display mode, or security requirements must fail explicitly rather than silently downgrade.
