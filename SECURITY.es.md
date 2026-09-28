@@ -20,7 +20,7 @@ Una sesión de producción debe:
 
 - usar cifrado por defecto en red;
 - exigir confirmación explícita en el primer pairing;
-- firmar el challenge nuevo del receiver con la identidad P-256 persistente del host macOS guardada en Keychain;
+- firmar el challenge nuevo del receiver con la identidad P-256 persistente del host macOS guardada en Keychain y conservar en Keychain las decisiones de confianza del receiver;
 - rechazar una clave pública distinta para un peer ID conocido hasta que el usuario borre la confianza;
 - invalidar reconexión silenciosa si cambia la identidad del peer;
 - rechazar entrada remota hasta autenticar/autorizar al peer;

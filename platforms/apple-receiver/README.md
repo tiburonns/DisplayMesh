@@ -88,7 +88,7 @@ macOS target behavior:
 
 ## Current security boundary
 
-The 0.2.2 development receiver verifies a P-256 signature from the macOS host against a fresh per-connection challenge and remembers accepted host public keys. This authenticates the host identity during pairing, but the current media/control transport remains plaintext TCP. Production still requires encrypted authenticated transport and receiver identity authentication.
+The 0.2.2 development receiver verifies a P-256 signature from the macOS host against a fresh per-connection challenge and remembers accepted host public keys in Keychain. This authenticates the host identity during pairing, but the current media/control transport remains plaintext TCP. Production still requires encrypted authenticated transport and receiver identity authentication.
 
 ## TestFlight preflight
 

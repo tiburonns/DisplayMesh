@@ -52,6 +52,7 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 - Cada conexión TCP reinicia la secuencia DMP en 1; frames duplicados, repetidos o con saltos se rechazan.
 - La telemetría de decode llega al host sin incluir secretos, frames de pantalla ni payloads de input.
 - El host macOS de desarrollo conserva su identidad P-256 en Keychain.
+- El receiver Apple conserva en Keychain las identidades aceptadas; un fallo de persistencia debe impedir la autorización.
 - La firma de pairing queda ligada al challenge nuevo del receiver y al código de seis dígitos mostrado.
 - Una clave pública distinta para un peer ID ya conocido se rechaza hasta borrar explícitamente la confianza.
 - Un cambio de identidad invalida la reconexión silenciosa.

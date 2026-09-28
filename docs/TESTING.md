@@ -52,6 +52,7 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 - Every TCP connection restarts DMP sequence numbers at 1; duplicate, replayed or skipped frames are rejected.
 - Receiver decode telemetry reaches the host without including pairing secrets, screen contents or input payloads.
 - The macOS development host keeps its P-256 signing identity in Keychain.
+- The Apple receiver persists accepted host trust records in Keychain; a persistence failure must prevent authorization.
 - Pairing signatures are bound to the receiver's fresh challenge and displayed six-digit code.
 - A changed public key for an existing peer ID is rejected until trust is explicitly cleared.
 - A changed peer identity invalidates silent reconnect.

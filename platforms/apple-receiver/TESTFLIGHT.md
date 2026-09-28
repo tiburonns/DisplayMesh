@@ -12,7 +12,8 @@ The iPhone/iPad receiver can be tested through TestFlight before the full Displa
 - H.264 VideoToolbox decoder + Metal NV12 renderer.
 - Explicit receiver-side pairing before video/input authorization.
 - Fresh receiver challenge + P-256 signed persistent macOS host identity.
-- Receiver trust store detects host identity replacement; trusted peers can be cleared explicitly.
+- Receiver Keychain trust store detects host identity replacement; trusted peers can be cleared explicitly.
+- Verify a simulated/real host identity replacement is rejected until trusted computers are cleared.
 
 ## Physical gates
 

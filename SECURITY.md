@@ -28,7 +28,7 @@ A production DisplayMesh session must satisfy all of the following:
 
 - Encryption is enabled by default for network sessions.
 - First pairing requires explicit user confirmation.
-- The current Apple/macOS development pairing path signs the receiver challenge with a persistent P-256 host key stored in macOS Keychain.
+- The current Apple/macOS development pairing path signs the receiver challenge with a persistent P-256 host key stored in macOS Keychain; accepted receiver-side host trust records are also persisted in Keychain.
 - The receiver rejects a changed public key for a known peer ID until the user explicitly clears trust.
 - A peer identity change invalidates silent reconnect.
 - Remote input is rejected until the peer is authenticated and authorized.

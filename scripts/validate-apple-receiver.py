@@ -107,7 +107,7 @@ if privacy.is_file():
         errors.append("receiver privacy manifest is missing UserDefaults reason CA92.1")
 
 root_readme = ROOT / "README.md"
-if root_readme.is_file() and "Current `main`: 0.2.1" not in root_readme.read_text(encoding="utf-8"):
+if root_readme.is_file() and "Current `main`: 0.2.2" not in root_readme.read_text(encoding="utf-8"):
     errors.append("root README version does not match receiver 0.2.1")
 
 settings = RECEIVER / "App" / "SettingsView.swift"
@@ -141,6 +141,19 @@ if view_model.is_file():
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
+
+trust_store = RECEIVER / "Sources" / "TrustedPeerStore.swift"
+if trust_store.is_file():
+    trust_text = trust_store.read_text(encoding="utf-8")
+    for required_token in (
+        "KeychainTrustedPeerPersistence",
+        "SecItemCopyMatching",
+        "SecItemUpdate",
+        "SecItemAdd",
+        "kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly",
+    ):
+        if required_token not in trust_text:
+            errors.append(f"receiver trust-store hardening is missing token: {required_token}")
 
 pairing_source = RECEIVER / "Protocol" / "PairingMessage.swift"
 if pairing_source.is_file():

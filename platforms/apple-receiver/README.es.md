@@ -8,7 +8,7 @@ Objetivos: escritorio extendido real, USB/Wi‑Fi, resolución Retina, portrait/
 
 El receiver escucha un endpoint TCP DMP. En Wi‑Fi se anuncia por Bonjour; en USB el host alcanza el mismo puerto mediante usbmux. El receptor no requiere ExternalAccessory/MFi para este diseño.
 
-Actualmente existen UI de receiver, captura touch/Pencil, framing, pairing firmado mediante identidad P-256 persistente del host y challenge nuevo por conexión, decode VideoToolbox H.264, render Metal NV12 y tests de protocolo. La validación física firmada y la integración host productiva completa siguen siendo gates separados.
+Actualmente existen UI de receiver, captura touch/Pencil, framing, pairing firmado mediante identidad P-256 persistente del host, challenge nuevo por conexión y confianza del receiver persistida en Keychain, decode VideoToolbox H.264, render Metal NV12 y tests de protocolo. La validación física firmada y la integración host productiva completa siguen siendo gates separados.
 
 
 ## Límite actual de seguridad

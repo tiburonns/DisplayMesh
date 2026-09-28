@@ -12,7 +12,8 @@ El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo 
 - Decoder H.264 VideoToolbox + renderer Metal NV12.
 - Pairing explícito antes de autorizar video/input.
 - Challenge nuevo del receiver + identidad P-256 persistente y firmada del host macOS.
-- El trust store detecta reemplazo de identidad y permite borrar explícitamente equipos confiables.
+- El trust store en Keychain detecta reemplazo de identidad y permite borrar explícitamente equipos confiables.
+- Verificar que un cambio de identidad del host se rechaza hasta borrar las computadoras confiables.
 
 ## Gates físicos
 
