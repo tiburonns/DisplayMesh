@@ -5,13 +5,25 @@ final class DMPFrameTests: XCTestCase {
     func testFrameRoundTrip() throws {
         let frame = DMPFrame(
             type: .telemetry,
-            flags: 0x1020,
+            flags: 0x0102,
             sequence: 42,
             payload: Data("hello".utf8)
         )
 
+        let encoded = try frame.encoded()
+        XCTAssertEqual(
+            encoded,
+            Data([
+                0x44, 0x4D, 0x50, 0x31,
+                0x01, 0x30, 0x01, 0x02,
+                0x00, 0x00, 0x00, 0x2A,
+                0x00, 0x00, 0x00, 0x05,
+                0x68, 0x65, 0x6C, 0x6C, 0x6F,
+            ])
+        )
+
         var decoder = DMPFrameDecoder()
-        decoder.append(try frame.encoded())
+        decoder.append(encoded)
 
         XCTAssertEqual(try decoder.nextFrame(), frame)
         XCTAssertNil(try decoder.nextFrame())

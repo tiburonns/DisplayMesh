@@ -19,6 +19,14 @@ int main() {
 
     std::vector<std::uint8_t> encoded;
     assert(EncodeDmpFrame(source, encoded, error));
+    const std::vector<std::uint8_t> expected{
+        0x44, 0x4D, 0x50, 0x31,
+        0x01, 0x30, 0x01, 0x02,
+        0x00, 0x00, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x05,
+        0x68, 0x65, 0x6C, 0x6C, 0x6F,
+    };
+    assert(encoded == expected);
 
     DmpFrame decoded{};
     std::size_t consumed = 0;
