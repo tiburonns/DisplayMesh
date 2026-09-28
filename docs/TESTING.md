@@ -47,7 +47,10 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 
 ## Session/security gate
 
-- First pairing requires explicit confirmation.
+- First pairing requires explicit confirmation and expires if it is left unanswered.
+- Pairing and receiver-panel waits fail with bounded timeouts instead of hanging indefinitely.
+- Every TCP connection restarts DMP sequence numbers at 1; duplicate, replayed or skipped frames are rejected.
+- Receiver decode telemetry reaches the host without including pairing secrets, screen contents or input payloads.
 - A changed peer identity invalidates silent reconnect.
 - Unsupported codec/transport/mode fails explicitly; no silent downgrade.
 - Network sessions use encrypted transport.

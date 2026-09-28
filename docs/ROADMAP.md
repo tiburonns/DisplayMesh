@@ -112,6 +112,9 @@
 - [x] Development security state shown truthfully in UI
 - [x] Apple receiver reproducible project generation
 - [x] Receiver FPS / bitrate / decode / dropped-frame diagnostics
+- [x] Receiver decode telemetry returned to the macOS development host
+- [x] Per-connection DMP sequence/replay guard
+- [x] Pairing and panel negotiation timeouts in the macOS development path
 - [ ] Apple receiver CI build confirmed green
 - [ ] First-run permission education
 - [ ] Production TLS 1.3 transport

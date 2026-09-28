@@ -85,6 +85,7 @@ if project.is_file():
         "ITSAppUsesNonExemptEncryption: false",
         "MARKETING_VERSION: 0.2.1",
         "CURRENT_PROJECT_VERSION: 2",
+        "SWIFT_STRICT_CONCURRENCY: targeted",
     ):
         if required_token not in project_text:
             errors.append(f"project.yml is missing required token: {required_token}")
@@ -114,6 +115,28 @@ if settings.is_file():
     for claim in forbidden_claims:
         if claim in settings_text:
             errors.append(f"development receiver makes unsupported security claim: {claim}")
+
+frame_source = RECEIVER / "Protocol" / "DMPFrame.swift"
+if frame_source.is_file():
+    frame_text = frame_source.read_text(encoding="utf-8")
+    for required_token in (
+        "DMPSequenceTracker",
+        "ReceiverTelemetry",
+        "unexpectedSequence",
+    ):
+        if required_token not in frame_text:
+            errors.append(f"receiver protocol hardening is missing token: {required_token}")
+
+view_model = RECEIVER / "App" / "ReceiverViewModel.swift"
+if view_model.is_file():
+    view_model_text = view_model.read_text(encoding="utf-8")
+    for required_token in (
+        "pairingTimeoutTask",
+        "sendTelemetryIfNeeded",
+        "PairingValidationError.expired",
+    ):
+        if required_token not in view_model_text:
+            errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
 
 workflow = ROOT / ".github" / "workflows" / "ci.yml"
 if workflow.is_file():

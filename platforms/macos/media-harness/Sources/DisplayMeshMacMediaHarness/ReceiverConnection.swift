@@ -6,7 +6,7 @@ final class ReceiverConnection {
 
     var onKeyframeRequest: (() -> Void)?
     var onInput: ((Data) -> Void)?
-    var onTelemetry: ((Data) -> Void)?
+    var onReceiverTelemetry: ((ReceiverTelemetry) -> Void)?
     var onErrorMessage: ((Data) -> Void)?
 
     private let queue = DispatchQueue(
@@ -17,71 +17,84 @@ final class ReceiverConnection {
 
     private var connection: NWConnection?
     private var decoder = DMPFrameDecoder()
+    private var incomingSequence = DMPSequenceTracker()
     private var nextSequence: UInt32 = 1
     private var videoSendInFlight = false
+    private var connectionReady = false
 
     private var pairingResponse: PairingResponse?
     private var pairingContinuation: CheckedContinuation<PairingResponse, Error>?
+    private var pairingWaitToken: UUID?
+
     private var panelDescriptor: ReceiverPanelDescriptor?
     private var panelContinuation: CheckedContinuation<ReceiverPanelDescriptor, Error>?
+    private var panelWaitToken: UUID?
 
     func connect(host: String) async throws {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
 
         let parameters = NWParameters(tls: nil, tcp: tcp)
-        let connection = NWConnection(
+        let newConnection = NWConnection(
             host: NWEndpoint.Host(host),
             port: Self.port,
             using: parameters
         )
 
-        self.connection = connection
+        resetProtocolState()
+        connection = newConnection
+        setConnectionReady(false)
 
         try await withCheckedThrowingContinuation { continuation in
             var resolved = false
 
-            connection.stateUpdateHandler = { [weak self] state in
-                guard let self else { return }
+            newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
+                guard let self, let newConnection else { return }
+                guard connection === newConnection else { return }
 
                 switch state {
                 case .ready:
+                    setConnectionReady(true)
                     if !resolved {
                         resolved = true
                         continuation.resume()
                     }
-                    receiveNext(on: connection)
+                    receiveNext(on: newConnection)
 
                 case .failed(let error):
                     if !resolved {
                         resolved = true
                         continuation.resume(throwing: error)
                     }
-                    failWaiters(error)
-                    clearVideoGate()
+                    handleTransportFailure(error, connection: newConnection)
 
                 case .cancelled:
+                    let error = DMPProtocolError.connectionClosed
                     if !resolved {
                         resolved = true
-                        continuation.resume(throwing: DMPProtocolError.connectionClosed)
+                        continuation.resume(throwing: error)
                     }
-                    failWaiters(DMPProtocolError.connectionClosed)
-                    clearVideoGate()
+                    handleTransportFailure(error, connection: newConnection)
 
                 default:
                     break
                 }
             }
 
-            connection.start(queue: queue)
+            newConnection.start(queue: queue)
         }
     }
 
     func close() {
-        connection?.cancel()
-        connection = nil
-        failWaiters(DMPProtocolError.connectionClosed)
-        clearVideoGate()
+        queue.async { [weak self] in
+            guard let self else { return }
+            connection?.cancel()
+            connection = nil
+            setConnectionReady(false)
+            failWaiters(DMPProtocolError.connectionClosed)
+            clearVideoGate()
+            resetProtocolState()
+        }
     }
 
     func sendPairingRequest(peerName: String, code: String) throws {
@@ -94,7 +107,9 @@ final class ReceiverConnection {
         send(type: .pairing, payload: payload)
     }
 
-    func waitForPairingResponse() async throws -> PairingResponse {
+    func waitForPairingResponse(
+        timeoutSeconds: TimeInterval = 30
+    ) async throws -> PairingResponse {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
                 guard let self else {
@@ -104,14 +119,40 @@ final class ReceiverConnection {
 
                 if let pairingResponse {
                     continuation.resume(returning: pairingResponse)
-                } else {
-                    pairingContinuation = continuation
+                    return
+                }
+
+                if pairingContinuation != nil {
+                    continuation.resume(
+                        throwing: DMPProtocolError.timeout("previous pairing waiter")
+                    )
+                    return
+                }
+
+                let token = UUID()
+                pairingWaitToken = token
+                pairingContinuation = continuation
+
+                queue.asyncAfter(deadline: .now() + timeoutSeconds) { [weak self] in
+                    guard let self,
+                          pairingWaitToken == token,
+                          let pending = pairingContinuation else {
+                        return
+                    }
+
+                    pairingWaitToken = nil
+                    pairingContinuation = nil
+                    pending.resume(
+                        throwing: DMPProtocolError.timeout("pairing approval")
+                    )
                 }
             }
         }
     }
 
-    func waitForPanelDescriptor() async throws -> ReceiverPanelDescriptor {
+    func waitForPanelDescriptor(
+        timeoutSeconds: TimeInterval = 15
+    ) async throws -> ReceiverPanelDescriptor {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
                 guard let self else {
@@ -121,8 +162,32 @@ final class ReceiverConnection {
 
                 if let panelDescriptor {
                     continuation.resume(returning: panelDescriptor)
-                } else {
-                    panelContinuation = continuation
+                    return
+                }
+
+                if panelContinuation != nil {
+                    continuation.resume(
+                        throwing: DMPProtocolError.timeout("previous panel waiter")
+                    )
+                    return
+                }
+
+                let token = UUID()
+                panelWaitToken = token
+                panelContinuation = continuation
+
+                queue.asyncAfter(deadline: .now() + timeoutSeconds) { [weak self] in
+                    guard let self,
+                          panelWaitToken == token,
+                          let pending = panelContinuation else {
+                        return
+                    }
+
+                    panelWaitToken = nil
+                    panelContinuation = nil
+                    pending.resume(
+                        throwing: DMPProtocolError.timeout("receiver panel descriptor")
+                    )
                 }
             }
         }
@@ -131,7 +196,7 @@ final class ReceiverConnection {
     func canAcceptVideo() -> Bool {
         videoGate.lock()
         defer { videoGate.unlock() }
-        return !videoSendInFlight && connection != nil
+        return connectionReady && !videoSendInFlight
     }
 
     @discardableResult
@@ -144,7 +209,7 @@ final class ReceiverConnection {
         }
 
         videoGate.lock()
-        guard !videoSendInFlight, connection != nil else {
+        guard connectionReady, !videoSendInFlight else {
             videoGate.unlock()
             return false
         }
@@ -152,7 +217,7 @@ final class ReceiverConnection {
         videoGate.unlock()
 
         queue.async { [weak self] in
-            guard let self, let connection else {
+            guard let self, let activeConnection = connection else {
                 self?.clearVideoGate()
                 return
             }
@@ -161,17 +226,24 @@ final class ReceiverConnection {
                 let frame = try makeFrame(type: .video, payload: payload)
                 let data = try frame.encoded()
 
-                connection.send(
+                activeConnection.send(
                     content: data,
-                    completion: .contentProcessed { [weak self] error in
-                        self?.clearVideoGate()
-                        if let error {
-                            self?.failWaiters(error)
+                    completion: .contentProcessed { [weak self, weak activeConnection] error in
+                        guard let self else { return }
+                        clearVideoGate()
+
+                        guard let error, let activeConnection else { return }
+                        queue.async {
+                            handleTransportFailure(
+                                error,
+                                connection: activeConnection
+                            )
                         }
                     }
                 )
             } catch {
                 clearVideoGate()
+                failWaiters(error)
             }
         }
 
@@ -180,13 +252,21 @@ final class ReceiverConnection {
 
     private func send(type: DMPMessageType, payload: Data) {
         queue.async { [weak self] in
-            guard let self, let connection else { return }
+            guard let self, let activeConnection = connection else { return }
 
             do {
                 let frame = try makeFrame(type: type, payload: payload)
-                connection.send(
+                activeConnection.send(
                     content: try frame.encoded(),
-                    completion: .contentProcessed { _ in }
+                    completion: .contentProcessed { [weak self, weak activeConnection] error in
+                        guard let self, let error, let activeConnection else { return }
+                        queue.async {
+                            handleTransportFailure(
+                                error,
+                                connection: activeConnection
+                            )
+                        }
+                    }
                 )
             } catch {
                 failWaiters(error)
@@ -208,39 +288,41 @@ final class ReceiverConnection {
         return frame
     }
 
-    private func receiveNext(on connection: NWConnection) {
-        connection.receive(
+    private func receiveNext(on activeConnection: NWConnection) {
+        activeConnection.receive(
             minimumIncompleteLength: 1,
             maximumLength: 64 * 1024
-        ) { [weak self, weak connection] data, _, isComplete, error in
-            guard let self, let connection else { return }
+        ) { [weak self, weak activeConnection] data, _, isComplete, error in
+            guard let self, let activeConnection else { return }
+            guard connection === activeConnection else { return }
 
             if let data, !data.isEmpty {
                 do {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
+                        try incomingSequence.accept(frame.sequence)
                         handle(frame)
                     }
                 } catch {
-                    failWaiters(error)
-                    connection.cancel()
+                    handleTransportFailure(error, connection: activeConnection)
                     return
                 }
             }
 
             if let error {
-                failWaiters(error)
-                connection.cancel()
+                handleTransportFailure(error, connection: activeConnection)
                 return
             }
 
             if isComplete {
-                failWaiters(DMPProtocolError.connectionClosed)
-                connection.cancel()
+                handleTransportFailure(
+                    DMPProtocolError.connectionClosed,
+                    connection: activeConnection
+                )
                 return
             }
 
-            receiveNext(on: connection)
+            receiveNext(on: activeConnection)
         }
     }
 
@@ -253,9 +335,11 @@ final class ReceiverConnection {
                     from: frame.payload
                 )
                 pairingResponse = response
+                pairingWaitToken = nil
                 pairingContinuation?.resume(returning: response)
                 pairingContinuation = nil
             } catch {
+                pairingWaitToken = nil
                 pairingContinuation?.resume(throwing: error)
                 pairingContinuation = nil
             }
@@ -267,9 +351,11 @@ final class ReceiverConnection {
                     from: frame.payload
                 )
                 panelDescriptor = panel
+                panelWaitToken = nil
                 panelContinuation?.resume(returning: panel)
                 panelContinuation = nil
             } catch {
+                panelWaitToken = nil
                 panelContinuation?.resume(throwing: error)
                 panelContinuation = nil
             }
@@ -281,7 +367,20 @@ final class ReceiverConnection {
             onInput?(frame.payload)
 
         case .telemetry:
-            onTelemetry?(frame.payload)
+            do {
+                let telemetry = try JSONDecoder().decode(
+                    ReceiverTelemetry.self,
+                    from: frame.payload
+                )
+                guard telemetry.protocolVersion == ReceiverTelemetry.version else {
+                    throw DMPProtocolError.unsupportedVersion(
+                        UInt8(clamping: telemetry.protocolVersion)
+                    )
+                }
+                onReceiverTelemetry?(telemetry)
+            } catch {
+                onErrorMessage?(Data(error.localizedDescription.utf8))
+            }
 
         case .error:
             onErrorMessage?(frame.payload)
@@ -291,11 +390,46 @@ final class ReceiverConnection {
         }
     }
 
+    private func handleTransportFailure(
+        _ error: Error,
+        connection failedConnection: NWConnection
+    ) {
+        guard connection === failedConnection else { return }
+
+        setConnectionReady(false)
+        connection = nil
+        failedConnection.cancel()
+        failWaiters(error)
+        clearVideoGate()
+    }
+
     private func failWaiters(_ error: Error) {
+        pairingWaitToken = nil
         pairingContinuation?.resume(throwing: error)
         pairingContinuation = nil
+
+        panelWaitToken = nil
         panelContinuation?.resume(throwing: error)
         panelContinuation = nil
+    }
+
+    private func resetProtocolState() {
+        decoder = DMPFrameDecoder()
+        incomingSequence.reset()
+        nextSequence = 1
+        pairingResponse = nil
+        panelDescriptor = nil
+        pairingWaitToken = nil
+        panelWaitToken = nil
+    }
+
+    private func setConnectionReady(_ ready: Bool) {
+        videoGate.lock()
+        connectionReady = ready
+        if !ready {
+            videoSendInFlight = false
+        }
+        videoGate.unlock()
     }
 
     private func clearVideoGate() {
