@@ -19,6 +19,8 @@ final class ReceiverViewModel: ObservableObject {
     private let listener: ReceiverListener
     private let videoDecoder: H264VideoDecoder
     private var lastKeyframeRequestTime: TimeInterval = 0
+    private var lastTelemetrySentTime: TimeInterval = 0
+    private var pairingTimeoutTask: Task<Void, Never>?
 
     init(
         listener: ReceiverListener = ReceiverListener(),
@@ -33,8 +35,7 @@ final class ReceiverViewModel: ObservableObject {
 
             switch state {
             case .connected:
-                sessionAuthorized = false
-                pendingPairing = nil
+                resetAuthorization()
                 lastProtocolError = nil
                 videoDecoder.reset()
                 videoSurface.clear()
@@ -56,7 +57,9 @@ final class ReceiverViewModel: ObservableObject {
         }
 
         videoDecoder.onMetrics = { [weak self] metrics in
-            self?.videoMetrics = metrics
+            guard let self else { return }
+            videoMetrics = metrics
+            sendTelemetryIfNeeded(metrics)
         }
 
         videoDecoder.onNeedsKeyframe = { [weak self] in
@@ -122,6 +125,8 @@ final class ReceiverViewModel: ObservableObject {
             return
         }
 
+        pairingTimeoutTask?.cancel()
+        pairingTimeoutTask = nil
         sessionAuthorized = true
         pendingPairing = nil
         lastProtocolError = nil
@@ -131,6 +136,8 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func rejectPairing() {
+        pairingTimeoutTask?.cancel()
+        pairingTimeoutTask = nil
         sessionAuthorized = false
         pendingPairing = nil
         videoDecoder.reset()
@@ -158,6 +165,7 @@ final class ReceiverViewModel: ObservableObject {
                 pendingPairing = request
                 sessionAuthorized = false
                 lastProtocolError = nil
+                schedulePairingTimeout()
             } catch {
                 pendingPairing = nil
                 sessionAuthorized = false
@@ -204,6 +212,35 @@ final class ReceiverViewModel: ObservableObject {
         listener.send(type: .pairing, payload: payload)
     }
 
+    private func sendTelemetryIfNeeded(_ metrics: ReceiverVideoMetrics) {
+        guard sessionAuthorized else { return }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastTelemetrySentTime >= 1 else { return }
+        lastTelemetrySentTime = now
+
+        let telemetry = ReceiverTelemetry(metrics: metrics)
+        guard let payload = try? JSONEncoder().encode(telemetry) else { return }
+        listener.send(type: .telemetry, payload: payload)
+    }
+
+    private func schedulePairingTimeout() {
+        pairingTimeoutTask?.cancel()
+        pairingTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(30))
+            guard !Task.isCancelled, let self else { return }
+            expirePairing()
+        }
+    }
+
+    private func expirePairing() {
+        guard pendingPairing != nil, !sessionAuthorized else { return }
+        pendingPairing = nil
+        pairingTimeoutTask = nil
+        lastProtocolError = PairingValidationError.expired.localizedDescription
+        sendPairingResponse(accepted: false)
+    }
+
     private func sendPanelDescriptorIfAuthorized() {
         guard sessionAuthorized,
               let panelDescriptor,
@@ -215,16 +252,25 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     private func resetAuthorization() {
+        pairingTimeoutTask?.cancel()
+        pairingTimeoutTask = nil
         sessionAuthorized = false
         pendingPairing = nil
         lastKeyframeRequestTime = 0
+        lastTelemetrySentTime = 0
     }
 }
 
 private enum PairingValidationError: LocalizedError {
     case invalidRequest
+    case expired
 
     var errorDescription: String? {
-        "Invalid DisplayMesh pairing request"
+        switch self {
+        case .invalidRequest:
+            return "Invalid DisplayMesh pairing request"
+        case .expired:
+            return "DisplayMesh pairing request expired"
+        }
     }
 }
