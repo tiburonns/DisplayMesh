@@ -45,4 +45,10 @@ El receiver autorizado devuelve al host, a cadencia limitada, telemetría de dec
 
 Las solicitudes de pairing y la espera del descriptor del panel usan timeouts acotados para evitar sesiones colgadas.
 
+### Handshake de identidad de desarrollo
+
+El binding Apple/macOS actual comienza con un challenge aleatorio de 32 bytes creado por el receiver. El host conserva UUID y clave P-256 en Keychain y firma un payload canónico con versión, peer ID/nombre, código de seis dígitos, challenge y clave pública. El receiver verifica firma/challenge antes de mostrar aprobación. Si un peer ID conocido llega con otra clave pública, se rechaza hasta borrar la confianza.
+
+Esto autentica únicamente la **identidad del host de desarrollo**; no sustituye TLS 1.3 ni autentica todavía el receiver ante el host.
+
 La especificación sigue siendo un contrato de desarrollo: transporte TLS/QUIC, identidad persistente y aceptación end-to-end permanecen sujetos a los gates del roadmap.

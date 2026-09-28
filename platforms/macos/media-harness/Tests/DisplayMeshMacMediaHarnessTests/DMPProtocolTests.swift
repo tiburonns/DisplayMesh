@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import DisplayMeshMacMediaHarness
 
@@ -50,6 +51,46 @@ final class DMPProtocolTests: XCTestCase {
             try JSONDecoder().decode(ReceiverTelemetry.self, from: encoded),
             source
         )
+    }
+
+    func testSignedPairingAuthenticatesForReceiverChallenge() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(repeating: 0xA5, count: ReceiverHello.challengeSize)
+        let request = try PairingRequest.signed(
+            peerName: "Test Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+
+        XCTAssertTrue(request.hasValidShape)
+        XCTAssertTrue(
+            request.isAuthentic(expectedChallenge: challenge)
+        )
+
+        var wrongChallenge = challenge
+        wrongChallenge[0] ^= 0xFF
+        XCTAssertFalse(
+            request.isAuthentic(expectedChallenge: wrongChallenge)
+        )
+    }
+
+    func testPairingShapeRejectsFormattedCode() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(
+            repeating: 0x5A,
+            count: ReceiverHello.challengeSize
+        )
+        let request = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123 456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+
+        XCTAssertFalse(request.hasValidShape)
     }
 
     func testVideoPacketHeaderMatchesDMPContract() throws {

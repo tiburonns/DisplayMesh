@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 enum DMPMessageType: UInt8 {
@@ -22,6 +23,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case pairingRejected
     case unexpectedSequence(expected: UInt32, received: UInt32)
     case timeout(String)
+    case invalidReceiverHello
+    case invalidPairingRequest
 
     var errorDescription: String? {
         switch self {
@@ -43,6 +46,10 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "Unexpected DMP sequence: expected \(expected), received \(received)"
         case .timeout(let operation):
             return "Timed out waiting for \(operation)"
+        case .invalidReceiverHello:
+            return "The receiver sent an invalid DisplayMesh hello challenge"
+        case .invalidPairingRequest:
+            return "The DisplayMesh pairing request is invalid"
         }
     }
 }
@@ -188,10 +195,115 @@ struct DMPVideoPacket: Equatable {
     }
 }
 
-struct PairingRequest: Codable {
+struct ReceiverHello: Codable, Equatable {
+    static let challengeSize = 32
+
+    let challenge: Data
+    let protocolVersion: Int
+
+    var isValid: Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && challenge.count == Self.challengeSize
+    }
+}
+
+struct PairingRequest: Codable, Equatable {
     let peerName: String
+    let peerID: String
     let verificationCode: String
     let protocolVersion: Int
+    let challenge: Data
+    let identityPublicKey: Data
+    let signature: Data
+
+    var normalizedVerificationCode: String {
+        verificationCode.filter(\.isNumber)
+    }
+
+    var identityFingerprint: String {
+        SHA256.hash(data: identityPublicKey)
+            .prefix(8)
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    var hasValidShape: Bool {
+        let peerNameBytes = peerName.utf8.count
+        return protocolVersion == Int(DMPFrame.version)
+            && (1...128).contains(peerNameBytes)
+            && verificationCode == normalizedVerificationCode
+            && normalizedVerificationCode.count == 6
+            && UUID(uuidString: peerID) != nil
+            && challenge.count == ReceiverHello.challengeSize
+            && identityPublicKey.count == 65
+            && signature.count == 64
+    }
+
+    func isAuthentic(expectedChallenge: Data) -> Bool {
+        guard hasValidShape, challenge == expectedChallenge else {
+            return false
+        }
+
+        do {
+            let publicKey = try P256.Signing.PublicKey(
+                rawRepresentation: identityPublicKey
+            )
+            let signature = try P256.Signing.ECDSASignature(
+                rawRepresentation: signature
+            )
+            return publicKey.isValidSignature(
+                signature,
+                for: signingPayload
+            )
+        } catch {
+            return false
+        }
+    }
+
+    static func signed(
+        peerName: String,
+        peerID: String,
+        verificationCode: String,
+        challenge: Data,
+        privateKey: P256.Signing.PrivateKey
+    ) throws -> PairingRequest {
+        let unsigned = PairingRequest(
+            peerName: peerName,
+            peerID: peerID,
+            verificationCode: verificationCode,
+            protocolVersion: Int(DMPFrame.version),
+            challenge: challenge,
+            identityPublicKey: privateKey.publicKey.rawRepresentation,
+            signature: Data()
+        )
+
+        let signature = try privateKey.signature(
+            for: unsigned.signingPayload
+        )
+
+        return PairingRequest(
+            peerName: unsigned.peerName,
+            peerID: unsigned.peerID,
+            verificationCode: unsigned.verificationCode,
+            protocolVersion: unsigned.protocolVersion,
+            challenge: unsigned.challenge,
+            identityPublicKey: unsigned.identityPublicKey,
+            signature: signature.rawRepresentation
+        )
+    }
+
+    private var signingPayload: Data {
+        let fields = [
+            "DMP1-PAIRING",
+            String(protocolVersion),
+            peerID,
+            peerName,
+            normalizedVerificationCode,
+            challenge.base64EncodedString(),
+            identityPublicKey.base64EncodedString(),
+        ]
+        return Data(fields.joined(separator: "\u{1F}").utf8)
+    }
 }
 
 struct PairingResponse: Codable {

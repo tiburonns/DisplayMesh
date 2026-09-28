@@ -79,8 +79,8 @@
 - [ ] macOS usbmux host transport
 - [ ] Windows usbmux-compatible host transport
 - [ ] USB device discovery
-- [ ] Host-side pairing request + identity persistence
-- [ ] End-to-end pairing
+- [x] Signed macOS development host pairing request + Keychain identity persistence
+- [x] Apple receiver ↔ macOS development pairing handshake
 - [x] Adaptive bitrate/raster decision engine
 - [ ] Wire host telemetry into adaptive controller
 - [ ] Apply adaptive bitrate to encoders
@@ -118,7 +118,7 @@
 - [ ] Apple receiver CI build confirmed green
 - [ ] First-run permission education
 - [ ] Production TLS 1.3 transport
-- [ ] Secure peer identity persistence
+- [ ] Mutual production peer identity persistence (host identity side implemented in development path)
 - [ ] End-to-end RTT / queue-depth telemetry
 - [ ] Automatic updates
 - [ ] macOS signing/notarization

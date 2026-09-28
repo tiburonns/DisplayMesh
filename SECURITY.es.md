@@ -20,6 +20,8 @@ Una sesión de producción debe:
 
 - usar cifrado por defecto en red;
 - exigir confirmación explícita en el primer pairing;
+- firmar el challenge nuevo del receiver con la identidad P-256 persistente del host macOS guardada en Keychain y conservar en Keychain las decisiones de confianza del receiver;
+- rechazar una clave pública distinta para un peer ID conocido hasta que el usuario borre la confianza;
 - invalidar reconexión silenciosa si cambia la identidad del peer;
 - rechazar entrada remota hasta autenticar/autorizar al peer;
 - fallar explícitamente ante codec/transporte/modo/requisito de seguridad no soportado;
@@ -29,3 +31,8 @@ Una sesión de producción debe:
 - limitar drivers test-signed de Windows a entornos de desarrollo.
 
 Los logs no deben contener secretos, claves, frames completos, clipboard, teclas o material de autenticación.
+
+
+## Límite actual de identidad de desarrollo
+
+DisplayMesh 0.2.2 autentica la **identidad del host macOS de desarrollo** durante el pairing mediante P-256 y un challenge nuevo del receiver. Esto evita sustituir silenciosamente la clave de un host ya confiable, pero **no** vuelve seguro para producción el transporte TCP actual: el receiver todavía no presenta una identidad criptográfica autenticada al host y media/control siguen sin cifrado.

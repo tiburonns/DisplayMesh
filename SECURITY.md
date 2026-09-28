@@ -28,6 +28,8 @@ A production DisplayMesh session must satisfy all of the following:
 
 - Encryption is enabled by default for network sessions.
 - First pairing requires explicit user confirmation.
+- The current Apple/macOS development pairing path signs the receiver challenge with a persistent P-256 host key stored in macOS Keychain; accepted receiver-side host trust records are also persisted in Keychain.
+- The receiver rejects a changed public key for a known peer ID until the user explicitly clears trust.
 - A peer identity change invalidates silent reconnect.
 - Remote input is rejected until the peer is authenticated and authorized.
 - Session configuration is negotiated from capabilities; unsupported codec, transport, display mode, or security requirements must fail explicitly rather than silently downgrade.
@@ -47,3 +49,8 @@ Before the first packaged release, DisplayMesh should commit `Cargo.lock` for re
 ## Scope
 
 DisplayMesh is intended for devices and networks the user controls or is authorized to use. The project must not add stealth installation, hidden remote control, credential interception, or mechanisms designed to bypass OS security prompts.
+
+
+## Current development identity boundary
+
+DisplayMesh 0.2.2 authenticates the **macOS development host identity** during pairing with P-256 signatures and a fresh receiver challenge. This prevents silent host-key substitution after trust has been recorded, but it does **not** make the current plaintext TCP media session production-secure: the receiver does not yet present a cryptographically authenticated identity to the host and media/control transport is not yet encrypted.

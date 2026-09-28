@@ -23,6 +23,8 @@
 "pairing.codeAccessibility" = "Verification code %@";
 "pairing.waitingTitle" = "Waiting for verification";
 "pairing.waitingMessage" = "A connected computer must request pairing before this display can be used.";
+"pairing.previouslyTrusted" = "Previously trusted identity";
+"pairing.identityFingerprint" = "Identity %@";
 
 "diagnostics.title" = "DisplayMesh diagnostics";
 "diagnostics.fps" = "%.0f FPS";
@@ -45,7 +47,9 @@
 
 "settings.security.section" = "Security";
 "settings.security.pairingRequired" = "Pairing confirmation required";
-"settings.security.pairingExplanation" = "A new computer cannot control this device until you verify its six-digit code and approve the connection.";
+"settings.security.pairingExplanation" = "Pairing requests are signed with a persistent P-256 host identity and a fresh per-connection challenge. You still approve every development connection while transport encryption is unfinished.";
+"settings.security.trustedPeers" = "Trusted computers";
+"settings.security.forgetTrustedPeers" = "Forget trusted computers";
 "settings.security.transportDevelopment" = "Transport encryption is not enabled in this development build";
 "settings.security.transportExplanation" = "Do not treat the current TCP development transport as production-secure. TLS 1.3 remains a release blocker.";
 

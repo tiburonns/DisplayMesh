@@ -26,6 +26,8 @@ required_files = [
     RECEIVER / "Tests" / "DMPFrameTests.swift",
     RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
+    RECEIVER / "Tests" / "PairingIdentityTests.swift",
+    RECEIVER / "Sources" / "TrustedPeerStore.swift",
 ]
 
 errors: list[str] = []
@@ -82,10 +84,10 @@ if project.is_file():
         "NSBonjourServices",
         "_displaymesh._tcp",
         "NSLocalNetworkUsageDescription",
-        "ITSAppUsesNonExemptEncryption: false",
-        "MARKETING_VERSION: 0.2.1",
-        "CURRENT_PROJECT_VERSION: 2",
+        "MARKETING_VERSION: 0.2.2",
+        "CURRENT_PROJECT_VERSION: 3",
         "SWIFT_STRICT_CONCURRENCY: targeted",
+        "ITSAppUsesNonExemptEncryption: false",
     ):
         if required_token not in project_text:
             errors.append(f"project.yml is missing required token: {required_token}")
@@ -105,8 +107,8 @@ if privacy.is_file():
         errors.append("receiver privacy manifest is missing UserDefaults reason CA92.1")
 
 root_readme = ROOT / "README.md"
-if root_readme.is_file() and "Current `main`: 0.2.1" not in root_readme.read_text(encoding="utf-8"):
-    errors.append("root README version does not match receiver 0.2.1")
+if root_readme.is_file() and "Current `main`: 0.2.2" not in root_readme.read_text(encoding="utf-8"):
+    errors.append("root README version does not match receiver 0.2.2")
 
 settings = RECEIVER / "App" / "SettingsView.swift"
 if settings.is_file():
@@ -134,9 +136,36 @@ if view_model.is_file():
         "pairingTimeoutTask",
         "sendTelemetryIfNeeded",
         "PairingValidationError.expired",
+        "sendReceiverHello",
+        "trustedPeerStore",
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
+
+trust_store = RECEIVER / "Sources" / "TrustedPeerStore.swift"
+if trust_store.is_file():
+    trust_text = trust_store.read_text(encoding="utf-8")
+    for required_token in (
+        "KeychainTrustedPeerPersistence",
+        "SecItemCopyMatching",
+        "SecItemUpdate",
+        "SecItemAdd",
+        "kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly",
+    ):
+        if required_token not in trust_text:
+            errors.append(f"receiver trust-store hardening is missing token: {required_token}")
+
+pairing_source = RECEIVER / "Protocol" / "PairingMessage.swift"
+if pairing_source.is_file():
+    pairing_text = pairing_source.read_text(encoding="utf-8")
+    for required_token in (
+        "P256.Signing.PublicKey",
+        "isAuthentic",
+        "ReceiverHello",
+        "identityFingerprint",
+    ):
+        if required_token not in pairing_text:
+            errors.append(f"signed pairing contract is missing token: {required_token}")
 
 workflow = ROOT / ".github" / "workflows" / "ci.yml"
 if workflow.is_file():

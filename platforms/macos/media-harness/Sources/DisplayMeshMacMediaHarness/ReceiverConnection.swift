@@ -22,6 +22,10 @@ final class ReceiverConnection {
     private var videoSendInFlight = false
     private var connectionReady = false
 
+    private var receiverHello: ReceiverHello?
+    private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
+    private var helloWaitToken: UUID?
+
     private var pairingResponse: PairingResponse?
     private var pairingContinuation: CheckedContinuation<PairingResponse, Error>?
     private var pairingWaitToken: UUID?
@@ -97,12 +101,62 @@ final class ReceiverConnection {
         }
     }
 
-    func sendPairingRequest(peerName: String, code: String) throws {
-        let request = PairingRequest(
-            peerName: peerName,
-            verificationCode: code,
-            protocolVersion: Int(DMPFrame.version)
-        )
+    func waitForReceiverHello(
+        timeoutSeconds: TimeInterval = 10
+    ) async throws -> ReceiverHello {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(
+                        throwing: DMPProtocolError.connectionClosed
+                    )
+                    return
+                }
+
+                if let receiverHello {
+                    continuation.resume(returning: receiverHello)
+                    return
+                }
+
+                if helloContinuation != nil {
+                    continuation.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "previous receiver hello waiter"
+                        )
+                    )
+                    return
+                }
+
+                let token = UUID()
+                helloWaitToken = token
+                helloContinuation = continuation
+
+                queue.asyncAfter(
+                    deadline: .now() + timeoutSeconds
+                ) { [weak self] in
+                    guard let self,
+                          helloWaitToken == token,
+                          let pending = helloContinuation else {
+                        return
+                    }
+
+                    helloWaitToken = nil
+                    helloContinuation = nil
+                    pending.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "receiver hello challenge"
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    func sendPairingRequest(_ request: PairingRequest) throws {
+        guard request.hasValidShape else {
+            throw DMPProtocolError.invalidPairingRequest
+        }
+
         let payload = try JSONEncoder().encode(request)
         send(type: .pairing, payload: payload)
     }
@@ -328,12 +382,37 @@ final class ReceiverConnection {
 
     private func handle(_ frame: DMPFrame) {
         switch frame.type {
+        case .hello:
+            do {
+                let hello = try JSONDecoder().decode(
+                    ReceiverHello.self,
+                    from: frame.payload
+                )
+                guard hello.isValid else {
+                    throw DMPProtocolError.invalidReceiverHello
+                }
+
+                receiverHello = hello
+                helloWaitToken = nil
+                helloContinuation?.resume(returning: hello)
+                helloContinuation = nil
+            } catch {
+                helloWaitToken = nil
+                helloContinuation?.resume(throwing: error)
+                helloContinuation = nil
+            }
+
         case .pairing:
             do {
                 let response = try JSONDecoder().decode(
                     PairingResponse.self,
                     from: frame.payload
                 )
+                guard response.protocolVersion == Int(DMPFrame.version) else {
+                    throw DMPProtocolError.unsupportedVersion(
+                        UInt8(clamping: response.protocolVersion)
+                    )
+                }
                 pairingResponse = response
                 pairingWaitToken = nil
                 pairingContinuation?.resume(returning: response)
@@ -385,7 +464,7 @@ final class ReceiverConnection {
         case .error:
             onErrorMessage?(frame.payload)
 
-        case .hello, .capabilities, .video:
+        case .capabilities, .video:
             break
         }
     }
@@ -404,6 +483,10 @@ final class ReceiverConnection {
     }
 
     private func failWaiters(_ error: Error) {
+        helloWaitToken = nil
+        helloContinuation?.resume(throwing: error)
+        helloContinuation = nil
+
         pairingWaitToken = nil
         pairingContinuation?.resume(throwing: error)
         pairingContinuation = nil
@@ -417,6 +500,8 @@ final class ReceiverConnection {
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
         nextSequence = 1
+        receiverHello = nil
+        helloWaitToken = nil
         pairingResponse = nil
         panelDescriptor = nil
         pairingWaitToken = nil

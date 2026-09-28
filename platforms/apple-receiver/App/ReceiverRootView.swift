@@ -175,6 +175,27 @@ struct ReceiverRootView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
+                if receiver.pendingPeerPreviouslyTrusted {
+                    Label(
+                        "pairing.previouslyTrusted",
+                        systemImage: "checkmark.shield.fill"
+                    )
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.green)
+                }
+
+                Text(
+                    String(
+                        format: NSLocalizedString(
+                            "pairing.identityFingerprint",
+                            comment: ""
+                        ),
+                        pairing.identityFingerprint.uppercased()
+                    )
+                )
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+
                 Text(pairing.normalizedVerificationCode)
                     .font(.system(.largeTitle, design: .monospaced, weight: .bold))
                     .tracking(5)

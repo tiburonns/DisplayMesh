@@ -23,6 +23,8 @@
 "pairing.codeAccessibility" = "Código de verificación %@";
 "pairing.waitingTitle" = "Esperando verificación";
 "pairing.waitingMessage" = "La computadora conectada debe solicitar emparejamiento antes de usar esta pantalla.";
+"pairing.previouslyTrusted" = "Identidad confiable previamente";
+"pairing.identityFingerprint" = "Identidad %@";
 
 "diagnostics.title" = "Diagnósticos de DisplayMesh";
 "diagnostics.fps" = "%.0f FPS";
@@ -45,7 +47,9 @@
 
 "settings.security.section" = "Seguridad";
 "settings.security.pairingRequired" = "Se requiere confirmación de emparejamiento";
-"settings.security.pairingExplanation" = "Una computadora nueva no puede controlar este dispositivo hasta que verifiques su código de seis dígitos y apruebes la conexión.";
+"settings.security.pairingExplanation" = "Las solicitudes de pairing se firman con una identidad P-256 persistente del host y un challenge nuevo por conexión. Todavía apruebas cada conexión de desarrollo mientras el cifrado de transporte siga pendiente.";
+"settings.security.trustedPeers" = "Computadoras confiables";
+"settings.security.forgetTrustedPeers" = "Olvidar computadoras confiables";
 "settings.security.transportDevelopment" = "El cifrado de transporte no está activo en esta compilación de desarrollo";
 "settings.security.transportExplanation" = "No consideres seguro para producción el transporte TCP actual. TLS 1.3 sigue siendo un requisito obligatorio antes del lanzamiento.";
 

@@ -163,6 +163,12 @@ DMPv1 prefers freshness over perfect delivery.
 
 DisplayMesh's adaptive controller treats bitrate as the first quality lever. Persistent congestion may then step the encoded stream raster through 100%, 85%, 75% and 67%. Resolution recovery happens before aggressive bitrate upshifts and requires a recovery keyframe.
 
+## Development identity handshake
+
+The current Apple/macOS development binding starts with a receiver-generated 32-byte random challenge. The host keeps a stable UUID and P-256 signing key in Keychain and signs a canonical pairing payload containing the protocol version, peer ID/name, six-digit verification code, challenge and public key. The receiver verifies the signature and challenge before showing the approval UI. A known peer ID arriving with a different public key is rejected until trust is explicitly cleared.
+
+This authenticates the development **host identity only**. It does not replace the TLS 1.3 requirement or authenticate the receiver to the host.
+
 ## Security
 
 - TLS 1.3 is required for normal remote sessions.
