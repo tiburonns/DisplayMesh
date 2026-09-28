@@ -50,6 +50,10 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 - El primer emparejamiento requiere confirmación explícita y expira si queda sin responder.
 - La espera de pairing y descriptor de panel termina con timeout en vez de quedar colgada indefinidamente.
 - Cada conexión TCP reinicia la secuencia DMP en 1; frames duplicados, repetidos o con saltos se rechazan.
+- Payloads de control sobredimensionados se rechazan desde el header antes de almacenar el cuerpo.
+- Input debe tener exactamente 40 bytes y flags reservados en cero; keyframe request no lleva payload.
+- Antes de autorizar el receiver, un frame del host que no sea pairing cierra la conexión.
+- Tres intentos de pairing malformados en una conexión cierran esa conexión.
 - La telemetría de decode llega al host sin incluir secretos, frames de pantalla ni payloads de input.
 - El host macOS de desarrollo conserva su identidad P-256 en Keychain.
 - El receiver Apple conserva en Keychain las identidades aceptadas; un fallo de persistencia debe impedir la autorización.

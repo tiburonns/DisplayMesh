@@ -114,6 +114,10 @@
 - [x] Receiver FPS / bitrate / decode / dropped-frame diagnostics
 - [x] Receiver decode telemetry returned to the macOS development host
 - [x] Per-connection DMP sequence/replay guard
+- [x] Per-message DMP payload budgets validated from the header
+- [x] Receiver authorization-phase admission guard
+- [x] Bounded malformed-pairing attempts per connection
+- [x] Reserved input flags rejected
 - [x] Pairing and panel negotiation timeouts in the macOS development path
 - [ ] Apple receiver CI build confirmed green
 - [ ] First-run permission education

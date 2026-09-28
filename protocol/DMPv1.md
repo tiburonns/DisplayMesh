@@ -88,6 +88,26 @@ A host may negotiate a smaller encoded stream raster than the panel's physical p
 
 For a TCP binding, channels are multiplexed with explicit message type and length framing. Interactive implementations must disable Nagle and must never let video backlog block input indefinitely.
 
+### Framing admission limits
+
+Receivers and hosts reject an invalid payload length from the **16-byte DMP header before waiting for the body**. The global frame ceiling remains 16 MiB for video, but control traffic has substantially smaller budgets:
+
+| Message | Payload budget |
+| --- | ---: |
+| hello | 4 KiB |
+| capabilities | 64 KiB |
+| panel descriptor | 16 KiB |
+| pairing | 16 KiB |
+| video | 16 MiB |
+| input | exactly 40 bytes |
+| telemetry | 16 KiB |
+| keyframe request | exactly 0 bytes |
+| error | 8 KiB |
+
+These are protocol safety limits, not targets. Implementations should normally send much smaller control payloads.
+
+Before receiver authorization, the current host-to-Apple-receiver development direction permits only a signed `pairing` request. After authorization it permits video, negotiated capability/control traffic implemented by that receiver, and bounded error reporting. Frames in the wrong direction or phase are treated as protocol violations rather than silently ignored.
+
 DMP frame sequence numbers are scoped to one transport connection. Each direction starts at sequence **1**, increments by one for every transmitted DMP frame, and wraps as an unsigned 32-bit counter. Because TCP is reliable and ordered, a duplicate, replayed or skipped sequence is a protocol error and the connection is closed rather than silently resynchronized.
 
 ## Video payload
@@ -140,7 +160,7 @@ DMP input frames use a fixed 40-byte binary sample instead of JSON in the intera
 | 28 | 4 | barrel roll, radians, float32; zero when unavailable |
 | 32 | 8 | receiver input timestamp in microseconds, big endian |
 
-Coordinates and pressure are validated before transmission and again before injection.
+Coordinates and pressure are validated before transmission and again before injection. The input flags byte is reserved in DMPv1 and must be zero; nonzero values are rejected until a later protocol revision defines them.
 
 The fixed layout keeps the high-rate path predictable for coalesced touch and Pencil input and lets native host backends decode a sample without a JSON parser or heap-heavy object model.
 

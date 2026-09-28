@@ -50,6 +50,10 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 - First pairing requires explicit confirmation and expires if it is left unanswered.
 - Pairing and receiver-panel waits fail with bounded timeouts instead of hanging indefinitely.
 - Every TCP connection restarts DMP sequence numbers at 1; duplicate, replayed or skipped frames are rejected.
+- Oversized control payloads are rejected from the DMP header before the body is buffered.
+- Input must be exactly 40 bytes with reserved flags set to zero; keyframe requests must carry no payload.
+- Before receiver authorization, non-pairing host frames close the connection.
+- Three malformed pairing attempts on one connection close that connection.
 - Receiver decode telemetry reaches the host without including pairing secrets, screen contents or input payloads.
 - The macOS development host keeps its P-256 signing identity in Keychain.
 - The Apple receiver persists accepted host trust records in Keychain; a persistence failure must prevent authorization.
