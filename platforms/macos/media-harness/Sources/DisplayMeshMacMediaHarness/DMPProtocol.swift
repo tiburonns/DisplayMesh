@@ -69,6 +69,7 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case unexpectedSequence(expected: UInt32, received: UInt32)
     case timeout(String)
     case invalidReceiverHello
+    case invalidReceiverTelemetry
     case invalidPairingRequest
 
     var errorDescription: String? {
@@ -107,6 +108,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "Timed out waiting for \(operation)"
         case .invalidReceiverHello:
             return "The receiver sent an invalid DisplayMesh hello challenge"
+        case .invalidReceiverTelemetry:
+            return "The receiver sent invalid DisplayMesh telemetry"
         case .invalidPairingRequest:
             return "The DisplayMesh pairing request is invalid"
         }
@@ -172,6 +175,18 @@ struct ReceiverTelemetry: Codable, Equatable {
     let averageDecodeMilliseconds: Double
     let hardwareAccelerated: Bool?
     let lastVideoSequence: UInt32?
+
+    var isValid: Bool {
+        protocolVersion == Self.version
+            && decodedFrames <= receivedFrames
+            && droppedFrames <= receivedFrames
+            && framesPerSecond.isFinite
+            && (0...480).contains(framesPerSecond)
+            && megabitsPerSecond.isFinite
+            && (0...2_000).contains(megabitsPerSecond)
+            && averageDecodeMilliseconds.isFinite
+            && (0...10_000).contains(averageDecodeMilliseconds)
+    }
 }
 
 struct DMPFrameDecoder {

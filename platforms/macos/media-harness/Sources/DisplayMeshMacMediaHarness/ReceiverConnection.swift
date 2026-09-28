@@ -462,6 +462,9 @@ final class ReceiverConnection {
                         UInt8(clamping: telemetry.protocolVersion)
                     )
                 }
+                guard telemetry.isValid else {
+                    throw DMPProtocolError.invalidReceiverTelemetry
+                }
                 onReceiverTelemetry?(telemetry)
             } catch {
                 onErrorMessage?(Data(error.localizedDescription.utf8))

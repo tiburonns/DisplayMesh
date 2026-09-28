@@ -246,7 +246,17 @@ struct DisplayMeshMacMediaHarness {
             fputs("receiver: \(message)\n", stderr)
         }
 
+        let feedbackController = ReceiverFeedbackController(
+            initialBitrateMbps: options.bitrateMbps,
+            targetFramesPerSecond: targetFPS
+        )
+
         receiver.onReceiverTelemetry = { telemetry in
+            if let bitrate = feedbackController.update(telemetry) {
+                encoder.setBitrate(mbps: bitrate)
+                print("Adaptive bitrate -> \(bitrate) Mbps")
+            }
+
             print(
                 String(
                     format:
