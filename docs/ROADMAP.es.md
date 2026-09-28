@@ -48,7 +48,8 @@
 - [x] Guard de secuencia/replay por conexión DMP.
 - [x] Timeouts de pairing y descriptor de panel en la ruta de desarrollo macOS.
 - [x] Telemetría de decode del receiver enviada al host de desarrollo macOS.
-- [ ] Primer uso/permisos, TLS 1.3, identidad persistente segura, telemetría E2E, updates y firma/notarización.
+- [x] Identidad P-256 persistente del host macOS y verificación del pairing en receiver.
+- [ ] Primer uso/permisos, TLS 1.3, identidad mutua de producción, telemetría E2E, updates y firma/notarización.
 
 ## M6 — Avanzado
 

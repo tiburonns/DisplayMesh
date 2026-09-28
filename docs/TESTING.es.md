@@ -1,4 +1,4 @@
-# DisplayMesh 0.2.1 — Plan de aceptación nativa
+# DisplayMesh 0.2.2 — Plan de aceptación nativa
 
 **Español** · [English](TESTING.md)
 
@@ -51,6 +51,9 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 - La espera de pairing y descriptor de panel termina con timeout en vez de quedar colgada indefinidamente.
 - Cada conexión TCP reinicia la secuencia DMP en 1; frames duplicados, repetidos o con saltos se rechazan.
 - La telemetría de decode llega al host sin incluir secretos, frames de pantalla ni payloads de input.
+- El host macOS de desarrollo conserva su identidad P-256 en Keychain.
+- La firma de pairing queda ligada al challenge nuevo del receiver y al código de seis dígitos mostrado.
+- Una clave pública distinta para un peer ID ya conocido se rechaza hasta borrar explícitamente la confianza.
 - Un cambio de identidad invalida la reconexión silenciosa.
 - Codec/transporte/modo incompatible falla explícitamente; sin downgrade silencioso.
 - Las sesiones de red usan transporte cifrado.

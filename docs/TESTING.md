@@ -1,4 +1,4 @@
-# DisplayMesh 0.2.1 — Native Acceptance Plan
+# DisplayMesh 0.2.2 — Native Acceptance Plan
 
 [Español](TESTING.es.md) · **English**
 
@@ -51,6 +51,9 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 - Pairing and receiver-panel waits fail with bounded timeouts instead of hanging indefinitely.
 - Every TCP connection restarts DMP sequence numbers at 1; duplicate, replayed or skipped frames are rejected.
 - Receiver decode telemetry reaches the host without including pairing secrets, screen contents or input payloads.
+- The macOS development host keeps its P-256 signing identity in Keychain.
+- Pairing signatures are bound to the receiver's fresh challenge and displayed six-digit code.
+- A changed public key for an existing peer ID is rejected until trust is explicitly cleared.
 - A changed peer identity invalidates silent reconnect.
 - Unsupported codec/transport/mode fails explicitly; no silent downgrade.
 - Network sessions use encrypted transport.

@@ -84,9 +84,10 @@ if project.is_file():
         "NSBonjourServices",
         "_displaymesh._tcp",
         "NSLocalNetworkUsageDescription",
-        "MARKETING_VERSION: 0.2.1",
-        "CURRENT_PROJECT_VERSION: 2",
+        "MARKETING_VERSION: 0.2.2",
+        "CURRENT_PROJECT_VERSION: 3",
         "SWIFT_STRICT_CONCURRENCY: targeted",
+        "ITSAppUsesNonExemptEncryption: false",
     ):
         if required_token not in project_text:
             errors.append(f"project.yml is missing required token: {required_token}")
