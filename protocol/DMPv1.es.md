@@ -35,7 +35,7 @@ Discovery → Pairing/identidad → Binding → Sesión segura DMP
 → Video + cursor + input → Telemetría/adaptación
 ```
 
-El receiver debe anunciar identificador estable de instalación, píxeles físicos, escala, orientación, refresh máximo y capacidades de touch/Pencil antes de que el host cree la pantalla virtual.
+El receiver debe anunciar identificador estable de instalación, píxeles físicos, escala, orientación, refresh máximo y capacidades de touch/Pencil antes de que el host cree la pantalla virtual. El host trata descriptor y telemetría como entrada de protocolo no confiable y rechaza valores no finitos, contadores imposibles, dimensiones/refresh absurdos y nombres fuera de límite antes de que puedan afectar captura, adaptación o input.
 
 ### Secuencia por conexión
 

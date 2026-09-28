@@ -112,6 +112,18 @@ struct ReceiverTelemetry: Codable, Equatable {
     let averageDecodeMilliseconds: Double
     let hardwareAccelerated: Bool?
     let lastVideoSequence: UInt32?
+
+    var isValid: Bool {
+        protocolVersion == Self.version
+            && decodedFrames <= receivedFrames
+            && droppedFrames <= receivedFrames
+            && framesPerSecond.isFinite
+            && (0...300).contains(framesPerSecond)
+            && megabitsPerSecond.isFinite
+            && (0...2_000).contains(megabitsPerSecond)
+            && averageDecodeMilliseconds.isFinite
+            && (0...5_000).contains(averageDecodeMilliseconds)
+    }
 }
 
 struct DMPFrameDecoder {
@@ -310,6 +322,11 @@ struct PairingResponse: Codable {
     let accepted: Bool
     let receiverName: String
     let protocolVersion: Int
+
+    var hasValidShape: Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && (1...128).contains(receiverName.utf8.count)
+    }
 }
 
 struct ReceiverPanelDescriptor: Codable {
@@ -326,6 +343,15 @@ struct ReceiverPanelDescriptor: Codable {
     let orientation: Orientation
     let maximumTouchPoints: Int
     let supportsPencil: Bool
+
+    var isValid: Bool {
+        (320...16_384).contains(pixelWidth)
+            && (320...16_384).contains(pixelHeight)
+            && nativeScale.isFinite
+            && (0.5...5).contains(nativeScale)
+            && (1...240).contains(maximumFramesPerSecond)
+            && (0...20).contains(maximumTouchPoints)
+    }
 }
 
 private extension Data {

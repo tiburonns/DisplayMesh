@@ -122,3 +122,81 @@ final class DMPProtocolTests: XCTestCase {
         XCTAssertThrowsError(try frame.encoded())
     }
 }
+
+
+extension DMPProtocolTests {
+    func testReceiverTelemetryRejectsImpossibleCountersAndNumbers() {
+        let impossibleCounters = ReceiverTelemetry(
+            protocolVersion: ReceiverTelemetry.version,
+            receivedFrames: 10,
+            decodedFrames: 11,
+            droppedFrames: 0,
+            framesPerSecond: 60,
+            megabitsPerSecond: 20,
+            averageDecodeMilliseconds: 3,
+            hardwareAccelerated: true,
+            lastVideoSequence: 10
+        )
+        XCTAssertFalse(impossibleCounters.isValid)
+
+        let invalidNumber = ReceiverTelemetry(
+            protocolVersion: ReceiverTelemetry.version,
+            receivedFrames: 10,
+            decodedFrames: 10,
+            droppedFrames: 0,
+            framesPerSecond: .nan,
+            megabitsPerSecond: 20,
+            averageDecodeMilliseconds: 3,
+            hardwareAccelerated: true,
+            lastVideoSequence: 10
+        )
+        XCTAssertFalse(invalidNumber.isValid)
+    }
+
+    func testPanelDescriptorBounds() {
+        let valid = ReceiverPanelDescriptor(
+            pixelWidth: 2796,
+            pixelHeight: 1290,
+            nativeScale: 3,
+            maximumFramesPerSecond: 120,
+            orientation: .landscape,
+            maximumTouchPoints: 10,
+            supportsPencil: false
+        )
+        XCTAssertTrue(valid.isValid)
+
+        let absurd = ReceiverPanelDescriptor(
+            pixelWidth: 100_000,
+            pixelHeight: 1290,
+            nativeScale: 3,
+            maximumFramesPerSecond: 1_000,
+            orientation: .landscape,
+            maximumTouchPoints: 100,
+            supportsPencil: false
+        )
+        XCTAssertFalse(absurd.isValid)
+    }
+
+    func testPairingResponseBoundsReceiverName() {
+        let valid = PairingResponse(
+            accepted: true,
+            receiverName: "iPad",
+            protocolVersion: Int(DMPFrame.version)
+        )
+        XCTAssertTrue(valid.hasValidShape)
+
+        let empty = PairingResponse(
+            accepted: true,
+            receiverName: "",
+            protocolVersion: Int(DMPFrame.version)
+        )
+        XCTAssertFalse(empty.hasValidShape)
+
+        let oversized = PairingResponse(
+            accepted: true,
+            receiverName: String(repeating: "x", count: 129),
+            protocolVersion: Int(DMPFrame.version)
+        )
+        XCTAssertFalse(oversized.hasValidShape)
+    }
+}

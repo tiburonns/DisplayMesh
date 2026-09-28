@@ -408,10 +408,8 @@ final class ReceiverConnection {
                     PairingResponse.self,
                     from: frame.payload
                 )
-                guard response.protocolVersion == Int(DMPFrame.version) else {
-                    throw DMPProtocolError.unsupportedVersion(
-                        UInt8(clamping: response.protocolVersion)
-                    )
+                guard response.hasValidShape else {
+                    throw DMPProtocolError.invalidPairingRequest
                 }
                 pairingResponse = response
                 pairingWaitToken = nil
@@ -429,6 +427,9 @@ final class ReceiverConnection {
                     ReceiverPanelDescriptor.self,
                     from: frame.payload
                 )
+                guard panel.isValid else {
+                    throw DMPProtocolError.invalidReceiverHello
+                }
                 panelDescriptor = panel
                 panelWaitToken = nil
                 panelContinuation?.resume(returning: panel)
@@ -451,10 +452,8 @@ final class ReceiverConnection {
                     ReceiverTelemetry.self,
                     from: frame.payload
                 )
-                guard telemetry.protocolVersion == ReceiverTelemetry.version else {
-                    throw DMPProtocolError.unsupportedVersion(
-                        UInt8(clamping: telemetry.protocolVersion)
-                    )
+                guard telemetry.isValid else {
+                    throw DMPProtocolError.invalidReceiverHello
                 }
                 onReceiverTelemetry?(telemetry)
             } catch {
