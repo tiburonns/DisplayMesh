@@ -55,4 +55,6 @@ Esto autentica únicamente la **identidad del host de desarrollo**; no sustituye
 
 El scaffold compartido de capacidades de desarrollo anuncia deliberadamente sólo la ruta implementada de extremo a extremo: **H.264 sobre TCP sin cifrar por Wi‑Fi/LAN**. Reporta cifrado como no disponible. La configuración de producción `SessionConfig::default()` sigue exigiendo cifrado, por lo que debe fallar contra el scaffold de desarrollo en lugar de fingir una sesión segura.
 
+Una segunda conexión entrante no puede expulsar la conexión activa del receiver; otro peer debe esperar hasta que la sesión actual termine.
+
 La especificación sigue siendo un contrato de desarrollo: transporte TLS/QUIC, identidad persistente y aceptación end-to-end permanecen sujetos a los gates del roadmap.

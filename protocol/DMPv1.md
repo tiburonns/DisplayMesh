@@ -178,6 +178,7 @@ The shared development capability scaffold intentionally advertises only the imp
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.
+- A second inbound peer cannot evict the active receiver transport connection; a new peer must wait until the current connection ends.
 - USB does not disable authentication merely because a cable is present.
 
 ## Capability negotiation

@@ -326,8 +326,8 @@ impl eframe::App for DisplayMeshApp {
                 "Base de control compartida para los backends nativos de macOS y Windows.",
             ));
             ui.label(self.tr(
-                "USB and Wi-Fi are first-class connection modes. iPhone/iPad receivers are designed for native Retina resolution and touch/stylus input.",
-                "USB y Wi-Fi son modos de conexión de primera clase. Los receptores iPhone/iPad están diseñados para resolución Retina nativa y entrada táctil/stylus.",
+                "DisplayMesh is designed for first-class USB and Wi-Fi sessions. Today the end-to-end development validator exposes Wi-Fi/LAN only; USB remains a transport milestone. iPhone/iPad receivers target native Retina resolution and touch/stylus input.",
+                "DisplayMesh está diseñado para sesiones USB y Wi-Fi de primera clase. Hoy el validador end-to-end de desarrollo expone sólo Wi-Fi/LAN; USB sigue siendo un milestone de transporte. Los receivers iPhone/iPad apuntan a resolución Retina nativa y entrada táctil/stylus.",
             ));
             ui.label(self.tr(
                 "The development validator advertises only the transport that exists end to end today: H.264 over plaintext TCP on Wi-Fi/LAN. Production defaults still require encrypted transport.",
