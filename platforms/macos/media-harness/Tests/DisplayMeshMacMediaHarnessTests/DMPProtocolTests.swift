@@ -161,6 +161,32 @@ final class DMPProtocolTests: XCTestCase {
         )
     }
 
+    func testPairingShapeRejectsControlCharactersAndUnicodeDigits() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(
+            repeating: 0x5A,
+            count: ReceiverHello.challengeSize
+        )
+
+        let controlName = try PairingRequest.signed(
+            peerName: "Mac\nInjected",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(controlName.hasValidShape)
+
+        let unicodeCode = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "١٢٣٤٥٦",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(unicodeCode.hasValidShape)
+    }
+
     func testPairingShapeRejectsFormattedCode() throws {
         let privateKey = P256.Signing.PrivateKey()
         let challenge = Data(

@@ -359,7 +359,7 @@ final class ReceiverViewModel: ObservableObject {
 
         let response = PairingResponse(
             accepted: accepted,
-            receiverName: UIDevice.current.name,
+            receiverName: "DisplayMesh Receiver",
             protocolVersion: Int(DMPFrame.version),
             challenge: receiverChallenge
         )

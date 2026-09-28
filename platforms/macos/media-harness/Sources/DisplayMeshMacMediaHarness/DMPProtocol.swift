@@ -302,7 +302,11 @@ struct PairingRequest: Codable, Equatable {
     let signature: Data
 
     var normalizedVerificationCode: String {
-        verificationCode.filter(\.isNumber)
+        String(
+            verificationCode.utf8
+                .filter { (48...57).contains($0) }
+                .map { Character(UnicodeScalar($0)) }
+        )
     }
 
     var identityFingerprint: String {
@@ -314,8 +318,17 @@ struct PairingRequest: Codable, Equatable {
 
     var hasValidShape: Bool {
         let peerNameBytes = peerName.utf8.count
+        let hasControlCharacters = peerName.unicodeScalars.contains {
+            CharacterSet.controlCharacters.contains($0)
+        }
+        let trimmedName = peerName.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+
         return protocolVersion == Int(DMPFrame.version)
             && (1...128).contains(peerNameBytes)
+            && !trimmedName.isEmpty
+            && !hasControlCharacters
             && verificationCode == normalizedVerificationCode
             && normalizedVerificationCode.count == 6
             && UUID(uuidString: peerID) != nil

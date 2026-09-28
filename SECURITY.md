@@ -67,7 +67,8 @@ The plaintext development binding is **not** a secure production transport. Whil
 - frames outside the current authorization/session phase are rejected;
 - stale pairing responses are bound to and rejected against the active receiver challenge;
 - a second LAN peer cannot replace an already active receiver connection;
-- Bonjour advertises a generic DisplayMesh service name instead of the user-configured device name;
+- Bonjour and pre-authorization pairing responses use generic DisplayMesh receiver names instead of the user-configured device name;
+- untrusted peer names reject control characters, and verification codes are ASCII digits only;
 - host identity and receiver trust records use device-only Keychain accessibility.
 
 These controls reduce attack surface during development but do **not** satisfy the production TLS 1.3 requirement.

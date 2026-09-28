@@ -136,3 +136,29 @@ extension PairingIdentityTests {
         )
     }
 }
+
+
+extension PairingIdentityTests {
+    func testPairingShapeRejectsControlCharactersAndNonASCIICode() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = try ReceiverHello.make().challenge
+
+        let controlName = try PairingRequest.signed(
+            peerName: "Mac\nInjected",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(controlName.hasValidShape)
+
+        let unicodeCode = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "١٢٣٤٥٦",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(unicodeCode.hasValidShape)
+    }
+}
