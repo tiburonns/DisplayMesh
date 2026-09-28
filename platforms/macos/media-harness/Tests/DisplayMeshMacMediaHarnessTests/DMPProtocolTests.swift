@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import DisplayMeshMacMediaHarness
 

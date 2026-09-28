@@ -75,7 +75,7 @@ final class PairingIdentityTests: XCTestCase {
         )
 
         XCTAssertEqual(store.status(for: first), .new)
-        store.trust(first)
+        XCTAssertTrue(store.trust(first))
         XCTAssertEqual(store.status(for: first), .trusted)
 
         let changed = try PairingRequest.signed(

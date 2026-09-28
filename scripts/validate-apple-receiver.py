@@ -108,7 +108,7 @@ if privacy.is_file():
 
 root_readme = ROOT / "README.md"
 if root_readme.is_file() and "Current `main`: 0.2.2" not in root_readme.read_text(encoding="utf-8"):
-    errors.append("root README version does not match receiver 0.2.1")
+    errors.append("root README version does not match receiver 0.2.2")
 
 settings = RECEIVER / "App" / "SettingsView.swift"
 if settings.is_file():
