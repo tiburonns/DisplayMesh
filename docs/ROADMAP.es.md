@@ -6,6 +6,7 @@
 
 - [x] Estructura del repositorio y dominio Rust compartido.
 - [x] Validación/negociación de sesión y capacidades.
+- [x] Defaults de producción seguros separados de capacidades de desarrollo reales/sin cifrar.
 - [x] Separación medio USB/Wi‑Fi de protocolo QUIC/TCP.
 - [x] Framing DMP, modelo de touch, controlador adaptativo y lifecycle de backends.
 - [x] Gates de calidad documentados.
@@ -35,7 +36,8 @@
 ## M3 — USB + red
 
 - [ ] Discovery productivo, QUIC/TLS, TCP/TLS, usbmux macOS/Windows, pairing host, handoff Wi‑Fi↔USB.
-- [x] Motor de bitrate/raster adaptativo; falta conectarlo a telemetría/encoders reales.
+- [x] Motor adaptativo conectado a telemetría del receiver y al bitrate del encoder VideoToolbox macOS.
+- [ ] Aplicar el escalado dinámico de raster y completar adaptación en Windows.
 
 ## M4 — Input
 
