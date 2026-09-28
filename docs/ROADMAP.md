@@ -82,8 +82,9 @@
 - [x] Signed macOS development host pairing request + Keychain identity persistence
 - [x] Apple receiver ↔ macOS development pairing handshake
 - [x] Adaptive bitrate/raster decision engine
-- [ ] Wire host telemetry into adaptive controller
-- [ ] Apply adaptive bitrate to encoders
+- [x] Wire receiver decode telemetry into macOS development bitrate feedback
+- [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder
+- [ ] Wire RTT / send-queue / loss telemetry into the shared adaptive controller
 - [ ] Apply adaptive stream raster to capture/encode
 - [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
 

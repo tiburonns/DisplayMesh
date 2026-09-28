@@ -32,7 +32,8 @@ DisplayMesh prioriza interacción fresca en lugar de comportamiento de reproduct
 - presentación Metal desde superficies NV12
 - solicitud de keyframe después de pérdida de sincronía o reset por backlog
 - prioridad de input/control sobre video en cola
-- el controlador adaptativo reduce bitrate antes de reducir el raster codificado
+- el feedback del receiver ajusta dinámicamente el bitrate del harness macOS con histéresis
+- el controlador adaptativo compartido reduce bitrate antes de reducir el raster codificado
 - congestión persistente puede bajar 100% → 85% → 75% → 67%
 - la recuperación restaura resolución antes de subir agresivamente el bitrate
 

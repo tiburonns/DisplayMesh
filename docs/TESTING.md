@@ -42,6 +42,7 @@ For macOS and Windows sender/receiver combinations:
 - preserve aspect ratio and color correctly
 - recover cleanly from receiver disconnect/reconnect
 - expose measured FPS, bitrate, RTT and dropped frames
+- verify receiver decode stress lowers the macOS development bitrate and sustained healthy decode recovers it gradually
 
 Minimum first-usable target: stable 1080p60 over an ordinary local network.
 
@@ -58,6 +59,9 @@ Minimum first-usable target: stable 1080p60 over an ordinary local network.
 - The macOS development host keeps its P-256 signing identity in Keychain.
 - The Apple receiver persists accepted host trust records in Keychain; a persistence failure must prevent authorization.
 - Pairing signatures are bound to the receiver's fresh challenge and displayed six-digit code.
+- Pairing responses must echo the same active challenge; stale responses are rejected.
+- The macOS development host rejects receiver frames that arrive outside the current hello/pairing/panel/streaming phase.
+- Invalid receiver telemetry cannot influence adaptive bitrate.
 - A changed public key for an existing peer ID is rejected until trust is explicitly cleared.
 - A changed peer identity invalidates silent reconnect.
 - Unsupported codec/transport/mode fails explicitly; no silent downgrade.

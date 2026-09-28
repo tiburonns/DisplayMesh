@@ -120,6 +120,7 @@ DisplayMesh optimizes for interaction latency rather than perfect frame delivery
 - input/control priority over video backlog
 - `TCP_NODELAY` for interactive TCP sessions
 - bitrate reduction before queue growth
+- receiver decode feedback can lower/recover the macOS development encoder bitrate with hysteresis
 - adaptive stream raster when the network cannot sustain native panel pixels
 
 ## Resolution / refresh targets

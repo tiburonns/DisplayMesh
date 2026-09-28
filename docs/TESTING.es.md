@@ -42,6 +42,7 @@ Para combinaciones macOS/Windows como emisor y receptor:
 - mantener relación de aspecto y color
 - recuperarse de desconexión/reconexión
 - mostrar FPS, bitrate, RTT y frames perdidos medidos
+- comprobar que estrés de decode reduce el bitrate del harness macOS y una recuperación estable lo eleva gradualmente
 
 Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 
@@ -58,6 +59,9 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 - El host macOS de desarrollo conserva su identidad P-256 en Keychain.
 - El receiver Apple conserva en Keychain las identidades aceptadas; un fallo de persistencia debe impedir la autorización.
 - La firma de pairing queda ligada al challenge nuevo del receiver y al código de seis dígitos mostrado.
+- La respuesta de pairing debe repetir ese challenge activo; respuestas obsoletas se rechazan.
+- El host macOS de desarrollo rechaza frames del receiver fuera de la fase hello/pairing/panel/streaming vigente.
+- Telemetría inválida del receiver no puede modificar el bitrate adaptativo.
 - Una clave pública distinta para un peer ID ya conocido se rechaza hasta borrar explícitamente la confianza.
 - Un cambio de identidad invalida la reconexión silenciosa.
 - Codec/transporte/modo incompatible falla explícitamente; sin downgrade silencioso.

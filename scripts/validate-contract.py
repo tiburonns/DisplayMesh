@@ -88,3 +88,22 @@ print(
     f"PASS: DisplayMesh {version} documentation, protocol status, "
     "security, and native harness contract"
 )
+
+
+feedback = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverFeedbackController.swift"
+if not feedback.exists():
+    raise SystemExit("adaptive feedback contract failed: ReceiverFeedbackController.swift is missing")
+feedback_source = feedback.read_text(encoding="utf-8")
+for token in ["stressedSamples", "healthySamples", "currentBitrateMbps"]:
+    if token not in feedback_source:
+        raise SystemExit(f"adaptive feedback contract failed: missing {token}")
+
+connection_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverConnection.swift").read_text(encoding="utf-8")
+for token in ["HostProtocolGate.permits", "invalidReceiverTelemetry", "invalidPairingResponse"]:
+    if token not in connection_source:
+        raise SystemExit(f"host protocol gate contract failed: missing {token}")
+
+main_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/main.swift").read_text(encoding="utf-8")
+for token in ["ReceiverFeedbackController(", "encoder.setBitrate(mbps: bitrate)"]:
+    if token not in main_source:
+        raise SystemExit(f"adaptive bitrate integration failed: missing {token}")

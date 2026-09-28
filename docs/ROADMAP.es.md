@@ -62,3 +62,11 @@
 - [x] Gate de fase/autorización en el receiver
 - [x] Intentos de pairing malformado acotados por conexión
 - [x] Flags reservados de input rechazados
+
+
+### Feedback adaptativo de desarrollo
+
+- [x] Telemetría de decode del receiver alimenta el bitrate adaptativo del harness macOS
+- [x] VideoToolbox puede ajustar bitrate durante la sesión con histéresis
+- [ ] Integrar RTT / cola de envío / pérdida con el controlador adaptativo compartido
+- [ ] Aplicar cambios adaptativos de raster sin cambiar la geometría lógica

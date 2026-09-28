@@ -32,7 +32,8 @@ DisplayMesh optimizes for interaction freshness instead of media-player behavior
 - Metal presentation from NV12 surfaces
 - keyframe request after decode loss or backlog reset
 - input/control priority over queued video
-- adaptive controller reduces bitrate before reducing encoded raster
+- macOS development receiver feedback dynamically reduces/recover bitrate with hysteresis
+- shared adaptive controller reduces bitrate before reducing encoded raster
 - persistent congestion may step stream raster from 100% → 85% → 75% → 67%
 - recovery restores resolution before aggressively increasing bitrate
 
