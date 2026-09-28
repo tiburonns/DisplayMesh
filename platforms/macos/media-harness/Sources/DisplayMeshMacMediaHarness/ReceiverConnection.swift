@@ -256,6 +256,12 @@ final class ReceiverConnection {
         }
     }
 
+    var isConnected: Bool {
+        videoGate.lock()
+        defer { videoGate.unlock() }
+        return connectionReady
+    }
+
     func canAcceptVideo() -> Bool {
         videoGate.lock()
         defer { videoGate.unlock() }

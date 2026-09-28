@@ -16,6 +16,7 @@ struct HostEncoderMetrics {
 
 enum HostMediaError: Error, LocalizedError {
     case noDisplays
+    case alreadyRunning
     case displayNotFound(CGDirectDisplayID)
     case invalidDimensions
     case encoderCreation(OSStatus)
@@ -30,6 +31,8 @@ enum HostMediaError: Error, LocalizedError {
         switch self {
         case .noDisplays:
             return "No capturable displays were found"
+        case .alreadyRunning:
+            return "Display capture is already running"
         case .displayNotFound(let id):
             return "Display ID \(id) is not available to ScreenCaptureKit"
         case .invalidDimensions:
@@ -92,11 +95,14 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         bitrateMbps: Int
     ) async throws -> (display: SCDisplay, width: Int, height: Int) {
         guard !running else {
-            if let display = try await Self.availableDisplays().first {
-                return (display, display.width, display.height)
-            }
-            throw HostMediaError.noDisplays
+            throw HostMediaError.alreadyRunning
         }
+
+        metrics = HostEncoderMetrics()
+        encodedBytesInWindow = 0
+        encodedFramesInWindow = 0
+        metricsWindowStart = ProcessInfo.processInfo.systemUptime
+        lastMetricsPublish = metricsWindowStart
 
         let displays = try await Self.availableDisplays()
         guard !displays.isEmpty else {
@@ -329,8 +335,12 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
         queue.async { [weak self] in
-            self?.running = false
-            self?.publishError(error.localizedDescription)
+            guard let self else { return }
+            running = false
+            self.stream = nil
+            invalidateEncoder()
+            publishError(error.localizedDescription)
+            publishMetricsIfNeeded(force: true)
         }
     }
 

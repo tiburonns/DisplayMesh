@@ -311,21 +311,27 @@ struct DisplayMeshMacMediaHarness {
         print("Touch: one finger = click/drag, two fingers = scroll.")
         print("Press Control-C to stop.")
 
-        if let seconds = options.durationSeconds {
-            try await Task.sleep(
-                nanoseconds: UInt64(seconds) * 1_000_000_000
-            )
-            inputBridge.reset()
-            await encoder.stop()
-            receiver.close()
-        } else {
-            while !Task.isCancelled {
-                try await Task.sleep(nanoseconds: 3_600_000_000_000)
-            }
-            inputBridge.reset()
-            await encoder.stop()
-            receiver.close()
+        let deadline = options.durationSeconds.map {
+            ProcessInfo.processInfo.systemUptime + Double($0)
         }
+
+        while !Task.isCancelled {
+            if !receiver.isConnected {
+                print("Receiver disconnected; stopping media session.")
+                break
+            }
+
+            if let deadline,
+               ProcessInfo.processInfo.systemUptime >= deadline {
+                break
+            }
+
+            try await Task.sleep(nanoseconds: 250_000_000)
+        }
+
+        inputBridge.reset()
+        await encoder.stop()
+        receiver.close()
     }
 
     private static func printUsage() {

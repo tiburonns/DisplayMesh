@@ -40,7 +40,7 @@ Para combinaciones macOS/Windows como emisor y receptor:
 - H.264 por hardware cuando esté disponible
 - decodificar/renderizar sin copias CPU innecesarias en estado estable
 - mantener relación de aspecto y color
-- recuperarse de desconexión/reconexión
+- detectar desconexión del receiver rápidamente, liberar input activo, detener captura/encoder limpiamente y reconectar mediante una sesión autenticada nueva
 - mostrar FPS, bitrate, RTT y frames perdidos medidos
 - comprobar que estrés de decode reduce el bitrate del harness macOS y una recuperación estable lo eleva gradualmente
 

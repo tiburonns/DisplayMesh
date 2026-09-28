@@ -40,7 +40,7 @@ For macOS and Windows sender/receiver combinations:
 - H.264 hardware encode when available
 - decode and render without unnecessary CPU frame copies in steady state
 - preserve aspect ratio and color correctly
-- recover cleanly from receiver disconnect/reconnect
+- detect receiver disconnect promptly, release active input, stop capture/encoder cleanly, and reconnect through a fresh authenticated session
 - expose measured FPS, bitrate, RTT and dropped frames
 - verify receiver decode stress lowers the macOS development bitrate and sustained healthy decode recovers it gradually
 
