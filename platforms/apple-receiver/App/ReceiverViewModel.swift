@@ -173,6 +173,7 @@ final class ReceiverViewModel: ObservableObject {
         lastProtocolError = nil
         sendPairingResponse(accepted: true)
         receiverChallenge = nil
+        sendCapabilitiesIfAuthorized()
         sendPanelDescriptorIfAuthorized()
         requestKeyframe(force: true)
     }
@@ -420,6 +421,22 @@ final class ReceiverViewModel: ObservableObject {
         sendPairingResponse(accepted: false)
         listener.disconnectCurrent()
         resetAuthorization()
+    }
+
+    private func sendCapabilitiesIfAuthorized() {
+        guard sessionAuthorized else { return }
+
+        let capabilities = ReceiverCapabilities.development(
+            panel: panelDescriptor
+        )
+        guard capabilities.isValid,
+              let payload = try? JSONEncoder().encode(capabilities) else {
+            lastProtocolError =
+                "DisplayMesh receiver capabilities are invalid"
+            return
+        }
+
+        listener.send(type: .capabilities, payload: payload)
     }
 
     private func sendPanelDescriptorIfAuthorized() {

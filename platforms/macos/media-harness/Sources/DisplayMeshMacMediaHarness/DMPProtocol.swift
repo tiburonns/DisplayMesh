@@ -70,6 +70,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case timeout(String)
     case invalidReceiverHello
     case invalidReceiverTelemetry
+    case invalidReceiverCapabilities
+    case incompatibleReceiverCapabilities
     case invalidPanelDescriptor
     case invalidPairingResponse
     case invalidSessionPhase(String)
@@ -113,6 +115,10 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver sent an invalid DisplayMesh hello challenge"
         case .invalidReceiverTelemetry:
             return "The receiver sent invalid DisplayMesh telemetry"
+        case .invalidReceiverCapabilities:
+            return "The receiver sent invalid DisplayMesh capabilities"
+        case .incompatibleReceiverCapabilities:
+            return "The receiver does not support the current H.264/TCP development path"
         case .invalidPanelDescriptor:
             return "The receiver sent an invalid DisplayMesh panel descriptor"
         case .invalidPairingResponse:
@@ -169,6 +175,41 @@ struct DMPSequenceTracker {
 
     mutating func reset() {
         expected = 1
+    }
+}
+
+struct ReceiverCapabilities: Codable, Equatable {
+    static let schemaVersion = 1
+    static let h264 = "h264"
+    static let tcp = "tcp"
+
+    let schemaVersion: Int
+    let protocolVersion: Int
+    let codecs: [String]
+    let connectionBindings: [String]
+    let inputKinds: [String]
+    let telemetrySupported: Bool
+    let maximumVideoPayloadBytes: Int
+    let encryptedTransport: Bool
+
+    var isValid: Bool {
+        schemaVersion == Self.schemaVersion
+            && protocolVersion == Int(DMPFrame.version)
+            && !codecs.isEmpty
+            && codecs.count <= 8
+            && connectionBindings.count <= 8
+            && inputKinds.count <= 8
+            && Set(codecs).count == codecs.count
+            && Set(connectionBindings).count == connectionBindings.count
+            && Set(inputKinds).count == inputKinds.count
+            && (1...DMPFrame.maximumPayloadSize)
+                .contains(maximumVideoPayloadBytes)
+    }
+
+    var supportsDevelopmentHost: Bool {
+        isValid
+            && codecs.contains(Self.h264)
+            && connectionBindings.contains(Self.tcp)
     }
 }
 

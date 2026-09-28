@@ -2,6 +2,7 @@ enum HostReceiverPhase: Equatable {
     case awaitingHello
     case readyToPair
     case awaitingPairingResponse
+    case awaitingCapabilities
     case awaitingPanel
     case streaming
 }
@@ -24,6 +25,9 @@ enum HostProtocolGate {
 
         case .awaitingPairingResponse:
             return type == .pairing
+
+        case .awaitingCapabilities:
+            return type == .capabilities
 
         case .awaitingPanel:
             switch type {

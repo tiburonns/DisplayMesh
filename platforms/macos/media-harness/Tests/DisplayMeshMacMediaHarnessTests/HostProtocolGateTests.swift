@@ -32,6 +32,21 @@ final class HostProtocolGateTests: XCTestCase {
         )
     }
 
+    func testCapabilitiesAreRequiredAfterAcceptedPairing() {
+        XCTAssertTrue(
+            HostProtocolGate.permits(
+                .capabilities,
+                phase: .awaitingCapabilities
+            )
+        )
+        XCTAssertFalse(
+            HostProtocolGate.permits(
+                .panelDescriptor,
+                phase: .awaitingCapabilities
+            )
+        )
+    }
+
     func testAuthorizedReceiverTrafficIsDirectionallyRestricted() {
         for type in [
             DMPMessageType.panelDescriptor,
@@ -64,6 +79,7 @@ final class HostProtocolGateTests: XCTestCase {
             HostReceiverPhase.awaitingHello,
             .readyToPair,
             .awaitingPairingResponse,
+            .awaitingCapabilities,
             .awaitingPanel,
             .streaming,
         ] {

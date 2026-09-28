@@ -32,6 +32,11 @@ final class ReceiverConnection {
     private var pairingContinuation: CheckedContinuation<PairingResponse, Error>?
     private var pairingWaitToken: UUID?
 
+    private var receiverCapabilities: ReceiverCapabilities?
+    private var capabilitiesContinuation:
+        CheckedContinuation<ReceiverCapabilities, Error>?
+    private var capabilitiesWaitToken: UUID?
+
     private var panelDescriptor: ReceiverPanelDescriptor?
     private var panelContinuation: CheckedContinuation<ReceiverPanelDescriptor, Error>?
     private var panelWaitToken: UUID?
@@ -207,6 +212,57 @@ final class ReceiverConnection {
                     pairingContinuation = nil
                     pending.resume(
                         throwing: DMPProtocolError.timeout("pairing approval")
+                    )
+                }
+            }
+        }
+    }
+
+    func waitForReceiverCapabilities(
+        timeoutSeconds: TimeInterval = 10
+    ) async throws -> ReceiverCapabilities {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(
+                        throwing: DMPProtocolError.connectionClosed
+                    )
+                    return
+                }
+
+                if let receiverCapabilities {
+                    continuation.resume(returning: receiverCapabilities)
+                    return
+                }
+
+                if capabilitiesContinuation != nil {
+                    continuation.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "previous receiver capabilities waiter"
+                        )
+                    )
+                    return
+                }
+
+                let token = UUID()
+                capabilitiesWaitToken = token
+                capabilitiesContinuation = continuation
+
+                queue.asyncAfter(
+                    deadline: .now() + timeoutSeconds
+                ) { [weak self] in
+                    guard let self,
+                          capabilitiesWaitToken == token,
+                          let pending = capabilitiesContinuation else {
+                        return
+                    }
+
+                    capabilitiesWaitToken = nil
+                    capabilitiesContinuation = nil
+                    pending.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "receiver capabilities"
+                        )
                     )
                 }
             }
@@ -452,7 +508,7 @@ final class ReceiverConnection {
                 pairingResponse = response
                 setProtocolPhase(
                     response.accepted
-                        ? .awaitingPanel
+                        ? .awaitingCapabilities
                         : .readyToPair
                 )
                 pairingWaitToken = nil
@@ -462,6 +518,33 @@ final class ReceiverConnection {
                 pairingWaitToken = nil
                 pairingContinuation?.resume(throwing: error)
                 pairingContinuation = nil
+            }
+
+        case .capabilities:
+            do {
+                let capabilities = try JSONDecoder().decode(
+                    ReceiverCapabilities.self,
+                    from: frame.payload
+                )
+                guard capabilities.isValid else {
+                    throw DMPProtocolError.invalidReceiverCapabilities
+                }
+                guard capabilities.supportsDevelopmentHost else {
+                    throw DMPProtocolError.incompatibleReceiverCapabilities
+                }
+
+                receiverCapabilities = capabilities
+                setProtocolPhase(.awaitingPanel)
+                capabilitiesWaitToken = nil
+                capabilitiesContinuation?.resume(
+                    returning: capabilities
+                )
+                capabilitiesContinuation = nil
+            } catch {
+                capabilitiesWaitToken = nil
+                capabilitiesContinuation?.resume(throwing: error)
+                capabilitiesContinuation = nil
+                throw error
             }
 
         case .panelDescriptor:
@@ -512,7 +595,7 @@ final class ReceiverConnection {
         case .error:
             onErrorMessage?(frame.payload)
 
-        case .capabilities, .video:
+        case .video:
             break
         }
     }
@@ -539,6 +622,10 @@ final class ReceiverConnection {
         pairingContinuation?.resume(throwing: error)
         pairingContinuation = nil
 
+        capabilitiesWaitToken = nil
+        capabilitiesContinuation?.resume(throwing: error)
+        capabilitiesContinuation = nil
+
         panelWaitToken = nil
         panelContinuation?.resume(throwing: error)
         panelContinuation = nil
@@ -552,6 +639,8 @@ final class ReceiverConnection {
         setProtocolPhase(.awaitingHello)
         helloWaitToken = nil
         pairingResponse = nil
+        receiverCapabilities = nil
+        capabilitiesWaitToken = nil
         panelDescriptor = nil
         pairingWaitToken = nil
         panelWaitToken = nil

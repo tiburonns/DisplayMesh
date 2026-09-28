@@ -189,7 +189,24 @@ struct DisplayMeshMacMediaHarness {
             throw DMPProtocolError.pairingRejected
         }
 
-        print("Paired with \(pairing.receiverName). Waiting for panel capabilities …")
+        print("Paired with \(pairing.receiverName). Negotiating receiver capabilities …")
+        let capabilities = try await receiver.waitForReceiverCapabilities()
+        guard capabilities.supportsDevelopmentHost else {
+            throw DMPProtocolError.incompatibleReceiverCapabilities
+        }
+
+        print(
+            "Receiver capabilities: codecs=" +
+            capabilities.codecs.joined(separator: ",") +
+            " bindings=" +
+            capabilities.connectionBindings.joined(separator: ",") +
+            " input=" +
+            capabilities.inputKinds.joined(separator: ",") +
+            (capabilities.encryptedTransport
+                ? " | encrypted"
+                : " | plaintext development transport")
+        )
+
         let panel = try await receiver.waitForPanelDescriptor()
 
         let targetFPS = min(

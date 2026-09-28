@@ -128,6 +128,34 @@ final class DMPProtocolTests: XCTestCase {
         )
     }
 
+    func testReceiverCapabilitiesValidation() {
+        let supported = ReceiverCapabilities(
+            schemaVersion: ReceiverCapabilities.schemaVersion,
+            protocolVersion: Int(DMPFrame.version),
+            codecs: ["h264"],
+            connectionBindings: ["tcp"],
+            inputKinds: ["touch"],
+            telemetrySupported: true,
+            maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
+            encryptedTransport: false
+        )
+        XCTAssertTrue(supported.isValid)
+        XCTAssertTrue(supported.supportsDevelopmentHost)
+
+        let incompatible = ReceiverCapabilities(
+            schemaVersion: ReceiverCapabilities.schemaVersion,
+            protocolVersion: Int(DMPFrame.version),
+            codecs: ["hevc"],
+            connectionBindings: ["tcp"],
+            inputKinds: ["touch"],
+            telemetrySupported: true,
+            maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
+            encryptedTransport: false
+        )
+        XCTAssertTrue(incompatible.isValid)
+        XCTAssertFalse(incompatible.supportsDevelopmentHost)
+    }
+
     func testReceiverTelemetryRoundTrip() throws {
         let source = ReceiverTelemetry(
             protocolVersion: ReceiverTelemetry.version,
