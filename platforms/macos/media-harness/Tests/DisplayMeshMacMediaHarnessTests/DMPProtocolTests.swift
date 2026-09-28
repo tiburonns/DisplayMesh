@@ -20,6 +20,38 @@ final class DMPProtocolTests: XCTestCase {
         XCTAssertNil(try decoder.nextFrame())
     }
 
+    func testSequenceTrackerRejectsReplayAndGap() throws {
+        var tracker = DMPSequenceTracker()
+
+        try tracker.accept(1)
+        try tracker.accept(2)
+
+        XCTAssertThrowsError(try tracker.accept(2))
+        tracker.reset()
+        try tracker.accept(1)
+        XCTAssertThrowsError(try tracker.accept(3))
+    }
+
+    func testReceiverTelemetryRoundTrip() throws {
+        let source = ReceiverTelemetry(
+            protocolVersion: ReceiverTelemetry.version,
+            receivedFrames: 120,
+            decodedFrames: 118,
+            droppedFrames: 2,
+            framesPerSecond: 59.2,
+            megabitsPerSecond: 21.4,
+            averageDecodeMilliseconds: 2.8,
+            hardwareAccelerated: true,
+            lastVideoSequence: 500
+        )
+
+        let encoded = try JSONEncoder().encode(source)
+        XCTAssertEqual(
+            try JSONDecoder().decode(ReceiverTelemetry.self, from: encoded),
+            source
+        )
+    }
+
     func testVideoPacketHeaderMatchesDMPContract() throws {
         let packet = DMPVideoPacket(
             presentationTimeMicroseconds: 1_234_567,

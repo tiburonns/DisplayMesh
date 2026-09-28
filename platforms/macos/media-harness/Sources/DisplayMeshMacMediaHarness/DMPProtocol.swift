@@ -20,6 +20,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case malformedVideoPacket
     case connectionClosed
     case pairingRejected
+    case unexpectedSequence(expected: UInt32, received: UInt32)
+    case timeout(String)
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +39,10 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver connection closed"
         case .pairingRejected:
             return "The receiver rejected pairing"
+        case .unexpectedSequence(let expected, let received):
+            return "Unexpected DMP sequence: expected \(expected), received \(received)"
+        case .timeout(let operation):
+            return "Timed out waiting for \(operation)"
         }
     }
 }
@@ -67,6 +73,38 @@ struct DMPFrame: Equatable {
         result.append(payload)
         return result
     }
+}
+
+struct DMPSequenceTracker {
+    private(set) var expected: UInt32 = 1
+
+    mutating func accept(_ sequence: UInt32) throws {
+        guard sequence == expected else {
+            throw DMPProtocolError.unexpectedSequence(
+                expected: expected,
+                received: sequence
+            )
+        }
+        expected &+= 1
+    }
+
+    mutating func reset() {
+        expected = 1
+    }
+}
+
+struct ReceiverTelemetry: Codable, Equatable {
+    static let version = 1
+
+    let protocolVersion: Int
+    let receivedFrames: UInt64
+    let decodedFrames: UInt64
+    let droppedFrames: UInt64
+    let framesPerSecond: Double
+    let megabitsPerSecond: Double
+    let averageDecodeMilliseconds: Double
+    let hardwareAccelerated: Bool?
+    let lastVideoSequence: UInt32?
 }
 
 struct DMPFrameDecoder {

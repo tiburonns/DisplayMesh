@@ -234,6 +234,22 @@ struct DisplayMeshMacMediaHarness {
             fputs("receiver: \(message)\n", stderr)
         }
 
+        receiver.onReceiverTelemetry = { telemetry in
+            print(
+                String(
+                    format:
+                        "receiver %.1f FPS | %.1f Mbps | %.1f ms decode | " +
+                        "decoded %llu | dropped %llu%@",
+                    telemetry.framesPerSecond,
+                    telemetry.megabitsPerSecond,
+                    telemetry.averageDecodeMilliseconds,
+                    telemetry.decodedFrames,
+                    telemetry.droppedFrames,
+                    telemetry.hardwareAccelerated == true ? " | HW" : ""
+                )
+            )
+        }
+
         let capture = try await encoder.start(
             displayID: options.displayID,
             width: options.width,

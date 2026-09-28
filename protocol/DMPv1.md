@@ -88,6 +88,8 @@ A host may negotiate a smaller encoded stream raster than the panel's physical p
 
 For a TCP binding, channels are multiplexed with explicit message type and length framing. Interactive implementations must disable Nagle and must never let video backlog block input indefinitely.
 
+DMP frame sequence numbers are scoped to one transport connection. Each direction starts at sequence **1**, increments by one for every transmitted DMP frame, and wraps as an unsigned 32-bit counter. Because TCP is reliable and ordered, a duplicate, replayed or skipped sequence is a protocol error and the connection is closed rather than silently resynchronized.
+
 ## Video payload
 
 A DMP frame with message type `video` carries a binary DMP video packet.
@@ -157,13 +159,14 @@ DMPv1 prefers freshness over perfect delivery.
 - input/control is prioritized ahead of queued video
 - stale media work is discarded rather than adding interaction latency
 - decode/render telemetry feeds adaptation
+- an authorized receiver reports decode FPS, bitrate, decode time, dropped-frame count, hardware-decoder state and the last observed video sequence to the host at a bounded cadence
 
 DisplayMesh's adaptive controller treats bitrate as the first quality lever. Persistent congestion may then step the encoded stream raster through 100%, 85%, 75% and 67%. Resolution recovery happens before aggressive bitrate upshifts and requires a recovery keyframe.
 
 ## Security
 
 - TLS 1.3 is required for normal remote sessions.
-- First pairing requires explicit user confirmation.
+- First pairing requires explicit user confirmation; an unanswered development pairing request expires instead of remaining authorized indefinitely.
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.

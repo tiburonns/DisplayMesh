@@ -47,7 +47,10 @@ Objetivo mínimo inicial: 1080p60 estable en una red local ordinaria.
 
 ## Puerta de sesión/seguridad
 
-- El primer emparejamiento requiere confirmación explícita.
+- El primer emparejamiento requiere confirmación explícita y expira si queda sin responder.
+- La espera de pairing y descriptor de panel termina con timeout en vez de quedar colgada indefinidamente.
+- Cada conexión TCP reinicia la secuencia DMP en 1; frames duplicados, repetidos o con saltos se rechazan.
+- La telemetría de decode llega al host sin incluir secretos, frames de pantalla ni payloads de input.
 - Un cambio de identidad invalida la reconexión silenciosa.
 - Codec/transporte/modo incompatible falla explícitamente; sin downgrade silencioso.
 - Las sesiones de red usan transporte cifrado.

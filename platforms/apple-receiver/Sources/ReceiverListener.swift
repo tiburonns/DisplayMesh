@@ -25,6 +25,7 @@ final class ReceiverListener {
     private var listener: NWListener?
     private var connection: NWConnection?
     private var decoder = DMPFrameDecoder()
+    private var incomingSequence = DMPSequenceTracker()
     private var nextSequence: UInt32 = 1
 
     func start() throws {
@@ -65,6 +66,8 @@ final class ReceiverListener {
             listener?.cancel()
             listener = nil
             decoder = DMPFrameDecoder()
+            incomingSequence.reset()
+            nextSequence = 1
             publish(.stopped)
         }
     }
@@ -82,7 +85,17 @@ final class ReceiverListener {
             nextSequence &+= 1
 
             guard let data = try? frame.encoded() else { return }
-            connection.send(content: data, completion: .contentProcessed { _ in })
+            connection.send(
+                content: data,
+                completion: .contentProcessed { [weak self, weak connection] error in
+                    guard let self, let connection, let error else { return }
+                    queue.async {
+                        guard self.connection === connection else { return }
+                        self.publish(.failed(error.localizedDescription))
+                        connection.cancel()
+                    }
+                }
+            )
         }
     }
 
@@ -109,9 +122,12 @@ final class ReceiverListener {
         connection?.cancel()
         connection = newConnection
         decoder = DMPFrameDecoder()
+        incomingSequence.reset()
+        nextSequence = 1
 
         newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
             guard let self, let newConnection else { return }
+            guard self.connection === newConnection else { return }
 
             switch state {
             case .ready:
@@ -144,11 +160,13 @@ final class ReceiverListener {
             maximumLength: 64 * 1024
         ) { [weak self, weak connection] data, _, isComplete, error in
             guard let self, let connection else { return }
+            guard self.connection === connection else { return }
 
             if let data, !data.isEmpty {
                 do {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
+                        try incomingSequence.accept(frame.sequence)
                         publish(frame)
                     }
                 } catch {
