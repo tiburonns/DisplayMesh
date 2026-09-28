@@ -160,6 +160,7 @@ final class ReceiverViewModel: ObservableObject {
         videoDecoder.reset()
         videoSurface.clear()
         sendPairingResponse(accepted: false)
+        rotateReceiverChallenge()
     }
 
     private func handle(_ frame: DMPFrame) {
@@ -188,6 +189,7 @@ final class ReceiverViewModel: ObservableObject {
                     lastProtocolError =
                         PairingValidationError.identityChanged.localizedDescription
                     sendPairingResponse(accepted: false)
+                    rotateReceiverChallenge()
 
                 case .trusted:
                     pendingPairing = request
@@ -244,6 +246,11 @@ final class ReceiverViewModel: ObservableObject {
         trustedPeerCount = 0
     }
 
+    private func rotateReceiverChallenge() {
+        receiverChallenge = nil
+        sendReceiverHello()
+    }
+
     private func sendReceiverHello() {
         do {
             let hello = try ReceiverHello.make()
@@ -295,6 +302,7 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask = nil
         lastProtocolError = PairingValidationError.expired.localizedDescription
         sendPairingResponse(accepted: false)
+        rotateReceiverChallenge()
     }
 
     private func sendPanelDescriptorIfAuthorized() {

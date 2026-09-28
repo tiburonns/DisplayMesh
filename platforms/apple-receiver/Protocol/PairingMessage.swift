@@ -32,11 +32,16 @@ struct ReceiverHello: Codable, Equatable {
 
     static func make() throws -> ReceiverHello {
         var bytes = [UInt8](repeating: 0, count: challengeSize)
-        let status = SecRandomCopyBytes(
-            kSecRandomDefault,
-            bytes.count,
-            &bytes
-        )
+        let status = bytes.withUnsafeMutableBytes { buffer in
+            guard let baseAddress = buffer.baseAddress else {
+                return errSecParam
+            }
+            return SecRandomCopyBytes(
+                kSecRandomDefault,
+                buffer.count,
+                baseAddress
+            )
+        }
         guard status == errSecSuccess else {
             throw PairingMessageError.randomGenerationFailed(status)
         }
