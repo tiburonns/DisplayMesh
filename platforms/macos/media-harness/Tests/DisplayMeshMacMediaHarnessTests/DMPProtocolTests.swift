@@ -92,6 +92,32 @@ final class DMPProtocolTests: XCTestCase {
         }
     }
 
+    func testPanelDescriptorValidationRejectsUnreasonableValues() {
+        XCTAssertTrue(
+            ReceiverPanelDescriptor(
+                pixelWidth: 2732,
+                pixelHeight: 2048,
+                nativeScale: 2,
+                maximumFramesPerSecond: 120,
+                orientation: .landscape,
+                maximumTouchPoints: 10,
+                supportsPencil: true
+            ).isValid
+        )
+
+        XCTAssertFalse(
+            ReceiverPanelDescriptor(
+                pixelWidth: 32,
+                pixelHeight: 32,
+                nativeScale: .nan,
+                maximumFramesPerSecond: 0,
+                orientation: .unknown,
+                maximumTouchPoints: 100,
+                supportsPencil: false
+            ).isValid
+        )
+    }
+
     func testReceiverTelemetryRoundTrip() throws {
         let source = ReceiverTelemetry(
             protocolVersion: ReceiverTelemetry.version,

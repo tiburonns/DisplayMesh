@@ -27,6 +27,7 @@ required_files = [
     RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
     RECEIVER / "Tests" / "PairingIdentityTests.swift",
+    RECEIVER / "Tests" / "PanelDescriptorTests.swift",
     RECEIVER / "Sources" / "TrustedPeerStore.swift",
     RECEIVER / "Sources" / "ReceiverProtocolGate.swift",
     RECEIVER / "Tests" / "ReceiverProtocolGateTests.swift",
@@ -179,6 +180,16 @@ if pairing_source.is_file():
     ):
         if required_token not in pairing_text:
             errors.append(f"signed pairing contract is missing token: {required_token}")
+
+listener_source = (RECEIVER / "Sources" / "ReceiverListener.swift").read_text(encoding="utf-8")
+if 'name: UIDevice.current.name' in listener_source:
+    errors.append("privacy contract failed: Bonjour service must not expose UIDevice.current.name")
+if 'guard connection == nil else' not in listener_source:
+    errors.append("transport contract failed: active receiver connection must reject replacement peers")
+
+panel_source = (RECEIVER / "Sources" / "PanelDescriptor.swift").read_text(encoding="utf-8")
+if "var isValid: Bool" not in panel_source:
+    errors.append("panel contract failed: receiver panel descriptor validation is missing")
 
 workflow = ROOT / ".github" / "workflows" / "ci.yml"
 if workflow.is_file():

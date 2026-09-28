@@ -115,6 +115,10 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func updatePanelDescriptor(_ descriptor: PanelDescriptor) {
+        guard descriptor.isValid else {
+            lastProtocolError = "DisplayMesh receiver panel descriptor is invalid"
+            return
+        }
         guard panelDescriptor != descriptor else { return }
         panelDescriptor = descriptor
         sendPanelDescriptorIfAuthorized()
@@ -421,6 +425,7 @@ final class ReceiverViewModel: ObservableObject {
     private func sendPanelDescriptorIfAuthorized() {
         guard sessionAuthorized,
               let panelDescriptor,
+              panelDescriptor.isValid,
               let payload = try? JSONEncoder().encode(panelDescriptor) else {
             return
         }

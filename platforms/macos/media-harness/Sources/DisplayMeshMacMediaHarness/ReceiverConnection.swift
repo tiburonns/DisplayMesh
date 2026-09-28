@@ -470,6 +470,9 @@ final class ReceiverConnection {
                     ReceiverPanelDescriptor.self,
                     from: frame.payload
                 )
+                guard panel.isValid else {
+                    throw DMPProtocolError.invalidPanelDescriptor
+                }
                 panelDescriptor = panel
                 setProtocolPhase(.streaming)
                 panelWaitToken = nil

@@ -70,6 +70,7 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case timeout(String)
     case invalidReceiverHello
     case invalidReceiverTelemetry
+    case invalidPanelDescriptor
     case invalidPairingResponse
     case invalidSessionPhase(String)
     case invalidPairingRequest
@@ -112,6 +113,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver sent an invalid DisplayMesh hello challenge"
         case .invalidReceiverTelemetry:
             return "The receiver sent invalid DisplayMesh telemetry"
+        case .invalidPanelDescriptor:
+            return "The receiver sent an invalid DisplayMesh panel descriptor"
         case .invalidPairingResponse:
             return "The receiver pairing response does not match the active challenge"
         case .invalidSessionPhase(let detail):
@@ -415,6 +418,15 @@ struct ReceiverPanelDescriptor: Codable {
     let orientation: Orientation
     let maximumTouchPoints: Int
     let supportsPencil: Bool
+
+    var isValid: Bool {
+        (320...16_384).contains(pixelWidth)
+            && (320...16_384).contains(pixelHeight)
+            && nativeScale.isFinite
+            && (0.5...8).contains(nativeScale)
+            && (1...240).contains(maximumFramesPerSecond)
+            && (0...32).contains(maximumTouchPoints)
+    }
 }
 
 private extension Data {

@@ -40,7 +40,7 @@ final class ReceiverListener {
         let newListener = try NWListener(using: parameters, on: Self.port)
         newListener.newConnectionLimit = 1
         newListener.service = NWListener.Service(
-            name: UIDevice.current.name,
+            name: "DisplayMesh",
             type: "_displaymesh._tcp"
         )
 
@@ -139,7 +139,11 @@ final class ReceiverListener {
     }
 
     private func accept(_ newConnection: NWConnection) {
-        connection?.cancel()
+        guard connection == nil else {
+            newConnection.cancel()
+            return
+        }
+
         connection = newConnection
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
