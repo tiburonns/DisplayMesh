@@ -145,6 +145,22 @@ jobs:
       - name: Test binary input contract
         run: ctest --test-dir build/windows-input-bridge -C Release --output-on-failure
 
+  windows-protocol:
+    needs: contract
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configure DMP protocol library
+        run: cmake -S platforms/windows/protocol -B build/windows-protocol
+
+      - name: Build DMP protocol library
+        run: cmake --build build/windows-protocol --config Release
+
+      - name: Test DMP framing contract
+        run: ctest --test-dir build/windows-protocol -C Release --output-on-failure
+
   windows-bootstrap:
     needs: contract
     runs-on: windows-latest
