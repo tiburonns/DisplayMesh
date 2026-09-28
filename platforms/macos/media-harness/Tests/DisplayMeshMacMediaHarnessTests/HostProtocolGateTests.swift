@@ -45,6 +45,18 @@ final class HostProtocolGateTests: XCTestCase {
                 phase: .awaitingCapabilities
             )
         )
+        XCTAssertFalse(
+            HostProtocolGate.permits(
+                .telemetry,
+                phase: .awaitingCapabilities
+            )
+        )
+        XCTAssertFalse(
+            HostProtocolGate.permits(
+                .input,
+                phase: .awaitingPanel
+            )
+        )
     }
 
     func testAuthorizedReceiverTrafficIsDirectionallyRestricted() {

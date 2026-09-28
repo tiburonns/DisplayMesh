@@ -18,6 +18,7 @@ required_files = [
     RECEIVER / "Protocol" / "DMPVideoPacket.swift",
     RECEIVER / "Protocol" / "DMPInputPacket.swift",
     RECEIVER / "Protocol" / "PairingMessage.swift",
+    RECEIVER / "Protocol" / "ReceiverCapabilities.swift",
     RECEIVER / "Resources" / "en.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "es.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "en.lproj" / "InfoPlist.strings",
@@ -190,6 +191,16 @@ if 'guard connection == nil else' not in listener_source:
 panel_source = (RECEIVER / "Sources" / "PanelDescriptor.swift").read_text(encoding="utf-8")
 if "var isValid: Bool" not in panel_source:
     errors.append("panel contract failed: receiver panel descriptor validation is missing")
+
+capabilities_source = (RECEIVER / "Protocol" / "ReceiverCapabilities.swift").read_text(encoding="utf-8")
+for required_token in (
+    'codecs: [Self.h264]',
+    'connectionBindings: [Self.tcp]',
+    'encryptedTransport: false',
+    'supportsDevelopmentHost',
+):
+    if required_token not in capabilities_source:
+        errors.append(f"receiver capabilities contract is missing token: {required_token}")
 
 workflow = ROOT / ".github" / "workflows" / "ci.yml"
 if workflow.is_file():

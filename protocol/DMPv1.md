@@ -106,7 +106,7 @@ Receivers and hosts reject an invalid payload length from the **16-byte DMP head
 
 These are protocol safety limits, not targets. Implementations should normally send much smaller control payloads.
 
-Before receiver authorization, the current host-to-Apple-receiver development direction permits only a signed `pairing` request. After authorization it permits video, negotiated capability/control traffic implemented by that receiver, and bounded error reporting. Frames in the wrong direction or phase are treated as protocol violations rather than silently ignored.
+Before receiver authorization, the current host-to-Apple-receiver development direction permits only a signed `pairing` request. The current Apple receiver then advertises its implemented capabilities to the macOS development host, followed by its panel descriptor. Only after those phases complete does streaming admit input/telemetry/keyframe traffic in the receiver→host direction and video in the host→receiver direction. This is **receiver capability admission**, not yet full bilateral capability negotiation. Frames in the wrong direction or phase are treated as protocol violations rather than silently ignored.
 
 DMP frame sequence numbers are scoped to one transport connection. Each direction starts at sequence **1**, increments by one for every transmitted DMP frame, and wraps as an unsigned 32-bit counter. Because TCP is reliable and ordered, a duplicate, replayed or skipped sequence is a protocol error and the connection is closed rather than silently resynchronized.
 

@@ -81,6 +81,8 @@
 - [ ] USB device discovery
 - [x] Signed macOS development host pairing request + Keychain identity persistence
 - [x] Apple receiver ↔ macOS development pairing handshake
+- [x] Receiver capability advertisement/admission before panel/media
+- [ ] Bilateral host/receiver capability negotiation
 - [x] Adaptive bitrate/raster decision engine
 - [x] Wire receiver decode telemetry into macOS development bitrate feedback
 - [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder

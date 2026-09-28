@@ -17,14 +17,12 @@ final class ReceiverProtocolGateTests: XCTestCase {
             ReceiverProtocolGate.permits(.video, authorized: true)
         )
         XCTAssertTrue(
-            ReceiverProtocolGate.permits(.capabilities, authorized: true)
-        )
-        XCTAssertTrue(
             ReceiverProtocolGate.permits(.error, authorized: true)
         )
 
         for type in [
             DMPMessageType.hello,
+            .capabilities,
             .panelDescriptor,
             .pairing,
             .input,

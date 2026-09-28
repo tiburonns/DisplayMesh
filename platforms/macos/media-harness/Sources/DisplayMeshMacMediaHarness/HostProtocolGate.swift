@@ -31,8 +31,7 @@ enum HostProtocolGate {
 
         case .awaitingPanel:
             switch type {
-            case .panelDescriptor, .capabilities, .keyframeRequest,
-                 .input, .telemetry:
+            case .panelDescriptor, .capabilities:
                 return true
             default:
                 return false

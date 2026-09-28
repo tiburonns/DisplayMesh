@@ -78,3 +78,10 @@
 - [x] decoder Windows de input rechaza flags reservados
 - [ ] integrar framing DMP al servicio Windows de red/media
 - [ ] implementar driver IddCx real y pipeline Media Foundation
+
+
+## Capabilities de sesión
+
+- [x] anuncio/admisión de capabilities del receiver antes de panel/media
+- [ ] negociación bilateral host/receiver
+- [ ] negociación productiva de seguridad/codec/binding sin downgrade silencioso
