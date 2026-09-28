@@ -246,7 +246,13 @@ struct DisplayMeshMacMediaHarness {
             fputs("receiver: \(message)\n", stderr)
         }
 
-        receiver.onReceiverTelemetry = { telemetry in
+        var adaptiveController = ReceiverAdaptiveController(
+            initialBitrateMbps: options.bitrateMbps,
+            maximumBitrateMbps: max(options.bitrateMbps, 120),
+            targetFramesPerSecond: targetFPS
+        )
+
+        receiver.onReceiverTelemetry = { [weak encoder] telemetry in
             print(
                 String(
                     format:
@@ -260,6 +266,17 @@ struct DisplayMeshMacMediaHarness {
                     telemetry.hardwareAccelerated == true ? " | HW" : ""
                 )
             )
+
+            if let decision = adaptiveController.update(telemetry) {
+                encoder?.setBitrate(mbps: decision.bitrateMbps)
+                if decision.requestKeyframe {
+                    encoder?.requestKeyframe()
+                }
+                print(
+                    "adaptive bitrate -> \(decision.bitrateMbps) Mbps" +
+                    (decision.requestKeyframe ? " + keyframe" : "")
+                )
+            }
         }
 
         let capture = try await encoder.start(
