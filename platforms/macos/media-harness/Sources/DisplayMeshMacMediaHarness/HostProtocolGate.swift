@@ -20,7 +20,7 @@ enum HostProtocolGate {
             return type == .hello
 
         case .readyToPair:
-            return false
+            return type == .hello
 
         case .awaitingPairingResponse:
             return type == .pairing

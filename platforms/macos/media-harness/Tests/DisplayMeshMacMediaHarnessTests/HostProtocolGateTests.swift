@@ -9,6 +9,9 @@ final class HostProtocolGateTests: XCTestCase {
         XCTAssertFalse(
             HostProtocolGate.permits(.pairing, phase: .awaitingHello)
         )
+        XCTAssertTrue(
+            HostProtocolGate.permits(.hello, phase: .readyToPair)
+        )
         XCTAssertFalse(
             HostProtocolGate.permits(.panelDescriptor, phase: .readyToPair)
         )
