@@ -25,6 +25,9 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case timeout(String)
     case invalidReceiverHello
     case invalidPairingRequest
+    case invalidPairingResponse
+    case invalidPanelDescriptor
+    case invalidTelemetry
 
     var errorDescription: String? {
         switch self {
@@ -50,6 +53,12 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver sent an invalid DisplayMesh hello challenge"
         case .invalidPairingRequest:
             return "The DisplayMesh pairing request is invalid"
+        case .invalidPairingResponse:
+            return "The receiver sent an invalid pairing response"
+        case .invalidPanelDescriptor:
+            return "The receiver sent an invalid panel descriptor"
+        case .invalidTelemetry:
+            return "The receiver sent invalid telemetry"
         }
     }
 }

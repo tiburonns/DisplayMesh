@@ -154,7 +154,7 @@ final class ReceiverConnection {
 
     func sendPairingRequest(_ request: PairingRequest) throws {
         guard request.hasValidShape else {
-            throw DMPProtocolError.invalidPairingRequest
+            throw DMPProtocolError.invalidPairingResponse
         }
 
         let payload = try JSONEncoder().encode(request)
@@ -428,7 +428,7 @@ final class ReceiverConnection {
                     from: frame.payload
                 )
                 guard panel.isValid else {
-                    throw DMPProtocolError.invalidReceiverHello
+                    throw DMPProtocolError.invalidPanelDescriptor
                 }
                 panelDescriptor = panel
                 panelWaitToken = nil
@@ -453,7 +453,7 @@ final class ReceiverConnection {
                     from: frame.payload
                 )
                 guard telemetry.isValid else {
-                    throw DMPProtocolError.invalidReceiverHello
+                    throw DMPProtocolError.invalidTelemetry
                 }
                 onReceiverTelemetry?(telemetry)
             } catch {
