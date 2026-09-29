@@ -6,8 +6,6 @@ using Microsoft::WRL::ComPtr;
 
 namespace displaymesh::idd {
 
-struct ModeSpec { DWORD width; DWORD height; DWORD refreshHz; };
-
 const std::array<ModeSpec, 5> kDisplayModes{{
     {1920, 1080, 60}, {1920, 1080, 120}, {2560, 1440, 60},
     {2560, 1440, 120}, {3840, 2160, 60},
@@ -94,11 +92,19 @@ DWORD WINAPI SwapChainProcessor::ThreadEntry(void* context) noexcept {
 
 void SwapChainProcessor::Run() noexcept {
     ComPtr<IDXGIDevice> dxgiDevice;
-    if (FAILED(renderDevice_->device.As(&dxgiDevice))) return;
+    if (FAILED(renderDevice_->device.As(&dxgiDevice))) {
+        WdfObjectDelete(reinterpret_cast<WDFOBJECT>(swapChain_));
+        swapChain_ = nullptr;
+        return;
+    }
 
     IDARG_IN_SWAPCHAINSETDEVICE setDevice{};
     setDevice.pDevice = dxgiDevice.Get();
-    if (FAILED(IddCxSwapChainSetDevice(swapChain_, &setDevice))) return;
+    if (FAILED(IddCxSwapChainSetDevice(swapChain_, &setDevice))) {
+        WdfObjectDelete(reinterpret_cast<WDFOBJECT>(swapChain_));
+        swapChain_ = nullptr;
+        return;
+    }
 
     HANDLE waits[] = {nextSurfaceAvailable_, stopEvent_};
 
@@ -269,6 +275,12 @@ NTSTATUS DisplayMeshDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT init) {
 
     WDF_OBJECT_ATTRIBUTES attrs;
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&attrs, displaymesh::idd::DeviceContextRef);
+    attrs.EvtCleanupCallback = [](WDFOBJECT object) {
+        auto* wrapper = displaymesh::idd::GetDisplayMeshDeviceContext(object);
+        delete wrapper->ptr;
+        wrapper->ptr = nullptr;
+    };
+
     WDFDEVICE device{};
     status = WdfDeviceCreate(&init, &attrs, &device);
     if (!NT_SUCCESS(status)) return status;
