@@ -160,6 +160,9 @@ jobs:
       - name: Build Windows companion bridge
         run: cmake --build build/windows-bridge-probe --config Release
 
+      - name: Test latest-frame mailbox
+        run: ctest --test-dir build/windows-bridge-probe -C Release --output-on-failure
+
   windows-media-harness:
     needs: contract
     runs-on: windows-latest
