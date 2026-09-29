@@ -72,13 +72,13 @@ if 'L"DisplayMeshIdd"' not in bootstrap:
     errors.append("bootstrap hardware ID no longer matches DisplayMeshIdd INF")
 
 for forbidden in (
-    "Map(",
     "D3D11_MAP_READ",
-    "CopyResource(",
+    "D3D11_USAGE_STAGING",
+    "GetData(",
 ):
     if forbidden in driver:
         errors.append(
-            f"IDD hot path contains CPU/readback-oriented token that requires review: {forbidden}"
+            f"IDD hot path contains CPU-readback token that requires review: {forbidden}"
         )
 
 if errors:
@@ -90,5 +90,5 @@ if errors:
 print(
     "Windows IDD contract validation passed: "
     "bootstrap/INF identity aligned, 5 display modes present, "
-    "IddCx lifecycle/swap-chain APIs present, no CPU readback tokens."
+    "IddCx lifecycle/swap-chain APIs present, no CPU readback/staging tokens."
 )
