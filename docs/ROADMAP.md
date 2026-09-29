@@ -33,10 +33,13 @@
 
 ### Windows host
 - [x] Software-device bootstrap implemented
-- [ ] Build DisplayMesh IddCx driver
-- [ ] Add virtual monitor modes
+- [x] DisplayMesh UMDF/IddCx source + INF/project package foundation
+- [x] Static 1080p60/120, 1440p60/120 and 4K60 virtual monitor modes
+- [x] D3D11 IddCx swap-chain consumer foundation without CPU readback
+- [x] CI contract validation for bootstrap/INF/modes/hot-path invariants
+- [ ] Compile driver with a real WDK toolchain (x64 + ARM64)
 - [ ] Dynamic receiver-native panel mode
-- [ ] Install/uninstall development package
+- [ ] Install/uninstall development package on Windows hardware
 - [ ] Test-sign development driver
 
 ### iPhone / iPad receiver
@@ -59,7 +62,8 @@
 ## M2 — End-to-end video path
 
 - [ ] macOS ScreenCaptureKit capture
-- [ ] Windows DirectX / IddCx frame path
+- [x] Windows IddCx → D3D11 desktop-surface acquisition foundation
+- [ ] Windows D3D11 surface → Media Foundation encode path
 - [ ] macOS VideoToolbox H.264 real-time encoder
 - [ ] Windows Media Foundation H.264 hardware encoder
 - [x] iPhone/iPad VideoToolbox H.264 receive implementation
@@ -92,9 +96,10 @@
 
 - [x] Normalized multitouch data model
 - [x] iOS/iPadOS coalesced touch capture
-- [ ] One-finger pointer/click/drag on macOS
-- [ ] Two-finger scroll on macOS
-- [ ] Windows real touch injection where deployment permits
+- [x] One-finger pointer/click/drag on macOS development path
+- [x] Two-finger scroll on macOS development path
+- [x] Windows native multi-contact touch injection bridge
+- [ ] Wire Windows authenticated DMP session into touch injection
 - [ ] Windows pointer fallback
 - [ ] Apple Pencil pen mapping
 - [ ] Pencil hover
