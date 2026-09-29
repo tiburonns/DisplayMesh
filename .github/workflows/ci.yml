@@ -18,6 +18,8 @@ jobs:
         run: python3 scripts/validate-contract.py
       - name: Validate Apple receiver resources
         run: python3 scripts/validate-apple-receiver.py
+      - name: Validate Windows IddCx package
+        run: python3 scripts/validate-windows-idd.py
 
   rust:
     needs: contract
