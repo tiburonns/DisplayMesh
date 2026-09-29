@@ -147,6 +147,19 @@ jobs:
       - name: Test binary input contract
         run: ctest --test-dir build/windows-input-bridge -C Release --output-on-failure
 
+  windows-bridge-probe:
+    needs: contract
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configure Windows companion bridge
+        run: cmake -S platforms/windows/bridge-probe -B build/windows-bridge-probe
+
+      - name: Build Windows companion bridge
+        run: cmake --build build/windows-bridge-probe --config Release
+
   windows-media-harness:
     needs: contract
     runs-on: windows-latest
