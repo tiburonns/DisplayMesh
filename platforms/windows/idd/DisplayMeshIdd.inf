@@ -1,0 +1,63 @@
+[Version]
+PnpLockDown=1
+Signature="$Windows NT$"
+Class=Display
+ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}
+ClassVer=2.0
+Provider=%ManufacturerName%
+CatalogFile=DisplayMeshIdd.cat
+DriverVer=09/29/2026,0.2.0.0
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$.10.0...19041
+
+[Standard.NT$ARCH$.10.0...19041]
+%DeviceName%=DisplayMesh_Install, DisplayMeshIdd
+%DeviceName%=DisplayMesh_Install, Root\DisplayMeshIdd
+
+[SourceDisksFiles]
+DisplayMeshIdd.dll=1
+
+[SourceDisksNames]
+1=%DiskName%
+
+[DisplayMesh_Install.NT]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT
+CopyFiles=DisplayMesh_Copy
+
+[DisplayMesh_Install.NT.hw]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.HW
+AddReg=DisplayMesh_HardwareSettings
+
+[DisplayMesh_HardwareSettings]
+HKR,, "UpperFilters", %REG_MULTI_SZ%, "IndirectKmd"
+HKR, "WUDF", "DeviceGroupId", %REG_SZ%, "DisplayMeshIddGroup"
+
+[DisplayMesh_Install.NT.Services]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.Services
+
+[DisplayMesh_Install.NT.Wdf]
+UmdfService=DisplayMeshIdd,DisplayMeshIdd_Install
+UmdfServiceOrder=DisplayMeshIdd
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+
+[DisplayMeshIdd_Install]
+UmdfLibraryVersion=$UMDFVERSION$
+ServiceBinary=%12%\UMDF\DisplayMeshIdd.dll
+UmdfExtensions=IddCx0102
+
+[DestinationDirs]
+DisplayMesh_Copy=12,UMDF
+
+[DisplayMesh_Copy]
+DisplayMeshIdd.dll
+
+[Strings]
+ManufacturerName="DisplayMesh"
+DiskName="DisplayMesh Virtual Display Driver"
+DeviceName="DisplayMesh Virtual Display Adapter"
+REG_MULTI_SZ=0x00010000
+REG_SZ=0x00000000
