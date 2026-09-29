@@ -7,9 +7,13 @@
 #include <d3d11_2.h>
 #include <dxgi1_5.h>
 #include <wrl.h>
+#include <array>
 #include <memory>
 
 namespace displaymesh::idd {
+
+struct ModeSpec { DWORD width; DWORD height; DWORD refreshHz; };
+extern const std::array<ModeSpec, 5> kDisplayModes;
 
 struct RenderDevice {
     explicit RenderDevice(LUID adapterLuid) noexcept;
@@ -70,6 +74,5 @@ struct MonitorContextRef { MonitorContext* ptr{}; };
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DeviceContextRef, GetDisplayMeshDeviceContext);
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(MonitorContextRef, GetDisplayMeshMonitorContext);
 
-extern const std::array<struct ModeSpec, 5> kDisplayModes;
 
 }  // namespace displaymesh::idd
