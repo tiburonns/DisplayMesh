@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.25)
+project(DisplayMeshWindowsBridgeProbe LANGUAGES CXX)
+
+if(NOT WIN32)
+    message(FATAL_ERROR "DisplayMesh bridge probe targets Windows")
+endif()
+
+add_executable(displaymesh-bridge-probe
+    main.cpp
+)
+
+target_include_directories(displaymesh-bridge-probe PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bridge
+)
+
+target_compile_features(
+    displaymesh-bridge-probe
+    PRIVATE cxx_std_20
+)
+
+target_compile_definitions(
+    displaymesh-bridge-probe
+    PRIVATE
+        UNICODE
+        _UNICODE
+        WINVER=0x0A00
+        _WIN32_WINNT=0x0A00
+)
+
+target_link_libraries(
+    displaymesh-bridge-probe
+    PRIVATE
+        Setupapi
+)
