@@ -84,7 +84,7 @@ if project.is_file():
         "NSBonjourServices",
         "_displaymesh._tcp",
         "NSLocalNetworkUsageDescription",
-        "MARKETING_VERSION: 0.2.2",
+        f"MARKETING_VERSION: {workspace_version}",
         "CURRENT_PROJECT_VERSION: 3",
         "SWIFT_STRICT_CONCURRENCY: targeted",
         "ITSAppUsesNonExemptEncryption: false",
@@ -107,8 +107,10 @@ if privacy.is_file():
         errors.append("receiver privacy manifest is missing UserDefaults reason CA92.1")
 
 root_readme = ROOT / "README.md"
-if root_readme.is_file() and "Current `main`: 0.2.2" not in root_readme.read_text(encoding="utf-8"):
-    errors.append("root README version does not match receiver 0.2.2")
+if root_readme.is_file() and f"Current `main`: {workspace_version}" not in root_readme.read_text(encoding="utf-8"):
+    errors.append(
+        f"root README version does not match receiver {workspace_version}"
+    )
 
 settings = RECEIVER / "App" / "SettingsView.swift"
 if settings.is_file():
