@@ -63,7 +63,10 @@
 
 - [ ] macOS ScreenCaptureKit capture
 - [x] Windows IddCx → D3D11 desktop-surface acquisition foundation
-- [ ] Windows D3D11 surface → Media Foundation encode path
+- [x] Windows GPU BGRA → NV12 Media Foundation capability harness
+- [x] Hardware H.264 MFT discovery/configuration + DXGI sample wrapping harness
+- [ ] Windows bounded async Media Foundation encode worker
+- [ ] Windows H.264 output → DMP Annex-B packetizer
 - [ ] macOS VideoToolbox H.264 real-time encoder
 - [ ] Windows Media Foundation H.264 hardware encoder
 - [x] iPhone/iPad VideoToolbox H.264 receive implementation
