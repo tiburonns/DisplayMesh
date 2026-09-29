@@ -14,6 +14,8 @@ required = [
     IDD / "DisplayMeshIdd.inf",
     IDD / "DisplayMeshIdd.vcxproj",
     IDD / "README.md",
+    ROOT / "platforms" / "windows" / "bridge" / "DisplayMeshBridgeProtocol.h",
+    ROOT / "platforms" / "windows" / "bridge-probe" / "main.cpp",
 ]
 
 errors: list[str] = []
@@ -35,6 +37,10 @@ for token in (
     "IddCxSwapChainReleaseAndAcquireBuffer",
     "IddCxSwapChainFinishedProcessingFrame",
     "D3D11CreateDevice",
+    "EvtIddCxDeviceIoControl",
+    "WdfDeviceCreateDeviceInterface",
+    "kIoctlQueryStatus",
+    "kIoctlSetReceiverMode",
 ):
     if token not in driver:
         errors.append(f"Driver.cpp is missing required IddCx/D3D token: {token}")
