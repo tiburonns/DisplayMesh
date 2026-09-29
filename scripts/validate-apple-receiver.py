@@ -9,6 +9,16 @@ ROOT = Path(__file__).resolve().parents[1]
 RECEIVER = ROOT / "platforms" / "apple-receiver"
 KEY_PATTERN = re.compile(r'^"([^"]+)"\s*=')
 
+cargo_text = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+version_match = re.search(
+    r'^version = "([0-9]+\.[0-9]+\.[0-9]+)"',
+    cargo_text,
+    re.MULTILINE,
+)
+if not version_match:
+    raise SystemExit("receiver validation failed: workspace version is missing")
+workspace_version = version_match.group(1)
+
 required_files = [
     RECEIVER / "project.yml",
     RECEIVER / "App" / "DisplayMeshReceiverApp.swift",
