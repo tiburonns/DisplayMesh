@@ -147,6 +147,19 @@ jobs:
       - name: Test binary input contract
         run: ctest --test-dir build/windows-input-bridge -C Release --output-on-failure
 
+  windows-media-harness:
+    needs: contract
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configure Windows media harness
+        run: cmake -S platforms/windows/media-harness -B build/windows-media-harness
+
+      - name: Build Windows media harness
+        run: cmake --build build/windows-media-harness --config Release
+
   windows-bootstrap:
     needs: contract
     runs-on: windows-latest
