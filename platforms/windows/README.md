@@ -1,52 +1,66 @@
 # Windows native backend
 
-The Windows implementation is split into an application-side media backend, a Software Device bootstrap and an Indirect Display Driver.
+The Windows implementation is split into the product/service layer, a Software Device bootstrap, the UMDF/IddCx virtual display driver, the input bridge and the future Media Foundation encoder.
 
-## Application backend
+## Current state
 
-Responsibilities:
+Implemented in source:
 
-- DXGI / D3D11 capture
-- Media Foundation hardware encode/decode
-- D3D11 rendering
-- Windows input injection
-- telemetry
+- Software Device bootstrap with `SwDeviceCreate`
+- DisplayMesh UMDF/IddCx driver package under `idd/`
+- one virtual DisplayMesh monitor
+- 1920×1080 at 60/120 Hz
+- 2560×1440 at 60/120 Hz
+- 3840×2160 at 60 Hz
+- D3D11 render-device creation on the adapter selected by Windows
+- real IddCx swap-chain acquisition/release lifecycle
+- Windows multi-contact touch injection bridge
+- CI contract checks for hardware ID, driver package, modes and no-CPU-readback invariant
 
-## Software-device bootstrap
+Still pending:
 
-`bootstrap/` contains a small Windows SDK application that creates the DisplayMesh software device with `SwDeviceCreate`.
+- compile the driver with a real WDK toolchain
+- install/test-sign it on Windows hardware or a suitable VM
+- connect D3D11 desktop textures to Media Foundation H.264
+- dynamic receiver-native monitor modes
+- integrate authenticated DMP input with the touch injector
+- production driver signing
 
-Build from a Developer Command Prompt:
+## Bootstrap
+
+`bootstrap/` enumerates the `DisplayMeshIdd` software device. It is not the display driver.
+
+Build:
 
 ```powershell
 cmake -S platforms/windows/bootstrap -B build/windows-bootstrap
 cmake --build build/windows-bootstrap --config Release
 ```
 
-The bootstrap does **not** pretend to be the display driver. It enumerates the software device and expects a matching `DisplayMeshIdd` driver package to already be installed.
+## IddCx driver
 
-## Virtual display driver
+`idd/` contains the actual virtual-display driver source, INF and Visual Studio driver project.
 
-The next native milestone is the DisplayMesh IddCx driver using the Windows Driver Kit.
+With Visual Studio 2022 + Windows SDK + WDK:
 
-Responsibilities:
+```powershell
+msbuild platforms\windows\idd\DisplayMeshIdd.vcxproj /p:Configuration=Debug /p:Platform=x64
+```
 
-- expose virtual monitor(s) to Windows
-- publish supported modes
-- manage monitor arrival/departure
-- provide a stable control path to the DisplayMesh service
-- process swap chains without unnecessary CPU copies
+The driver keeps the desktop frame as a D3D11 GPU surface. The normal path intentionally does not map frames back to CPU memory; the next media milestone feeds that texture directly into the Windows hardware H.264 encoder.
 
 ## Development signing
 
-Initial driver builds should use Windows test signing on dedicated development machines. Production distribution requires Microsoft's production driver-signing flow and must not depend on test mode.
+Use test signing only on a dedicated development PC/VM. Production distribution requires Microsoft's production driver-signing submission flow.
 
-## Validation checklist
+## Hardware acceptance
 
-1. Install the test-signed DisplayMesh IddCx package.
-2. Run the bootstrap and create the software device.
-3. Verify a 1920×1080 @ 60 Hz virtual monitor appears.
-4. Extend the Windows desktop onto it.
-5. Close the bootstrap.
-6. Verify the virtual monitor departs cleanly.
-7. Uninstall the development driver without stale devices.
+1. Compile x64 and ARM64 with the WDK.
+2. Test-sign/install the package.
+3. Start the DisplayMesh bootstrap.
+4. Confirm **DisplayMesh Virtual Display Adapter** enumerates.
+5. Confirm Windows offers the advertised modes.
+6. Extend the desktop onto the virtual display.
+7. Exercise 60/120 Hz swap-chain delivery.
+8. Close/remove the software device and confirm clean monitor departure.
+9. Run Driver Verifier/IDD diagnostics before calling the driver production-ready.
