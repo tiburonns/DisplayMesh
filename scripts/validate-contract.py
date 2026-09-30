@@ -165,11 +165,21 @@ for token in ["pending_", "droppedPending", "discardedOnStop", "handlerFailures"
 windows_packetizer = ROOT / "platforms/windows/media-harness/H264AnnexBPacketizer.cpp"
 windows_packetizer_header = ROOT / "platforms/windows/media-harness/H264AnnexBPacketizer.h"
 windows_packetizer_tests = ROOT / "platforms/windows/media-harness/tests/H264AnnexBPacketizerTests.cpp"
-for path in [windows_packetizer, windows_packetizer_header, windows_packetizer_tests]:
+windows_packetizer_integration = ROOT / "platforms/windows/media-harness/tests/H264DmpFrameIntegrationTests.cpp"
+for path in [
+    windows_packetizer,
+    windows_packetizer_header,
+    windows_packetizer_tests,
+    windows_packetizer_integration,
+]:
     if not path.exists():
         raise SystemExit(f"windows H.264 packetizer contract failed: missing {path.relative_to(ROOT)}")
 
 packetizer_source = windows_packetizer.read_text(encoding="utf-8")
+packetizer_integration_source = windows_packetizer_integration.read_text(encoding="utf-8")
+for token in ["EncodeDmpFrame", "DecodeDmpFrame", "DmpMessageType::Video"]:
+    if token not in packetizer_integration_source:
+        raise SystemExit(f"windows H.264/DMP integration contract failed: missing {token}")
 for token in [
     "kNalSps",
     "kNalPps",

@@ -75,4 +75,25 @@ if(BUILD_TESTING)
         NAME h264-dmp-packetizer
         COMMAND h264-dmp-packetizer-tests
     )
+
+    add_executable(
+        h264-dmp-frame-integration-tests
+        tests/H264DmpFrameIntegrationTests.cpp
+        ../protocol/DmpFrame.cpp
+    )
+
+    target_include_directories(
+        h264-dmp-frame-integration-tests
+        PRIVATE ../protocol
+    )
+
+    target_link_libraries(
+        h264-dmp-frame-integration-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-dmp-frame-integration
+        COMMAND h264-dmp-frame-integration-tests
+    )
 endif()
