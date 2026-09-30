@@ -115,6 +115,21 @@ if(BUILD_TESTING)
     )
 
     add_executable(
+        h264-normalizer-packetizer-integration-tests
+        tests/H264NormalizerPacketizerIntegrationTests.cpp
+    )
+
+    target_link_libraries(
+        h264-normalizer-packetizer-integration-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-normalizer-packetizer-integration
+        COMMAND h264-normalizer-packetizer-integration-tests
+    )
+
+    add_executable(
         mft-encoder-pump-state-tests
         tests/MftEncoderPumpStateTests.cpp
     )
