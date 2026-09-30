@@ -28,8 +28,7 @@ final class ReceiverConnection {
     private var connectionReady = false
     private var lastDisconnectErrorStorage: Error?
     private var protocolPhaseStorage: HostReceiverPhase = .awaitingHello
-    private var pendingPing: (token: UInt64, sentAt: TimeInterval)?
-    private var nextPingToken: UInt64 = 1
+    private var roundTripTracker = RoundTripProbeTracker()
 
     private var receiverHello: ReceiverHello?
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
@@ -383,16 +382,11 @@ final class ReceiverConnection {
             guard let self,
                   connectionReady,
                   currentProtocolPhase() == .streaming,
-                  pendingPing == nil else {
+                  let token = roundTripTracker.begin(
+                    now: ProcessInfo.processInfo.systemUptime
+                  ) else {
                 return
             }
-
-            let token = nextPingToken
-            nextPingToken &+= 1
-            pendingPing = (
-                token: token,
-                sentAt: ProcessInfo.processInfo.systemUptime
-            )
 
             var bigEndian = token.bigEndian
             let payload = Swift.withUnsafeBytes(of: &bigEndian) { Data($0) }
@@ -686,20 +680,13 @@ final class ReceiverConnection {
             let token = frame.payload.reduce(UInt64(0)) {
                 ($0 << 8) | UInt64($1)
             }
-            guard let pendingPing,
-                  pendingPing.token == token else {
+            guard let rttMilliseconds =
+                    roundTripTracker.complete(
+                        token: token,
+                        now: ProcessInfo.processInfo.systemUptime
+                    ) else {
                 throw DMPProtocolError.invalidSessionPhase(
-                    "unexpected pong token"
-                )
-            }
-            self.pendingPing = nil
-            let rttMilliseconds =
-                (ProcessInfo.processInfo.systemUptime - pendingPing.sentAt)
-                * 1_000
-            guard rttMilliseconds.isFinite,
-                  rttMilliseconds >= 0 else {
-                throw DMPProtocolError.invalidSessionPhase(
-                    "invalid RTT clock state"
+                    "unexpected pong token or invalid RTT clock state"
                 )
             }
             onRoundTripTime?(rttMilliseconds)
@@ -770,8 +757,7 @@ final class ReceiverConnection {
         incomingSequence.reset()
         nextSequence = 1
         protectedCodec.clear()
-        pendingPing = nil
-        nextPingToken = 1
+        roundTripTracker.reset()
         pairingKeyAgreementPrivateKey = nil
         receiverHello = nil
         setProtocolPhase(.awaitingHello)
