@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdint>
+#include <limits>
 
 #include "../bridge/LatestFrameMailbox.h"
 
@@ -81,6 +82,13 @@ int main() {
         6,
         6'000,
         0,
+        2560,
+        1440));
+
+    assert(!mailbox.Publish(
+        (std::numeric_limits<std::uint64_t>::max() >> 2) + 1,
+        7'000,
+        3,
         2560,
         1440));
 

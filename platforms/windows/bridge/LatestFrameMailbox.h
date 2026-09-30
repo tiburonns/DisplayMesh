@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <optional>
 
 namespace displaymesh::bridge {
@@ -31,7 +32,13 @@ public:
         std::uint64_t surfaceGeneration,
         std::uint32_t width,
         std::uint32_t height) noexcept {
+        constexpr std::uint64_t
+            kMaximumEncodableSequence =
+                std::numeric_limits<
+                    std::uint64_t>::max() >> 2;
+
         if (sequence == 0 ||
+            sequence > kMaximumEncodableSequence ||
             surfaceGeneration == 0 ||
             width == 0 ||
             height == 0) {
