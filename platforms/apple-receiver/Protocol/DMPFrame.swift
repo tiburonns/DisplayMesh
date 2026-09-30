@@ -53,6 +53,44 @@ enum DMPMessageType: UInt8, Codable, CaseIterable {
             )
         }
     }
+
+    func validateWirePayloadSize(
+        _ size: Int,
+        flags: UInt16
+    ) throws {
+        let unknownFlags =
+            flags & ~DMPFrame.encryptedPayloadFlag
+        guard unknownFlags == 0 else {
+            throw DMPFrameError.invalidFlags(flags)
+        }
+
+        guard flags & DMPFrame.encryptedPayloadFlag != 0 else {
+            try validatePayloadSize(size)
+            return
+        }
+
+        let overhead = DMPFrame.securePayloadOverhead
+        if let exactPayloadSize {
+            let expected = exactPayloadSize + overhead
+            guard size == expected else {
+                throw DMPFrameError.invalidPayloadLength(
+                    type: rawValue,
+                    size: size,
+                    expected: expected
+                )
+            }
+            return
+        }
+
+        let maximum = maximumPayloadSize + overhead
+        guard size <= maximum else {
+            throw DMPFrameError.payloadTooLargeForMessage(
+                type: rawValue,
+                size: size,
+                maximum: maximum
+            )
+        }
+    }
 }
 
 enum DMPFrameError: Error, Equatable, LocalizedError {
@@ -62,6 +100,7 @@ enum DMPFrameError: Error, Equatable, LocalizedError {
     case payloadTooLarge(Int)
     case payloadTooLargeForMessage(type: UInt8, size: Int, maximum: Int)
     case invalidPayloadLength(type: UInt8, size: Int, expected: Int)
+    case invalidFlags(UInt16)
     case unexpectedSequence(expected: UInt32, received: UInt32)
 
     var errorDescription: String? {
@@ -88,6 +127,11 @@ enum DMPFrameError: Error, Equatable, LocalizedError {
                 size,
                 expected
             )
+        case .invalidFlags(let flags):
+            return String(
+                format: "DMP frame has unsupported flags: 0x%04X",
+                flags
+            )
         case .unexpectedSequence(let expected, let received):
             return "Unexpected DMP sequence: expected \(expected), received \(received)"
         }
@@ -99,6 +143,10 @@ struct DMPFrame: Equatable {
     static let version: UInt8 = 1
     static let headerSize = 16
     static let maximumPayloadSize = 16 * 1024 * 1024
+    static let securePayloadOverhead = 28
+    static let maximumWirePayloadSize =
+        maximumPayloadSize + securePayloadOverhead
+    static let encryptedPayloadFlag: UInt16 = 0x0001
 
     let type: DMPMessageType
     let flags: UInt16
@@ -106,10 +154,13 @@ struct DMPFrame: Equatable {
     let payload: Data
 
     func encoded() throws -> Data {
-        guard payload.count <= Self.maximumPayloadSize else {
+        guard payload.count <= Self.maximumWirePayloadSize else {
             throw DMPFrameError.payloadTooLarge(payload.count)
         }
-        try type.validatePayloadSize(payload.count)
+        try type.validateWirePayloadSize(
+            payload.count,
+            flags: flags
+        )
 
         var data = Data(capacity: Self.headerSize + payload.count)
         data.append(contentsOf: Self.magic)
@@ -208,10 +259,13 @@ struct DMPFrameDecoder {
             UInt32(header[15])
 
         let payloadSize = Int(payloadLength)
-        guard payloadSize <= DMPFrame.maximumPayloadSize else {
+        guard payloadSize <= DMPFrame.maximumWirePayloadSize else {
             throw DMPFrameError.payloadTooLarge(payloadSize)
         }
-        try type.validatePayloadSize(payloadSize)
+        try type.validateWirePayloadSize(
+            payloadSize,
+            flags: flags
+        )
 
         let totalSize = DMPFrame.headerSize + payloadSize
         guard buffer.count >= totalSize else { return nil }
