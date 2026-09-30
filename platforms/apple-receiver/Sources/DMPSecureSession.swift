@@ -21,7 +21,7 @@ enum DMPSecureSessionError: Error, LocalizedError {
 }
 
 struct DMPSecureSession {
-    static let encryptedPayloadFlag: UInt16 = 0x0001
+    static let encryptedPayloadFlag = DMPFrame.encryptedPayloadFlag
     static let challengeSize = 32
 
     private let sendKey: SymmetricKey

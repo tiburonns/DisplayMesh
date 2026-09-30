@@ -15,6 +15,8 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: UUID().uuidString,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -54,6 +56,8 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: receiverID,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -67,6 +71,8 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: receiverID,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -84,6 +90,8 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: UUID().uuidString,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -95,6 +103,50 @@ final class ReceiverTrustStoreTests: XCTestCase {
             challenge: valid.challenge,
             hostChallenge: valid.hostChallenge,
             identityPublicKey: valid.identityPublicKey,
+            keyAgreementPublicKey: valid.keyAgreementPublicKey,
+            signature: valid.signature
+        )
+
+        XCTAssertFalse(
+            tampered.isAuthentic(
+                expectedReceiverChallenge: receiverChallenge,
+                expectedHostChallenge: hostChallenge
+            )
+        )
+    }
+}
+
+
+extension ReceiverTrustStoreTests {
+    func testTamperedReceiverEphemeralKeyInvalidatesSignature() throws {
+        let receiverChallenge =
+            Data(repeating: 0x77, count: ReceiverHello.challengeSize)
+        let hostChallenge =
+            Data(repeating: 0x88, count: ReceiverHello.challengeSize)
+
+        let valid = try PairingResponse.signed(
+            accepted: true,
+            receiverName: "Receiver",
+            receiverID: UUID().uuidString,
+            challenge: receiverChallenge,
+            hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
+            privateKey: P256.Signing.PrivateKey()
+        )
+
+        var changedKey = valid.keyAgreementPublicKey
+        changedKey[changedKey.startIndex] ^= 0x01
+
+        let tampered = PairingResponse(
+            accepted: valid.accepted,
+            receiverName: valid.receiverName,
+            receiverID: valid.receiverID,
+            protocolVersion: valid.protocolVersion,
+            challenge: valid.challenge,
+            hostChallenge: valid.hostChallenge,
+            identityPublicKey: valid.identityPublicKey,
+            keyAgreementPublicKey: changedKey,
             signature: valid.signature
         )
 

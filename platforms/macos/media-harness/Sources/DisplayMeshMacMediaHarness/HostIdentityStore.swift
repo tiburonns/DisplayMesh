@@ -16,14 +16,17 @@ struct HostIdentity {
     func makePairingRequest(
         peerName: String,
         verificationCode: String,
-        challenge: Data
+        challenge: Data,
+        hostChallenge: Data,
+        keyAgreementPublicKey: Data
     ) throws -> PairingRequest {
         try PairingRequest.signed(
             peerName: peerName,
             peerID: peerID,
             verificationCode: verificationCode,
             challenge: challenge,
-            hostChallenge: PairingRequest.makeHostChallenge(),
+            hostChallenge: hostChallenge,
+            keyAgreementPublicKey: keyAgreementPublicKey,
             privateKey: privateKey
         )
     }

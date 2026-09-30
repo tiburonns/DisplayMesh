@@ -1,4 +1,5 @@
 import CoreGraphics
+import CryptoKit
 import Foundation
 import Network
 import ScreenCaptureKit
@@ -264,13 +265,21 @@ struct DisplayMeshMacMediaHarness {
             format: "%06d",
             Int.random(in: 0...999_999)
         )
+        let hostKeyAgreement = P256.KeyAgreement.PrivateKey()
+        let hostChallenge = PairingRequest.makeHostChallenge()
         let request = try identity.makePairingRequest(
             peerName: Host.current().localizedName ?? "Mac",
             verificationCode: verificationCode,
-            challenge: hello.challenge
+            challenge: hello.challenge,
+            hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                hostKeyAgreement.publicKey.rawRepresentation
         )
 
-        try receiver.sendPairingRequest(request)
+        try receiver.sendPairingRequest(
+            request,
+            keyAgreementPrivateKey: hostKeyAgreement
+        )
 
         print("")
         print("PAIRING CODE: \(verificationCode)")
@@ -548,9 +557,10 @@ struct DisplayMeshMacMediaHarness {
             The receiver must already be listening in the DisplayMesh
             iPhone/iPad app. Without --host, the harness discovers exactly
             one _displaymesh._tcp Bonjour service and fails if none or
-            multiple receivers are visible. This development harness uses
-            plaintext TCP;
-            production TLS is still a release blocker.
+            multiple receivers are visible. The current development binding
+            encrypts every post-pairing DMP frame with an authenticated
+            ephemeral P-256/ChaChaPoly session. A separately reviewed
+            production transport remains a release gate.
             """
         )
     }

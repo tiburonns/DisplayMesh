@@ -14,7 +14,8 @@ final class ReceiverCapabilitiesTests: XCTestCase {
         )
 
         let capabilities = ReceiverCapabilities.development(
-            panel: panel
+            panel: panel,
+            encryptedTransport: true
         )
 
         XCTAssertTrue(capabilities.isValid)
@@ -23,7 +24,7 @@ final class ReceiverCapabilitiesTests: XCTestCase {
         XCTAssertEqual(capabilities.connectionBindings, ["tcp"])
         XCTAssertEqual(capabilities.inputKinds, ["touch", "pencil"])
         XCTAssertTrue(capabilities.telemetrySupported)
-        XCTAssertFalse(capabilities.encryptedTransport)
+        XCTAssertTrue(capabilities.encryptedTransport)
     }
 
     func testInvalidCapabilitiesAreRejected() {

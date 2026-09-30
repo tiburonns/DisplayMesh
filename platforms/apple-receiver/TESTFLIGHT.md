@@ -1,6 +1,6 @@
 # DisplayMesh Receiver 0.2.3 — TestFlight preflight
 
-The iPhone/iPad receiver can be tested through TestFlight before the full DisplayMesh host product is production-ready. This does **not** make plaintext developer transport a production security claim.
+The iPhone/iPad receiver can be tested through TestFlight before the full DisplayMesh host product is production-ready. The current macOS ↔ Apple development binding now protects all post-pairing DMP frames with an authenticated ephemeral P-256 / HKDF-SHA256 / ChaCha20-Poly1305 session. This is **not** a claim that the final production transport has completed its independent security review.
 
 ## Source gates
 
@@ -34,7 +34,7 @@ Run `./platforms/apple-receiver/preflight-testflight.sh` from the repository roo
 
 ## Export compliance
 
-The receiver now contains CryptoKit code for persistent P-256 identity and a staged P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305 secure-session implementation. Do **not** hard-code an export-compliance exemption in the plist before the first upload.
+The receiver uses CryptoKit for persistent P-256 identity and for the active P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305 post-pairing DMP session. Do **not** hard-code an export-compliance exemption in the plist before the first upload.
 
 For the first TestFlight upload, leave `ITSAppUsesNonExemptEncryption` unset and answer App Store Connect's encryption questionnaire based on the actual submitted build and distribution regions. After Apple determines whether this use is exempt or requires documentation, record that result and only then add the appropriate plist/export-compliance code for subsequent releases.
 
@@ -42,4 +42,4 @@ For the first TestFlight upload, leave `ITSAppUsesNonExemptEncryption` unset and
 
 Generate the project with XcodeGen 2.46.0, open it in Xcode 26+, choose your paid team, Archive, Validate App and upload for **Internal TestFlight**.
 
-The receiver is an internal/development TestFlight candidate while DMP transport is plaintext TCP. Production distribution remains blocked by the security gates in `docs/QUALITY_GATES.md`.
+The receiver is an internal/development TestFlight candidate with authenticated encrypted DMP payloads over the current TCP binding. Production distribution still requires the remaining security, signing and hardware gates in `docs/QUALITY_GATES.md`.

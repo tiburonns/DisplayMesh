@@ -137,7 +137,7 @@ final class DMPProtocolTests: XCTestCase {
             inputKinds: ["touch"],
             telemetrySupported: true,
             maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
-            encryptedTransport: false
+            encryptedTransport: true
         )
         XCTAssertTrue(supported.isValid)
         XCTAssertTrue(supported.supportsDevelopmentHost)
@@ -229,6 +229,9 @@ final class DMPProtocolTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123456",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
 
@@ -256,6 +259,9 @@ final class DMPProtocolTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123456",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(controlName.hasValidShape)
@@ -265,6 +271,9 @@ final class DMPProtocolTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "١٢٣٤٥٦",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(unicodeCode.hasValidShape)
@@ -281,6 +290,9 @@ final class DMPProtocolTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123 456",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
 

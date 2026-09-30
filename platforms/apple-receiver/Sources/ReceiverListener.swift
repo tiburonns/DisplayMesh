@@ -27,6 +27,7 @@ final class ReceiverListener {
     private var decoder = DMPFrameDecoder()
     private var incomingSequence = DMPSequenceTracker()
     private var nextSequence: UInt32 = 1
+    private var protectedCodec = DMPProtectedFrameCodec()
 
     func start() throws {
         guard listener == nil else { return }
@@ -67,6 +68,7 @@ final class ReceiverListener {
             decoder = DMPFrameDecoder()
             incomingSequence.reset()
             nextSequence = 1
+            protectedCodec.clear()
 
             if listener != nil {
                 publish(.ready(port: Self.port.rawValue))
@@ -87,7 +89,14 @@ final class ReceiverListener {
             decoder = DMPFrameDecoder()
             incomingSequence.reset()
             nextSequence = 1
+            protectedCodec.clear()
             publish(.stopped)
+        }
+    }
+
+    func installSecureSession(_ session: DMPSecureSession) {
+        queue.async { [weak self] in
+            self?.protectedCodec.install(session)
         }
     }
 
@@ -95,17 +104,16 @@ final class ReceiverListener {
         queue.async { [weak self] in
             guard let self, let connection else { return }
 
-            let frame = DMPFrame(
-                type: type,
-                flags: flags,
-                sequence: nextSequence,
-                payload: payload
-            )
+            do {
+                let frame = try protectedCodec.outboundFrame(
+                    type: type,
+                    payload: payload,
+                    sequence: nextSequence
+                )
+                let data = try frame.encoded()
+                nextSequence &+= 1
 
-            guard let data = try? frame.encoded() else { return }
-            nextSequence &+= 1
-
-            connection.send(
+                connection.send(
                 content: data,
                 completion: .contentProcessed { [weak self, weak connection] error in
                     guard let self, let connection, let error else { return }
@@ -116,6 +124,10 @@ final class ReceiverListener {
                     }
                 }
             )
+            } catch {
+                publish(.failed(error.localizedDescription))
+                connection.cancel()
+            }
         }
     }
 
@@ -151,6 +163,7 @@ final class ReceiverListener {
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
         nextSequence = 1
+        protectedCodec.clear()
 
         newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
             guard let self, let newConnection else { return }
@@ -167,10 +180,18 @@ final class ReceiverListener {
                 newConnection.cancel()
                 if connection === newConnection {
                     connection = nil
+                    decoder = DMPFrameDecoder()
+                    incomingSequence.reset()
+                    nextSequence = 1
+                    protectedCodec.clear()
                 }
             case .cancelled:
                 if connection === newConnection {
                     connection = nil
+                    decoder = DMPFrameDecoder()
+                    incomingSequence.reset()
+                    nextSequence = 1
+                    protectedCodec.clear()
                     publish(.ready(port: Self.port.rawValue))
                 }
             default:
@@ -194,7 +215,8 @@ final class ReceiverListener {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
                         try incomingSequence.accept(frame.sequence)
-                        publish(frame)
+                        let protectedFrame = try protectedCodec.inboundFrame(frame)
+                        publish(protectedFrame)
                     }
                 } catch {
                     publish(.failed(error.localizedDescription))

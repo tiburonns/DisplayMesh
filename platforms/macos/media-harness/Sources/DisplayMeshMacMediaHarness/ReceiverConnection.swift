@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Network
 
@@ -20,6 +21,8 @@ final class ReceiverConnection {
     private var decoder = DMPFrameDecoder()
     private var incomingSequence = DMPSequenceTracker()
     private var nextSequence: UInt32 = 1
+    private var protectedCodec = DMPProtectedFrameCodec()
+    private var pairingKeyAgreementPrivateKey: P256.KeyAgreement.PrivateKey?
     private var videoSendInFlight = false
     private var connectionReady = false
     private var lastDisconnectErrorStorage: Error?
@@ -196,7 +199,10 @@ final class ReceiverConnection {
         }
     }
 
-    func sendPairingRequest(_ request: PairingRequest) throws {
+    func sendPairingRequest(
+        _ request: PairingRequest,
+        keyAgreementPrivateKey: P256.KeyAgreement.PrivateKey
+    ) throws {
         guard request.hasValidShape else {
             throw DMPProtocolError.invalidPairingRequest
         }
@@ -208,6 +214,7 @@ final class ReceiverConnection {
         }
 
         pairingRequest = request
+        pairingKeyAgreementPrivateKey = keyAgreementPrivateKey
         setProtocolPhase(.awaitingPairingResponse)
         let payload = try JSONEncoder().encode(request)
         send(type: .pairing, payload: payload)
@@ -452,11 +459,10 @@ final class ReceiverConnection {
         type: DMPMessageType,
         payload: Data
     ) throws -> Data {
-        let frame = DMPFrame(
+        let frame = try protectedCodec.outboundFrame(
             type: type,
-            flags: 0,
-            sequence: nextSequence,
-            payload: payload
+            payload: payload,
+            sequence: nextSequence
         )
         let encoded = try frame.encoded()
         nextSequence &+= 1
@@ -476,7 +482,8 @@ final class ReceiverConnection {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
                         try incomingSequence.accept(frame.sequence)
-                        try handle(frame)
+                        let protectedFrame = try protectedCodec.inboundFrame(frame)
+                        try handle(protectedFrame)
                     }
                 } catch {
                     handleTransportFailure(error, connection: activeConnection)
@@ -553,7 +560,27 @@ final class ReceiverConnection {
                       ) else {
                     throw DMPProtocolError.invalidPairingResponse
                 }
+                if response.accepted {
+                    guard let privateKey = pairingKeyAgreementPrivateKey else {
+                        throw DMPProtocolError.invalidPairingResponse
+                    }
+                    let receiverPublicKey = try P256.KeyAgreement.PublicKey(
+                        rawRepresentation: response.keyAgreementPublicKey
+                    )
+                    let sharedSecret = try privateKey.sharedSecretFromKeyAgreement(
+                        with: receiverPublicKey
+                    )
+                    protectedCodec.install(
+                        try DMPSecureSession.derive(
+                            role: .host,
+                            sharedSecret: sharedSecret,
+                            receiverChallenge: request.challenge,
+                            hostChallenge: request.hostChallenge
+                        )
+                    )
+                }
                 pairingResponse = response
+                pairingKeyAgreementPrivateKey = nil
                 setProtocolPhase(
                     response.accepted
                         ? .awaitingCapabilities
@@ -688,6 +715,8 @@ final class ReceiverConnection {
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
         nextSequence = 1
+        protectedCodec.clear()
+        pairingKeyAgreementPrivateKey = nil
         receiverHello = nil
         setProtocolPhase(.awaitingHello)
         helloWaitToken = nil

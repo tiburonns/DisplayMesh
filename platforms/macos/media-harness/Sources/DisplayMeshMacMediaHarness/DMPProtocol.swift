@@ -34,23 +34,34 @@ enum DMPMessageType: UInt8 {
         }
     }
 
-    func validatePayloadSize(_ size: Int) throws {
+    func validatePayloadSize(
+        _ size: Int,
+        flags: UInt16 = 0
+    ) throws {
+        let encrypted =
+            flags & DMPFrame.encryptedPayloadFlag != 0
+        let overhead = encrypted
+            ? DMPFrame.authenticatedEncryptionOverhead
+            : 0
+
         if let exactPayloadSize {
-            guard size == exactPayloadSize else {
+            let expected = exactPayloadSize + overhead
+            guard size == expected else {
                 throw DMPProtocolError.invalidPayloadLength(
                     type: rawValue,
                     size: size,
-                    expected: exactPayloadSize
+                    expected: expected
                 )
             }
             return
         }
 
-        guard size <= maximumPayloadSize else {
+        let maximum = maximumPayloadSize + overhead
+        guard size <= maximum else {
             throw DMPProtocolError.payloadTooLargeForMessage(
                 type: rawValue,
                 size: size,
-                maximum: maximumPayloadSize
+                maximum: maximum
             )
         }
     }
@@ -142,6 +153,10 @@ struct DMPFrame: Equatable {
     static let version: UInt8 = 1
     static let headerSize = 16
     static let maximumPayloadSize = 16 * 1024 * 1024
+    static let authenticatedEncryptionOverhead = 28
+    static let encryptedPayloadFlag: UInt16 = 0x0001
+    static let maximumWirePayloadSize =
+        maximumPayloadSize + authenticatedEncryptionOverhead
 
     let type: DMPMessageType
     let flags: UInt16
@@ -149,10 +164,13 @@ struct DMPFrame: Equatable {
     let payload: Data
 
     func encoded() throws -> Data {
-        guard payload.count <= Self.maximumPayloadSize else {
+        guard payload.count <= Self.maximumWirePayloadSize else {
             throw DMPProtocolError.payloadTooLarge(payload.count)
         }
-        try type.validatePayloadSize(payload.count)
+        try type.validatePayloadSize(
+            payload.count,
+            flags: flags
+        )
 
         var result = Data(capacity: Self.headerSize + payload.count)
         result.append(Self.magic)
@@ -216,6 +234,7 @@ struct ReceiverCapabilities: Codable, Equatable {
         isValid
             && codecs.contains(Self.h264)
             && connectionBindings.contains(Self.tcp)
+            && encryptedTransport
     }
 }
 
@@ -311,10 +330,13 @@ struct DMPFrameDecoder {
             UInt32(header[15])
 
         let payloadSize = Int(payloadLength)
-        guard payloadSize <= DMPFrame.maximumPayloadSize else {
+        guard payloadSize <= DMPFrame.maximumWirePayloadSize else {
             throw DMPProtocolError.payloadTooLarge(payloadSize)
         }
-        try type.validatePayloadSize(payloadSize)
+        try type.validatePayloadSize(
+            payloadSize,
+            flags: flags
+        )
 
         let totalSize = DMPFrame.headerSize + payloadSize
         guard buffer.count >= totalSize else { return nil }
@@ -377,6 +399,7 @@ struct PairingRequest: Codable, Equatable {
     let challenge: Data
     let hostChallenge: Data
     let identityPublicKey: Data
+    let keyAgreementPublicKey: Data
     let signature: Data
 
     var normalizedVerificationCode: String {
@@ -414,6 +437,7 @@ struct PairingRequest: Codable, Equatable {
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
             && identityPublicKey.count == 65
+            && keyAgreementPublicKey.count == 65
             && signature.count == 64
     }
 
@@ -456,6 +480,7 @@ struct PairingRequest: Codable, Equatable {
         verificationCode: String,
         challenge: Data,
         hostChallenge: Data,
+        keyAgreementPublicKey: Data,
         privateKey: P256.Signing.PrivateKey
     ) throws -> PairingRequest {
         let unsigned = PairingRequest(
@@ -466,6 +491,7 @@ struct PairingRequest: Codable, Equatable {
             challenge: challenge,
             hostChallenge: hostChallenge,
             identityPublicKey: privateKey.publicKey.rawRepresentation,
+            keyAgreementPublicKey: keyAgreementPublicKey,
             signature: Data()
         )
 
@@ -481,6 +507,7 @@ struct PairingRequest: Codable, Equatable {
             challenge: unsigned.challenge,
             hostChallenge: unsigned.hostChallenge,
             identityPublicKey: unsigned.identityPublicKey,
+            keyAgreementPublicKey: unsigned.keyAgreementPublicKey,
             signature: signature.rawRepresentation
         )
     }
@@ -495,6 +522,7 @@ struct PairingRequest: Codable, Equatable {
             challenge.base64EncodedString(),
             hostChallenge.base64EncodedString(),
             identityPublicKey.base64EncodedString(),
+            keyAgreementPublicKey.base64EncodedString(),
         ]
         return Data(fields.joined(separator: "\u{1F}").utf8)
     }
@@ -508,6 +536,7 @@ struct PairingResponse: Codable, Equatable {
     let challenge: Data
     let hostChallenge: Data
     let identityPublicKey: Data
+    let keyAgreementPublicKey: Data
     let signature: Data
 
     var identityFingerprint: String {
@@ -533,6 +562,7 @@ struct PairingResponse: Codable, Equatable {
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
             && identityPublicKey.count == 65
+            && keyAgreementPublicKey.count == 65
             && signature.count == 64
     }
 
@@ -568,6 +598,7 @@ struct PairingResponse: Codable, Equatable {
         receiverID: String,
         challenge: Data,
         hostChallenge: Data,
+        keyAgreementPublicKey: Data,
         privateKey: P256.Signing.PrivateKey
     ) throws -> PairingResponse {
         let unsigned = PairingResponse(
@@ -578,6 +609,7 @@ struct PairingResponse: Codable, Equatable {
             challenge: challenge,
             hostChallenge: hostChallenge,
             identityPublicKey: privateKey.publicKey.rawRepresentation,
+            keyAgreementPublicKey: keyAgreementPublicKey,
             signature: Data()
         )
 
@@ -593,6 +625,7 @@ struct PairingResponse: Codable, Equatable {
             challenge: unsigned.challenge,
             hostChallenge: unsigned.hostChallenge,
             identityPublicKey: unsigned.identityPublicKey,
+            keyAgreementPublicKey: unsigned.keyAgreementPublicKey,
             signature: signature.rawRepresentation
         )
     }
@@ -607,6 +640,7 @@ struct PairingResponse: Codable, Equatable {
             challenge.base64EncodedString(),
             hostChallenge.base64EncodedString(),
             identityPublicKey.base64EncodedString(),
+            keyAgreementPublicKey.base64EncodedString(),
         ]
         return Data(fields.joined(separator: "\u{1F}").utf8)
     }
