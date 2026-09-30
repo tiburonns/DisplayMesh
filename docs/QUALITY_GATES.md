@@ -53,7 +53,7 @@ Initial acceptance:
 
 - 1080p60 without persistent frame queue growth,
 - 1440p60 on supported hardware,
-- bounded decode/render queue,
+- bounded decode/render queue with observable decode and presentation queue depth,
 - stale video frames are dropped instead of increasing interaction latency,
 - decoded-frame presentation is latest-frame-wins so MainActor/UI stalls cannot grow an unbounded display queue,
 - input has priority over queued video,

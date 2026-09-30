@@ -6,7 +6,9 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         received: UInt64,
         dropped: UInt64,
         fps: Double = 60,
-        decodeMilliseconds: Double = 3
+        decodeMilliseconds: Double = 3,
+        decodeQueueDepth: Int? = nil,
+        presentationQueueDepth: Int? = nil
     ) -> ReceiverTelemetry {
         ReceiverTelemetry(
             protocolVersion: ReceiverTelemetry.version,
@@ -17,7 +19,9 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
             megabitsPerSecond: 20,
             averageDecodeMilliseconds: decodeMilliseconds,
             hardwareAccelerated: true,
-            lastVideoSequence: UInt32(clamping: received)
+            lastVideoSequence: UInt32(clamping: received),
+            decodeQueueDepth: decodeQueueDepth,
+            presentationQueueDepth: presentationQueueDepth
         )
     }
 
@@ -67,6 +71,56 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         XCTAssertEqual(decision?.bitrateMbps, 21)
         XCTAssertEqual(decision?.rasterScale, 1.0)
         XCTAssertEqual(decision?.requestKeyframe, false)
+    }
+
+    func testFullDecodeQueueIsImmediateSevereStress() {
+        var controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 40,
+            targetFramesPerSecond: 60
+        )
+
+        _ = controller.update(
+            telemetry(received: 60, dropped: 0)
+        )
+
+        let decision = controller.update(
+            telemetry(
+                received: 120,
+                dropped: 0,
+                fps: 60,
+                decodeMilliseconds: 3,
+                decodeQueueDepth: 3,
+                presentationQueueDepth: 0
+            )
+        )
+
+        XCTAssertEqual(decision?.bitrateMbps, 30)
+        XCTAssertEqual(decision?.requestKeyframe, true)
+    }
+
+    func testPresentationQueueAloneDoesNotForceBitrateReduction() {
+        var controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 24,
+            targetFramesPerSecond: 60
+        )
+
+        _ = controller.update(
+            telemetry(received: 60, dropped: 0)
+        )
+
+        XCTAssertNil(
+            controller.update(
+                telemetry(
+                    received: 120,
+                    dropped: 0,
+                    fps: 60,
+                    decodeMilliseconds: 3,
+                    decodeQueueDepth: 0,
+                    presentationQueueDepth: 1
+                )
+            )
+        )
+        XCTAssertEqual(controller.bitrateMbps, 24)
     }
 
     func testSevereStressReducesImmediatelyAndRequestsKeyframe() {

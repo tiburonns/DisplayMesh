@@ -225,6 +225,34 @@ struct ReceiverTelemetry: Codable, Equatable {
     let averageDecodeMilliseconds: Double
     let hardwareAccelerated: Bool?
     let lastVideoSequence: UInt32?
+    let decodeQueueDepth: Int?
+    let presentationQueueDepth: Int?
+
+    init(
+        protocolVersion: Int,
+        receivedFrames: UInt64,
+        decodedFrames: UInt64,
+        droppedFrames: UInt64,
+        framesPerSecond: Double,
+        megabitsPerSecond: Double,
+        averageDecodeMilliseconds: Double,
+        hardwareAccelerated: Bool?,
+        lastVideoSequence: UInt32?,
+        decodeQueueDepth: Int? = nil,
+        presentationQueueDepth: Int? = nil
+    ) {
+        self.protocolVersion = protocolVersion
+        self.receivedFrames = receivedFrames
+        self.decodedFrames = decodedFrames
+        self.droppedFrames = droppedFrames
+        self.framesPerSecond = framesPerSecond
+        self.megabitsPerSecond = megabitsPerSecond
+        self.averageDecodeMilliseconds = averageDecodeMilliseconds
+        self.hardwareAccelerated = hardwareAccelerated
+        self.lastVideoSequence = lastVideoSequence
+        self.decodeQueueDepth = decodeQueueDepth
+        self.presentationQueueDepth = presentationQueueDepth
+    }
 
     var isValid: Bool {
         protocolVersion == Self.version
@@ -236,6 +264,8 @@ struct ReceiverTelemetry: Codable, Equatable {
             && (0...2_000).contains(megabitsPerSecond)
             && averageDecodeMilliseconds.isFinite
             && (0...10_000).contains(averageDecodeMilliseconds)
+            && decodeQueueDepth.map { (0...64).contains($0) } != false
+            && presentationQueueDepth.map { (0...8).contains($0) } != false
     }
 }
 

@@ -17,7 +17,7 @@ Si falla cualquiera de estos gates, la capacidad debe etiquetarse como desarroll
 
 ## Receiver
 
-Debe ocupar la superficie completa, adaptarse a orientación, soportar Sistema/English/Español, reportar capacidades de panel, exigir autorización de peers nuevos, rechazar tráfico útil antes de autorización, mantener la pantalla despierta sólo durante una sesión conectada y autorizada, mostrar fallos de conexión/protocolo y usar presentación **latest-frame-wins** para que un bloqueo temporal de UI no acumule una cola de video obsoleta.
+Debe exponer profundidad de cola de decode/presentación en diagnósticos sin ampliar las colas. Debe ocupar la superficie completa, adaptarse a orientación, soportar Sistema/English/Español, reportar capacidades de panel, exigir autorización de peers nuevos, rechazar tráfico útil antes de autorización, mantener la pantalla despierta sólo durante una sesión conectada y autorizada, mostrar fallos de conexión/protocolo y usar presentación **latest-frame-wins** para que un bloqueo temporal de UI no acumule una cola de video obsoleta.
 
 ## Host
 

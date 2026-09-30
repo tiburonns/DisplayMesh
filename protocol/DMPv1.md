@@ -177,9 +177,9 @@ DMPv1 prefers freshness over perfect delivery.
 - input/control is prioritized ahead of queued video
 - stale media work is discarded rather than adding interaction latency
 - decode/render telemetry feeds adaptation
-- an authorized receiver reports decode FPS, bitrate, decode time, dropped-frame count, hardware-decoder state and the last observed video sequence to the host at a bounded cadence
+- an authorized receiver reports decode FPS, bitrate, decode time, dropped-frame count, hardware-decoder state, the last observed video sequence, and optional instantaneous decode/presentation queue depths to the host at a bounded cadence
 
-DisplayMesh's adaptive controller treats bitrate as the first quality lever. The macOS development path now consumes receiver FPS/decode/drop telemetry and applies bounded bitrate reductions/recovery to VideoToolbox. Severe receiver stress also requests a recovery keyframe. Persistent congestion may later step the encoded stream raster through 100%, 85%, 75% and 67%; dynamic raster application remains a separate implementation milestone.
+DisplayMesh's adaptive controller treats bitrate as the first quality lever. The macOS development path consumes receiver FPS/decode/drop/queue telemetry and applies bounded bitrate reductions/recovery to VideoToolbox. Severe receiver stress also requests a recovery keyframe. Persistent congestion can step the encoded stream raster through 100%, 85%, 75% and 67% while keeping logical display geometry stable.
 
 ## Development identity handshake
 

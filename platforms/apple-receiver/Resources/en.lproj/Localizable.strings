@@ -73,3 +73,6 @@
 "action.tryAgain" = "Try Again";
 "action.openSettings" = "Open Settings";
 "receiver.failureRecoveryHint" = "If you previously denied Local Network access, enable DisplayMesh in Settings. Otherwise, retry the listener and review the error above.";
+
+"diagnostics.decodeQueue" = "DQ %lld";
+"diagnostics.presentationQueue" = "PQ %lld";

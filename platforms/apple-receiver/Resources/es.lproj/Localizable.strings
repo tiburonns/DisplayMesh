@@ -73,3 +73,6 @@
 "action.tryAgain" = "Reintentar";
 "action.openSettings" = "Abrir Ajustes";
 "receiver.failureRecoveryHint" = "Si antes negaste el acceso a Red local, habilita DisplayMesh en Ajustes. De lo contrario, reintenta el listener y revisa el error mostrado arriba.";
+
+"diagnostics.decodeQueue" = "CD %lld";
+"diagnostics.presentationQueue" = "CP %lld";

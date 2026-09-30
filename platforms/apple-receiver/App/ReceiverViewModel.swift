@@ -376,7 +376,13 @@ final class ReceiverViewModel: ObservableObject {
         guard sessionAuthorized else { return }
 
         let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastTelemetrySentTime >= 1 else { return }
+        guard ReceiverTelemetryCadencePolicy.shouldSend(
+            now: now,
+            lastSentAt: lastTelemetrySentTime,
+            decodeQueueDepth: metrics.decodeQueueDepth
+        ) else {
+            return
+        }
         lastTelemetrySentTime = now
 
         let telemetry = ReceiverTelemetry(metrics: metrics)

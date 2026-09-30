@@ -113,7 +113,9 @@ final class DMPFrameTests: XCTestCase {
                 megabitsPerSecond: 18.2,
                 averageDecodeMilliseconds: 3.1,
                 hardwareAccelerated: true,
-                lastSequence: 99
+                lastSequence: 99,
+                decodeQueueDepth: 2,
+                presentationQueueDepth: 1
             )
         )
 
@@ -123,6 +125,8 @@ final class DMPFrameTests: XCTestCase {
             from: encoded
         )
         XCTAssertEqual(decoded, source)
+        XCTAssertEqual(decoded.decodeQueueDepth, 2)
+        XCTAssertEqual(decoded.presentationQueueDepth, 1)
     }
 
     func testReceiverHelloHasExpectedChallengeSize() throws {

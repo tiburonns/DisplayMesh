@@ -153,6 +153,8 @@ struct ReceiverTelemetry: Codable, Equatable {
     let averageDecodeMilliseconds: Double
     let hardwareAccelerated: Bool?
     let lastVideoSequence: UInt32?
+    let decodeQueueDepth: Int?
+    let presentationQueueDepth: Int?
 
     init(metrics: ReceiverVideoMetrics) {
         protocolVersion = Self.version
@@ -164,6 +166,8 @@ struct ReceiverTelemetry: Codable, Equatable {
         averageDecodeMilliseconds = metrics.averageDecodeMilliseconds
         hardwareAccelerated = metrics.hardwareAccelerated
         lastVideoSequence = metrics.lastSequence
+        decodeQueueDepth = metrics.decodeQueueDepth
+        presentationQueueDepth = metrics.presentationQueueDepth
     }
 }
 

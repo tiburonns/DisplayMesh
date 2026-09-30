@@ -460,6 +460,20 @@ struct ReceiverRootView: View {
                 )
             )
 
+            Text(
+                String(
+                    format: NSLocalizedString("diagnostics.decodeQueue", comment: ""),
+                    Int64(metrics.decodeQueueDepth)
+                )
+            )
+
+            Text(
+                String(
+                    format: NSLocalizedString("diagnostics.presentationQueue", comment: ""),
+                    Int64(metrics.presentationQueueDepth)
+                )
+            )
+
             if metrics.hardwareAccelerated == true {
                 Image(systemName: "bolt.fill")
                     .accessibilityLabel(Text("diagnostics.hardware"))

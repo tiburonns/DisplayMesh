@@ -45,6 +45,8 @@ required_files = [
     RECEIVER / "Tests" / "ReceiverProtocolGateTests.swift",
     RECEIVER / "Sources" / "LatestFramePresentationGate.swift",
     RECEIVER / "Tests" / "LatestFramePresentationGateTests.swift",
+    RECEIVER / "Sources" / "ReceiverTelemetryCadencePolicy.swift",
+    RECEIVER / "Tests" / "ReceiverTelemetryCadencePolicyTests.swift",
 ]
 
 errors: list[str] = []
@@ -196,6 +198,19 @@ if decoder_source.is_file():
         if required_token not in decoder_text:
             errors.append(
                 f"receiver bounded presentation contract is missing token: {required_token}"
+            )
+
+telemetry_policy = RECEIVER / "Sources" / "ReceiverTelemetryCadencePolicy.swift"
+if telemetry_policy.is_file():
+    telemetry_policy_text = telemetry_policy.read_text(encoding="utf-8")
+    for required_token in (
+        "normalIntervalSeconds",
+        "saturatedIntervalSeconds",
+        "saturatedDecodeQueueDepth",
+    ):
+        if required_token not in telemetry_policy_text:
+            errors.append(
+                f"receiver telemetry cadence contract is missing token: {required_token}"
             )
 
 trust_store = RECEIVER / "Sources" / "TrustedPeerStore.swift"
