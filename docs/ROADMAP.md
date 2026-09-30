@@ -67,7 +67,7 @@
 - [x] Hardware H.264 MFT discovery/configuration + DXGI sample wrapping harness
 - [x] Windows bounded latest-frame encode scheduler foundation
 - [ ] Wire shared D3D11 surfaces into the Media Foundation encode worker
-- [ ] Windows H.264 output → DMP Annex-B packetizer
+- [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)
 - [ ] Windows Media Foundation H.264 hardware encoder
 - [x] iPhone/iPad VideoToolbox H.264 receive implementation

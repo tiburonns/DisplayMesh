@@ -62,3 +62,10 @@ Usa test signing sólo en una PC/VM dedicada de desarrollo. La distribución fin
 `media-harness/BoundedEncodeWorker` define la política de baja latencia del futuro encoder Windows. Sólo puede existir un frame pendiente mientras otro se procesa; un frame nuevo reemplaza al pendiente anterior, se rechazan secuencias obsoletas, el shutdown descarta trabajo pendiente y una excepción del handler no mata el worker.
 
 Es una base de scheduling, no una afirmación de que la textura IddCx ya llegue a Media Foundation. Falta transportar la superficie/handle D3D11 compartida sin readback a CPU y packetizar la salida H.264 en DMP.
+
+
+## Packetizer H.264 Annex-B
+
+`media-harness/H264AnnexBPacketizer` valida access units Annex-B y genera el mismo header DMP de video de 16 bytes que consume el receiver Apple. Mantiene cache SPS/PPS, repara un IDR que no los incluya cuando existe estado válido, normaliza start codes, respeta el presupuesto DMP y falla antes de emitir un keyframe no recuperable si faltan parameter sets.
+
+Es una pieza determinista e independiente del hardware. Falta alimentar este packetizer con la salida real del encoder Media Foundation y envolver el payload resultante en la sesión DMP autenticada.
