@@ -63,4 +63,4 @@ Touch control additionally requires Accessibility permission. The harness reques
 
 ## Adaptive raster
 
-Receiver telemetry can now move the development pipeline through 100%, 85%, 75%, and 67% encoded raster steps. Reconfiguration updates ScreenCaptureKit first, recreates the VideoToolbox encoder at the negotiated raster, drops frames during the transition, and forces recovery with a fresh keyframe. The receiver panel geometry remains unchanged.
+Receiver telemetry can now move the development pipeline through 100%, 85%, 75%, and 67% encoded raster steps. Reconfiguration updates ScreenCaptureKit first, recreates the VideoToolbox encoder at the negotiated raster, drops frames during the transition, and forces recovery with a fresh keyframe. The receiver panel geometry remains unchanged. If a live raster reconfiguration cannot rebuild the encoder, the development session tears down instead of continuing with mismatched capture/encode state.

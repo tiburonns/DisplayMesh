@@ -269,7 +269,7 @@ struct DisplayMeshMacMediaHarness {
             targetFramesPerSecond: targetFPS
         )
 
-        receiver.onReceiverTelemetry = { [weak encoder] telemetry in
+        receiver.onReceiverTelemetry = { [weak encoder, weak receiver] telemetry in
             print(
                 String(
                     format:
@@ -308,6 +308,8 @@ struct DisplayMeshMacMediaHarness {
                                 "adaptive raster: \(error.localizedDescription)\n",
                                 stderr
                             )
+                            await encoder.stop()
+                            receiver?.close()
                         }
                     }
                 }
