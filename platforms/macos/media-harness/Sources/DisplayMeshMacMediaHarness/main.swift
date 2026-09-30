@@ -11,6 +11,7 @@ private struct Options {
     var width: Int?
     var height: Int?
     var durationSeconds: Int?
+    var reconnectAttempts = HostReconnectPolicy.defaultMaximumRetries
 
     static func parse(_ arguments: [String]) throws -> Options {
         var options = Options()
@@ -68,6 +69,13 @@ private struct Options {
                     throw CLIError.invalidValue(argument, raw)
                 }
                 options.durationSeconds = value
+            case "--reconnect-attempts":
+                let raw = try nextValue()
+                guard let value = Int(raw),
+                      (0...HostReconnectPolicy.maximumSupportedRetries).contains(value) else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.reconnectAttempts = value
             case "--help", "-h":
                 throw CLIError.help
             default:
@@ -152,7 +160,53 @@ struct DisplayMeshMacMediaHarness {
         options: Options,
         receiverHost: String
     ) async throws {
+        var completedRetries = 0
+
+        while true {
+            do {
+                try await runOnce(
+                    options: options,
+                    receiverHost: receiverHost
+                )
+                return
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                guard HostReconnectPolicy.shouldRetry(
+                    error,
+                    completedRetries: completedRetries,
+                    maximumRetries: options.reconnectAttempts
+                ) else {
+                    throw error
+                }
+
+                completedRetries += 1
+                let delay = HostReconnectPolicy.delaySeconds(
+                    forRetryNumber: completedRetries
+                )
+
+                fputs(
+                    "transport: \(error.localizedDescription) — reconnect " +
+                    "\(completedRetries)/\(options.reconnectAttempts) in " +
+                    String(format: "%.1f", delay) + " s\n",
+                    stderr
+                )
+
+                try await Task.sleep(
+                    nanoseconds: UInt64(
+                        (delay * 1_000_000_000).rounded()
+                    )
+                )
+            }
+        }
+    }
+
+    private static func runOnce(
+        options: Options,
+        receiverHost: String
+    ) async throws {
         let receiver = ReceiverConnection()
+        defer { receiver.close() }
 
         print("Connecting to DisplayMesh receiver at \(receiverHost):49655 …")
         try await receiver.connect(host: receiverHost)
@@ -360,20 +414,44 @@ struct DisplayMeshMacMediaHarness {
         print("Touch: one finger = click/drag, two fingers = scroll.")
         print("Press Control-C to stop.")
 
-        if let seconds = options.durationSeconds {
-            try await Task.sleep(
-                nanoseconds: UInt64(seconds) * 1_000_000_000
+        do {
+            try await monitorSession(
+                receiver: receiver,
+                durationSeconds: options.durationSeconds
             )
+        } catch {
             inputBridge.reset()
             await encoder.stop()
-            receiver.close()
-        } else {
-            while !Task.isCancelled {
-                try await Task.sleep(nanoseconds: 3_600_000_000_000)
+            throw error
+        }
+
+        inputBridge.reset()
+        await encoder.stop()
+    }
+
+    private static func monitorSession(
+        receiver: ReceiverConnection,
+        durationSeconds: Int?
+    ) async throws {
+        let startedAt = ProcessInfo.processInfo.systemUptime
+
+        while true {
+            try Task.checkCancellation()
+
+            guard receiver.isConnected else {
+                throw receiver.lastDisconnectError
+                    ?? DMPProtocolError.connectionClosed
             }
-            inputBridge.reset()
-            await encoder.stop()
-            receiver.close()
+
+            if let durationSeconds,
+               ProcessInfo.processInfo.systemUptime - startedAt
+                    >= Double(durationSeconds) {
+                return
+            }
+
+            try await Task.sleep(
+                nanoseconds: HostReconnectPolicy.sessionPollNanoseconds
+            )
         }
     }
 
@@ -393,6 +471,8 @@ struct DisplayMeshMacMediaHarness {
               --width <pixels>   Encoded width (default: captured display width)
               --height <pixels>  Encoded height (default: captured display height)
               --seconds <n>      Stop automatically after n seconds
+              --reconnect-attempts <0-10>
+                                  Retry transient disconnects (default: 3)
               --help             Show this help
 
             The receiver must already be listening in the DisplayMesh

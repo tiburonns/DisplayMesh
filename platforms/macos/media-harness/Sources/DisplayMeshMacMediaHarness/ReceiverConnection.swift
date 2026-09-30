@@ -22,6 +22,7 @@ final class ReceiverConnection {
     private var nextSequence: UInt32 = 1
     private var videoSendInFlight = false
     private var connectionReady = false
+    private var lastDisconnectErrorStorage: Error?
     private var protocolPhaseStorage: HostReceiverPhase = .awaitingHello
 
     private var receiverHello: ReceiverHello?
@@ -56,6 +57,7 @@ final class ReceiverConnection {
         )
 
         resetProtocolState()
+        clearLastDisconnectError()
         connection = newConnection
         setConnectionReady(false)
 
@@ -68,6 +70,7 @@ final class ReceiverConnection {
 
                 switch state {
                 case .ready:
+                    clearLastDisconnectError()
                     setConnectionReady(true)
                     if attempt.claim() {
                         continuation.resume()
@@ -108,10 +111,10 @@ final class ReceiverConnection {
     }
 
     func close() {
-        queue.async { [weak self] in
-            guard let self else { return }
+        queue.async { [self] in
             connection?.cancel()
             connection = nil
+            setLastDisconnectError(DMPProtocolError.connectionClosed)
             setConnectionReady(false)
             failWaiters(DMPProtocolError.connectionClosed)
             clearVideoGate()
@@ -327,6 +330,12 @@ final class ReceiverConnection {
         videoGate.lock()
         defer { videoGate.unlock() }
         return connectionReady
+    }
+
+    var lastDisconnectError: Error? {
+        videoGate.lock()
+        defer { videoGate.unlock() }
+        return lastDisconnectErrorStorage
     }
 
     func canAcceptVideo() -> Bool {
@@ -621,11 +630,13 @@ final class ReceiverConnection {
     ) {
         guard connection === failedConnection else { return }
 
+        setLastDisconnectError(error)
         setConnectionReady(false)
         connection = nil
         failedConnection.cancel()
         failWaiters(error)
         clearVideoGate()
+        resetProtocolState()
     }
 
     private func failWaiters(_ error: Error) {
@@ -671,6 +682,18 @@ final class ReceiverConnection {
         phaseLock.lock()
         protocolPhaseStorage = phase
         phaseLock.unlock()
+    }
+
+    private func setLastDisconnectError(_ error: Error) {
+        videoGate.lock()
+        lastDisconnectErrorStorage = error
+        videoGate.unlock()
+    }
+
+    private func clearLastDisconnectError() {
+        videoGate.lock()
+        lastDisconnectErrorStorage = nil
+        videoGate.unlock()
     }
 
     private func setConnectionReady(_ ready: Bool) {
