@@ -88,6 +88,18 @@ impl SessionConfig {
         Ok(())
     }
 
+    pub fn negotiate_production(
+        &self,
+        local: &PeerCapabilities,
+        remote: &PeerCapabilities,
+    ) -> Result<NegotiatedSession, SessionNegotiationError> {
+        if !self.encryption_required {
+            return Err(SessionNegotiationError::PlaintextForbiddenInProduction);
+        }
+
+        self.negotiate(local, remote)
+    }
+
     pub fn negotiate(
         &self,
         local: &PeerCapabilities,
@@ -170,6 +182,7 @@ pub enum SessionNegotiationError {
     },
     UnsupportedPreset(DisplayPreset),
     EncryptionUnavailable,
+    PlaintextForbiddenInProduction,
 }
 
 impl std::fmt::Display for SessionNegotiationError {
@@ -198,6 +211,9 @@ impl std::fmt::Display for SessionNegotiationError {
             ),
             Self::EncryptionUnavailable => {
                 f.write_str("encrypted sessions are required but one peer cannot provide them")
+            }
+            Self::PlaintextForbiddenInProduction => {
+                f.write_str("plaintext transport is forbidden in production sessions")
             }
         }
     }
@@ -265,6 +281,39 @@ mod tests {
         assert_eq!(negotiated.wire_protocol, WireProtocol::Tcp);
         assert_eq!(negotiated.preset, DisplayPreset::PRESETS[1]);
         assert!(!negotiated.encryption_required);
+    }
+
+    #[test]
+    fn production_path_rejects_plaintext_even_if_peers_claim_encryption() {
+        let config = SessionConfig::development_scaffold();
+        let mut local = PeerCapabilities::development_scaffold();
+        let mut remote = PeerCapabilities::development_scaffold();
+        local.encryption_supported = true;
+        remote.encryption_supported = true;
+
+        assert_eq!(
+            config.negotiate_production(&local, &remote),
+            Err(SessionNegotiationError::PlaintextForbiddenInProduction)
+        );
+    }
+
+    #[test]
+    fn production_path_accepts_only_explicit_encrypted_configuration() {
+        let config = SessionConfig {
+            wire_protocol: WireProtocol::Tcp,
+            ..SessionConfig::default()
+        };
+        let mut local = PeerCapabilities::development_scaffold();
+        let mut remote = PeerCapabilities::development_scaffold();
+        local.encryption_supported = true;
+        remote.encryption_supported = true;
+
+        let negotiated = config
+            .negotiate_production(&local, &remote)
+            .expect("encrypted production policy should negotiate");
+
+        assert!(negotiated.encryption_required);
+        assert_eq!(negotiated.wire_protocol, WireProtocol::Tcp);
     }
 
     #[test]

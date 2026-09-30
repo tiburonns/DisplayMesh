@@ -74,3 +74,8 @@ The plaintext TCP development binding remains intentionally labeled **not produc
 - host identity and accepted trust records use device-only Keychain accessibility.
 
 These controls reduce attack surface during development. Mutual persistent P-256 peer authentication is now present, but it does **not** replace TLS 1.3 (or an equivalently reviewed encrypted transport) for production confidentiality and transport integrity.
+
+
+## Production negotiation guard
+
+Production negotiation must reject any configuration with encryption disabled, even if both peers incorrectly advertise the same plaintext capability. The explicit plaintext path is limited to the development scaffold and must never be reused as a production fallback.
