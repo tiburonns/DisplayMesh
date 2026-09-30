@@ -37,6 +37,7 @@ The iPhone/iPad receiver must:
 Production distribution is blocked until all of the following are true:
 
 - TLS 1.3 or an equivalently reviewed authenticated encrypted transport is enabled,
+- the secure-session primitive is wired into framing and rejects unauthenticated/tampered post-pairing frames,
 - production negotiation rejects plaintext configurations before transport establishment,
 - peer identity is persisted securely on both host and receiver,
 - changed peer identity invalidates silent reconnect on both sides,

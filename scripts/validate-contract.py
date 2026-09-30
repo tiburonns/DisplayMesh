@@ -237,7 +237,29 @@ for token in [
     if token not in workflow_source:
         raise SystemExit(f"windows CI contract failed: missing {token}")
 
+secure_session_paths = [
+    ROOT / "platforms/apple-receiver/Sources/DMPSecureSession.swift",
+    ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/DMPSecureSession.swift",
+]
+for path in secure_session_paths:
+    if not path.exists():
+        raise SystemExit(
+            f"security contract failed: missing {path.relative_to(ROOT)}"
+        )
+    content = path.read_text(encoding="utf-8")
+    for token in [
+        "ChaChaPoly",
+        "DMP1-HOST-TO-RECEIVER",
+        "DMP1-RECEIVER-TO-HOST",
+        "additionalAuthenticatedData",
+    ]:
+        if token not in content:
+            raise SystemExit(
+                f"security contract failed: {path.relative_to(ROOT)} missing {token}"
+            )
+
 print(
     f"PASS: DisplayMesh {version} protocol/session/media contracts, "
-    "Windows framing, adaptive transport, and native harness scaffolds"
+    "Windows framing, adaptive transport, secure-session primitive, "
+    "and native harness scaffolds"
 )

@@ -240,3 +240,16 @@ The current development TCP binding authenticates both peers before capabilities
 Both challenges are covered by the signatures, so a recorded pairing response cannot be replayed against a new host challenge.
 
 This authenticates development peer identities only. It does **not** encrypt DMP media, input, telemetry or control traffic. TLS 1.3 or an equivalently reviewed authenticated encrypted binding remains mandatory for production.
+
+
+## Secure payload construction (implementation staging)
+
+The Apple/macOS implementation now has a mirrored AEAD primitive intended for the encrypted DMP binding:
+
+- ephemeral P-256 ECDH shared secret;
+- transcript salt derived from the independent host and receiver challenges;
+- HKDF-SHA256 with separate host-to-receiver and receiver-to-host labels;
+- ChaCha20-Poly1305 payload protection;
+- AAD binds DMP version, message type, flags and sequence number.
+
+This section describes the staged cryptographic primitive, **not the current wire state**. Until the pairing exchange carries ephemeral key-agreement material and the transport layer seals/opens every post-pairing frame, the TCP binding remains plaintext and the encryptedTransport capability remains false.

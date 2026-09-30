@@ -79,3 +79,10 @@ These controls reduce attack surface during development. Mutual persistent P-256
 ## Production negotiation guard
 
 Production negotiation must reject any configuration with encryption disabled, even if both peers incorrectly advertise the same plaintext capability. The explicit plaintext path is limited to the development scaffold and must never be reused as a production fallback.
+
+
+## Secure-session primitive status
+
+The Apple receiver and macOS media harness now share a mirrored secure-session primitive based on ephemeral P-256 key agreement, HKDF-SHA256 directional keys and ChaCha20-Poly1305 authenticated encryption. Authentication data binds DMP protocol version, message type, flags and sequence number.
+
+This primitive is **not yet wired into the DMP TCP framing path**. The receiver capability named encryptedTransport must therefore remain false and plaintext TCP remains development-only until key exchange is connected to pairing and every post-pairing frame is required to authenticate/decrypt successfully.
