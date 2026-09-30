@@ -53,6 +53,23 @@ if not (ROOT / "platforms/macos/harness/Makefile").exists():
 if not (ROOT / "platforms/windows/bootstrap/CMakeLists.txt").exists():
     raise SystemExit("native contract failed: Windows bootstrap is missing")
 
+framing = (ROOT / "crates/displaymesh-core/src/framing.rs").read_text(encoding="utf-8")
+for token in ["maximum_payload_len", "PayloadTooLargeForType", "InvalidPayloadLength"]:
+    if token not in framing:
+        raise SystemExit(f"protocol hardening contract failed: framing missing {token}")
+
+input_source = (ROOT / "crates/displaymesh-core/src/input.rs").read_text(encoding="utf-8")
+if "UnsupportedFlags" not in input_source:
+    raise SystemExit("protocol hardening contract failed: reserved input flags are not rejected")
+
+receiver_gate = ROOT / "platforms/apple-receiver/Sources/ReceiverProtocolGate.swift"
+if not receiver_gate.exists():
+    raise SystemExit("receiver admission contract failed: ReceiverProtocolGate.swift is missing")
+gate_source = receiver_gate.read_text(encoding="utf-8")
+for token in [".pairing", ".video", "authorized"]:
+    if token not in gate_source:
+        raise SystemExit(f"receiver admission contract failed: gate missing {token}")
+
 identity_store = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/HostIdentityStore.swift"
 if not identity_store.exists():
     raise SystemExit("security contract failed: macOS host identity store is missing")
@@ -97,7 +114,48 @@ for token in ["ReceiverHello", "P256.Signing.PublicKey", "isAuthentic"]:
     if token not in pairing_text:
         raise SystemExit(f"security contract failed: signed receiver pairing missing {token}")
 
+connection_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverConnection.swift").read_text(encoding="utf-8")
+for token in ["HostProtocolGate.permits", "invalidReceiverTelemetry", "invalidPairingResponse"]:
+    if token not in connection_source:
+        raise SystemExit(f"host protocol gate contract failed: missing {token}")
+
+encoder_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/DisplayCaptureEncoder.swift").read_text(encoding="utf-8")
+for token in ["alreadyRunning", "setBitrate(mbps:", "didStopWithError"]:
+    if token not in encoder_source:
+        raise SystemExit(f"media lifecycle contract failed: missing {token}")
+
+if "kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly" not in identity_text:
+    raise SystemExit("security contract failed: host identity must remain device-only in Keychain")
+
+for token in ["waitForReceiverCapabilities()", "supportsDevelopmentHost"]:
+    if token not in media_main:
+        raise SystemExit(f"capability negotiation contract failed: macOS harness missing {token}")
+
+windows_protocol = ROOT / "platforms/windows/protocol"
+for relative in [
+    "DmpFrame.h",
+    "DmpFrame.cpp",
+    "CMakeLists.txt",
+    "tests/DmpFrameTests.cpp",
+]:
+    if not (windows_protocol / relative).exists():
+        raise SystemExit(f"windows protocol contract failed: missing {relative}")
+
+windows_frame = (windows_protocol / "DmpFrame.cpp").read_text(encoding="utf-8")
+for token in ["ValidatePayloadSize", "DmpSequenceTracker::Accept", "kDmpMaximumPayloadSize"]:
+    if token not in windows_frame:
+        raise SystemExit(f"windows protocol contract failed: missing {token}")
+
+windows_input = (ROOT / "platforms/windows/input-bridge/DmpInput.cpp").read_text(encoding="utf-8")
+if 'payload[3] != 0' not in windows_input:
+    raise SystemExit("windows input contract failed: reserved DMP flags are not rejected")
+
+workflow_source = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+for token in ["windows-protocol:", "Test DMP framing contract"]:
+    if token not in workflow_source:
+        raise SystemExit(f"windows CI contract failed: missing {token}")
+
 print(
-    f"PASS: DisplayMesh {version} documentation, protocol status, "
-    "security, and native harness contract"
+    f"PASS: DisplayMesh {version} protocol/session/media contracts, "
+    "Windows framing, adaptive transport, and native harness scaffolds"
 )

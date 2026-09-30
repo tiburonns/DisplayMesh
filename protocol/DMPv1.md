@@ -88,6 +88,24 @@ A host may negotiate a smaller encoded stream raster than the panel's physical p
 
 For a TCP binding, channels are multiplexed with explicit message type and length framing. Interactive implementations must disable Nagle and must never let video backlog block input indefinitely.
 
+### Framing admission limits
+
+Hosts and receivers reject an invalid payload length from the **16-byte DMP header before waiting for the body**. The global video ceiling remains 16 MiB, while control traffic is intentionally tighter:
+
+| Message | Payload budget |
+| --- | ---: |
+| hello | 4 KiB |
+| capabilities | 64 KiB |
+| panel descriptor | 16 KiB |
+| pairing | 16 KiB |
+| video | 16 MiB |
+| input | exactly 40 bytes |
+| telemetry | 16 KiB |
+| keyframe request | exactly 0 bytes |
+| error | 8 KiB |
+
+These are safety ceilings, not normal target sizes. Frames outside the current authorization/session phase are protocol violations rather than silently ignored.
+
 DMP frame sequence numbers are scoped to one transport connection. Each direction starts at sequence **1**, increments by one for every transmitted DMP frame, and wraps as an unsigned 32-bit counter. Because TCP is reliable and ordered, a duplicate, replayed or skipped sequence is a protocol error and the connection is closed rather than silently resynchronized.
 
 ## Video payload
@@ -130,7 +148,7 @@ DMP input frames use a fixed 40-byte binary sample instead of JSON in the intera
 | 0 | 1 | input version, currently 1 |
 | 1 | 1 | kind: 1 touch, 2 pencil |
 | 2 | 1 | phase: 1 began, 2 moved, 3 ended, 4 cancelled, 5 hover |
-| 3 | 1 | flags, reserved for compatible extensions |
+| 3 | 1 | flags, reserved; must be zero in DMPv1 |
 | 4 | 4 | contact ID, big endian |
 | 8 | 4 | normalized X, IEEE-754 float32, big endian |
 | 12 | 4 | normalized Y, IEEE-754 float32, big endian |
@@ -140,7 +158,7 @@ DMP input frames use a fixed 40-byte binary sample instead of JSON in the intera
 | 28 | 4 | barrel roll, radians, float32; zero when unavailable |
 | 32 | 8 | receiver input timestamp in microseconds, big endian |
 
-Coordinates and pressure are validated before transmission and again before injection.
+Coordinates and pressure are validated before transmission and again before injection. Reserved input flags must be zero; nonzero values are rejected until a later protocol revision defines them.
 
 The fixed layout keeps the high-rate path predictable for coalesced touch and Pencil input and lets native host backends decode a sample without a JSON parser or heap-heavy object model.
 
@@ -167,14 +185,15 @@ DisplayMesh's adaptive controller treats bitrate as the first quality lever. The
 
 The current Apple/macOS development binding starts with a receiver-generated 32-byte random challenge. The host keeps a stable UUID and P-256 signing key in Keychain and signs a canonical pairing payload containing the protocol version, peer ID/name, six-digit verification code, challenge and public key. The receiver verifies the signature and challenge before showing the approval UI. A known peer ID arriving with a different public key is rejected until trust is explicitly cleared.
 
-This authenticates the development **host identity only**. It does not replace the TLS 1.3 requirement or authenticate the receiver to the host.
+The receiver pairing response echoes the active receiver challenge, and the host rejects stale or out-of-phase responses. This authenticates the development **host identity only** and binds the transaction against stale replay; it does not replace TLS 1.3 or authenticate the receiver to the host.
 
 The shared development capability scaffold intentionally advertises only the implemented end-to-end path: **H.264 over plaintext TCP on Wi-Fi/LAN**. It reports encryption as unsupported. Production-oriented `SessionConfig::default()` still requires encryption, so it must fail against the development scaffold instead of falsely reporting a secure negotiated session.
 
 ## Security
 
 - TLS 1.3 is required for normal remote sessions.
-- First pairing requires explicit user confirmation; an unanswered development pairing request expires instead of remaining authorized indefinitely.
+- A connected development peer must present a valid signed pairing request within a bounded admission window or the receiver closes the connection.
+- First pairing requires explicit user confirmation; the approval window is bounded and rejection/expiry closes that connection so a retry starts with a fresh challenge and sequence space.
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
 - No unauthenticated remote input is accepted.

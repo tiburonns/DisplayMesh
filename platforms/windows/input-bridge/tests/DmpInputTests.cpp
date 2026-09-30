@@ -47,6 +47,10 @@ int main() {
     assert(sample.normalizedX == 0.25F);
     assert(sample.normalizedY == 0.75F);
 
+    payload[3] = 1;
+    assert(!displaymesh::DecodeInputSample(payload, sample, error));
+    payload[3] = 0;
+
     payload[8] = 0x3f;
     payload[9] = 0x99;
     payload[10] = 0x99;

@@ -58,6 +58,11 @@ bool DecodeInputSample(
         return false;
     }
 
+    if (payload[3] != 0) {
+        error = "unsupported DMP input flags";
+        return false;
+    }
+
     output.kind = static_cast<InputKind>(payload[1]);
     output.phase = static_cast<InputPhase>(payload[2]);
     output.flags = payload[3];

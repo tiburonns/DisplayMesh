@@ -14,6 +14,7 @@ final class ReceiverConnection {
         qos: .userInteractive
     )
     private let videoGate = NSLock()
+    private let phaseLock = NSLock()
 
     private var connection: NWConnection?
     private var decoder = DMPFrameDecoder()
@@ -21,6 +22,7 @@ final class ReceiverConnection {
     private var nextSequence: UInt32 = 1
     private var videoSendInFlight = false
     private var connectionReady = false
+    private var protocolPhaseStorage: HostReceiverPhase = .awaitingHello
 
     private var receiverHello: ReceiverHello?
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
@@ -29,6 +31,11 @@ final class ReceiverConnection {
     private var pairingResponse: PairingResponse?
     private var pairingContinuation: CheckedContinuation<PairingResponse, Error>?
     private var pairingWaitToken: UUID?
+
+    private var receiverCapabilities: ReceiverCapabilities?
+    private var capabilitiesContinuation:
+        CheckedContinuation<ReceiverCapabilities, Error>?
+    private var capabilitiesWaitToken: UUID?
 
     private var panelDescriptor: ReceiverPanelDescriptor?
     private var panelContinuation: CheckedContinuation<ReceiverPanelDescriptor, Error>?
@@ -156,7 +163,14 @@ final class ReceiverConnection {
         guard request.hasValidShape else {
             throw DMPProtocolError.invalidPairingRequest
         }
+        let phase = currentProtocolPhase()
+        guard phase == .readyToPair else {
+            throw DMPProtocolError.invalidSessionPhase(
+                "pairing request while \(phase)"
+            )
+        }
 
+        setProtocolPhase(.awaitingPairingResponse)
         let payload = try JSONEncoder().encode(request)
         send(type: .pairing, payload: payload)
     }
@@ -198,6 +212,57 @@ final class ReceiverConnection {
                     pairingContinuation = nil
                     pending.resume(
                         throwing: DMPProtocolError.timeout("pairing approval")
+                    )
+                }
+            }
+        }
+    }
+
+    func waitForReceiverCapabilities(
+        timeoutSeconds: TimeInterval = 10
+    ) async throws -> ReceiverCapabilities {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(
+                        throwing: DMPProtocolError.connectionClosed
+                    )
+                    return
+                }
+
+                if let receiverCapabilities {
+                    continuation.resume(returning: receiverCapabilities)
+                    return
+                }
+
+                if capabilitiesContinuation != nil {
+                    continuation.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "previous receiver capabilities waiter"
+                        )
+                    )
+                    return
+                }
+
+                let token = UUID()
+                capabilitiesWaitToken = token
+                capabilitiesContinuation = continuation
+
+                queue.asyncAfter(
+                    deadline: .now() + timeoutSeconds
+                ) { [weak self] in
+                    guard let self,
+                          capabilitiesWaitToken == token,
+                          let pending = capabilitiesContinuation else {
+                        return
+                    }
+
+                    capabilitiesWaitToken = nil
+                    capabilitiesContinuation = nil
+                    pending.resume(
+                        throwing: DMPProtocolError.timeout(
+                            "receiver capabilities"
+                        )
                     )
                 }
             }
@@ -247,6 +312,12 @@ final class ReceiverConnection {
         }
     }
 
+    var isConnected: Bool {
+        videoGate.lock()
+        defer { videoGate.unlock() }
+        return connectionReady
+    }
+
     func canAcceptVideo() -> Bool {
         videoGate.lock()
         defer { videoGate.unlock() }
@@ -277,8 +348,10 @@ final class ReceiverConnection {
             }
 
             do {
-                let frame = try makeFrame(type: .video, payload: payload)
-                let data = try frame.encoded()
+                let data = try makeEncodedFrame(
+                    type: .video,
+                    payload: payload
+                )
 
                 activeConnection.send(
                     content: data,
@@ -309,9 +382,12 @@ final class ReceiverConnection {
             guard let self, let activeConnection = connection else { return }
 
             do {
-                let frame = try makeFrame(type: type, payload: payload)
+                let data = try makeEncodedFrame(
+                    type: type,
+                    payload: payload
+                )
                 activeConnection.send(
-                    content: try frame.encoded(),
+                    content: data,
                     completion: .contentProcessed { [weak self, weak activeConnection] error in
                         guard let self, let error, let activeConnection else { return }
                         queue.async {
@@ -328,18 +404,19 @@ final class ReceiverConnection {
         }
     }
 
-    private func makeFrame(
+    private func makeEncodedFrame(
         type: DMPMessageType,
         payload: Data
-    ) throws -> DMPFrame {
+    ) throws -> Data {
         let frame = DMPFrame(
             type: type,
             flags: 0,
             sequence: nextSequence,
             payload: payload
         )
+        let encoded = try frame.encoded()
         nextSequence &+= 1
-        return frame
+        return encoded
     }
 
     private func receiveNext(on activeConnection: NWConnection) {
@@ -355,7 +432,7 @@ final class ReceiverConnection {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
                         try incomingSequence.accept(frame.sequence)
-                        handle(frame)
+                        try handle(frame)
                     }
                 } catch {
                     handleTransportFailure(error, connection: activeConnection)
@@ -380,7 +457,17 @@ final class ReceiverConnection {
         }
     }
 
-    private func handle(_ frame: DMPFrame) {
+    private func handle(_ frame: DMPFrame) throws {
+        let phase = currentProtocolPhase()
+        guard HostProtocolGate.permits(
+            frame.type,
+            phase: phase
+        ) else {
+            throw DMPProtocolError.invalidSessionPhase(
+                "\(phase) received \(frame.type)"
+            )
+        }
+
         switch frame.type {
         case .hello:
             do {
@@ -393,6 +480,7 @@ final class ReceiverConnection {
                 }
 
                 receiverHello = hello
+                setProtocolPhase(.readyToPair)
                 helloWaitToken = nil
                 helloContinuation?.resume(returning: hello)
                 helloContinuation = nil
@@ -413,7 +501,16 @@ final class ReceiverConnection {
                         UInt8(clamping: response.protocolVersion)
                     )
                 }
+                guard let challenge = receiverHello?.challenge,
+                      response.isValid(expectedChallenge: challenge) else {
+                    throw DMPProtocolError.invalidPairingResponse
+                }
                 pairingResponse = response
+                setProtocolPhase(
+                    response.accepted
+                        ? .awaitingCapabilities
+                        : .readyToPair
+                )
                 pairingWaitToken = nil
                 pairingContinuation?.resume(returning: response)
                 pairingContinuation = nil
@@ -423,13 +520,44 @@ final class ReceiverConnection {
                 pairingContinuation = nil
             }
 
+        case .capabilities:
+            do {
+                let capabilities = try JSONDecoder().decode(
+                    ReceiverCapabilities.self,
+                    from: frame.payload
+                )
+                guard capabilities.isValid else {
+                    throw DMPProtocolError.invalidReceiverCapabilities
+                }
+                guard capabilities.supportsDevelopmentHost else {
+                    throw DMPProtocolError.incompatibleReceiverCapabilities
+                }
+
+                receiverCapabilities = capabilities
+                setProtocolPhase(.awaitingPanel)
+                capabilitiesWaitToken = nil
+                capabilitiesContinuation?.resume(
+                    returning: capabilities
+                )
+                capabilitiesContinuation = nil
+            } catch {
+                capabilitiesWaitToken = nil
+                capabilitiesContinuation?.resume(throwing: error)
+                capabilitiesContinuation = nil
+                throw error
+            }
+
         case .panelDescriptor:
             do {
                 let panel = try JSONDecoder().decode(
                     ReceiverPanelDescriptor.self,
                     from: frame.payload
                 )
+                guard panel.isValid else {
+                    throw DMPProtocolError.invalidPanelDescriptor
+                }
                 panelDescriptor = panel
+                setProtocolPhase(.streaming)
                 panelWaitToken = nil
                 panelContinuation?.resume(returning: panel)
                 panelContinuation = nil
@@ -456,6 +584,9 @@ final class ReceiverConnection {
                         UInt8(clamping: telemetry.protocolVersion)
                     )
                 }
+                guard telemetry.isValid else {
+                    throw DMPProtocolError.invalidReceiverTelemetry
+                }
                 onReceiverTelemetry?(telemetry)
             } catch {
                 onErrorMessage?(Data(error.localizedDescription.utf8))
@@ -464,7 +595,7 @@ final class ReceiverConnection {
         case .error:
             onErrorMessage?(frame.payload)
 
-        case .capabilities, .video:
+        case .video:
             break
         }
     }
@@ -491,6 +622,10 @@ final class ReceiverConnection {
         pairingContinuation?.resume(throwing: error)
         pairingContinuation = nil
 
+        capabilitiesWaitToken = nil
+        capabilitiesContinuation?.resume(throwing: error)
+        capabilitiesContinuation = nil
+
         panelWaitToken = nil
         panelContinuation?.resume(throwing: error)
         panelContinuation = nil
@@ -501,11 +636,26 @@ final class ReceiverConnection {
         incomingSequence.reset()
         nextSequence = 1
         receiverHello = nil
+        setProtocolPhase(.awaitingHello)
         helloWaitToken = nil
         pairingResponse = nil
+        receiverCapabilities = nil
+        capabilitiesWaitToken = nil
         panelDescriptor = nil
         pairingWaitToken = nil
         panelWaitToken = nil
+    }
+
+    private func currentProtocolPhase() -> HostReceiverPhase {
+        phaseLock.lock()
+        defer { phaseLock.unlock() }
+        return protocolPhaseStorage
+    }
+
+    private func setProtocolPhase(_ phase: HostReceiverPhase) {
+        phaseLock.lock()
+        protocolPhaseStorage = phase
+        phaseLock.unlock()
     }
 
     private func setConnectionReady(_ ready: Bool) {

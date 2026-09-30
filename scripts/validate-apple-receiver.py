@@ -28,6 +28,7 @@ required_files = [
     RECEIVER / "Protocol" / "DMPVideoPacket.swift",
     RECEIVER / "Protocol" / "DMPInputPacket.swift",
     RECEIVER / "Protocol" / "PairingMessage.swift",
+    RECEIVER / "Protocol" / "ReceiverCapabilities.swift",
     RECEIVER / "Resources" / "en.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "es.lproj" / "Localizable.strings",
     RECEIVER / "Resources" / "en.lproj" / "InfoPlist.strings",
@@ -37,7 +38,11 @@ required_files = [
     RECEIVER / "Tests" / "DMPVideoPacketTests.swift",
     RECEIVER / "Tests" / "DMPInputPacketTests.swift",
     RECEIVER / "Tests" / "PairingIdentityTests.swift",
+    RECEIVER / "Tests" / "PanelDescriptorTests.swift",
+    RECEIVER / "Tests" / "ReceiverCapabilitiesTests.swift",
     RECEIVER / "Sources" / "TrustedPeerStore.swift",
+    RECEIVER / "Sources" / "ReceiverProtocolGate.swift",
+    RECEIVER / "Tests" / "ReceiverProtocolGateTests.swift",
 ]
 
 errors: list[str] = []
@@ -137,6 +142,9 @@ if frame_source.is_file():
         "DMPSequenceTracker",
         "ReceiverTelemetry",
         "unexpectedSequence",
+        "maximumPayloadSize",
+        "invalidPayloadLength",
+        "payloadTooLargeForMessage",
     ):
         if required_token not in frame_text:
             errors.append(f"receiver protocol hardening is missing token: {required_token}")
@@ -145,11 +153,17 @@ view_model = RECEIVER / "App" / "ReceiverViewModel.swift"
 if view_model.is_file():
     view_model_text = view_model.read_text(encoding="utf-8")
     for required_token in (
+        "admissionTimeoutTask",
+        "scheduleAdmissionTimeout",
+        "PairingValidationError.admissionExpired",
         "pairingTimeoutTask",
         "sendTelemetryIfNeeded",
         "PairingValidationError.expired",
         "sendReceiverHello",
         "trustedPeerStore",
+        "maximumInvalidPairingAttempts",
+        "ReceiverProtocolGate.permits",
+        "disconnectCurrent",
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
@@ -175,6 +189,8 @@ if pairing_source.is_file():
         "isAuthentic",
         "ReceiverHello",
         "identityFingerprint",
+        "challenge: Data",
+        "isValid(expectedChallenge:",
     ):
         if required_token not in pairing_text:
             errors.append(f"signed pairing contract is missing token: {required_token}")
@@ -197,6 +213,26 @@ if "guard connection == nil else" not in listener_source:
     errors.append(
         "receiver transport must reject a second connection instead of evicting the active peer"
     )
+if 'name: UIDevice.current.name' in listener_source:
+    errors.append("privacy contract failed: Bonjour must not expose the configured device name")
+if 'name: "DisplayMesh"' not in listener_source:
+    errors.append("privacy contract failed: Bonjour must advertise the generic DisplayMesh service name")
+if "func disconnectCurrent()" not in listener_source:
+    errors.append("transport contract failed: receiver needs explicit active-connection teardown")
+
+panel_source = (RECEIVER / "Sources" / "PanelDescriptor.swift").read_text(encoding="utf-8")
+if "var isValid: Bool" not in panel_source:
+    errors.append("panel contract failed: receiver panel validation is missing")
+
+capabilities_source = (RECEIVER / "Protocol" / "ReceiverCapabilities.swift").read_text(encoding="utf-8")
+for required_token in (
+    'codecs: [Self.h264]',
+    'connectionBindings: [Self.tcp]',
+    'encryptedTransport: false',
+    'supportsDevelopmentHost',
+):
+    if required_token not in capabilities_source:
+        errors.append(f"receiver capabilities contract is missing token: {required_token}")
 
 root_view_source = (ROOT / "platforms/apple-receiver/App/ReceiverRootView.swift").read_text(
     encoding="utf-8"

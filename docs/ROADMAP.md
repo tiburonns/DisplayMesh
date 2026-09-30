@@ -61,19 +61,19 @@
 
 ## M2 — End-to-end video path
 
-- [ ] macOS ScreenCaptureKit capture
+- [x] macOS ScreenCaptureKit capture (development media harness)
 - [x] Windows IddCx → D3D11 desktop-surface acquisition foundation
 - [x] Windows GPU BGRA → NV12 Media Foundation capability harness
 - [x] Hardware H.264 MFT discovery/configuration + DXGI sample wrapping harness
 - [ ] Windows bounded async Media Foundation encode worker
 - [ ] Windows H.264 output → DMP Annex-B packetizer
-- [ ] macOS VideoToolbox H.264 real-time encoder
+- [x] macOS VideoToolbox H.264 real-time encoder (development media harness)
 - [ ] Windows Media Foundation H.264 hardware encoder
 - [x] iPhone/iPad VideoToolbox H.264 receive implementation
 - [x] iPhone/iPad Metal NV12 renderer implementation
 - [x] Receiver bounded-latency policy
 - [x] Receiver keyframe recovery
-- [ ] Host emits DMP video packets with SPS/PPS + IDR recovery frames
+- [x] macOS host emits DMP H.264 packets with recovery keyframes
 - [ ] End-to-end local loopback test
 - [x] Scripted macOS virtual-display → ScreenCaptureKit → H.264 → Apple receiver path
 - [ ] 1080p60 hardware acceptance
@@ -124,6 +124,11 @@
 - [x] Receiver decode telemetry returned to the macOS development host
 - [x] Per-connection DMP sequence/replay guard
 - [x] Pairing and panel negotiation timeouts in the macOS development path
+- [x] Per-message DMP payload budgets and exact-size interactive frames
+- [x] Receiver authorization-phase admission gate
+- [x] Bounded malformed pairing attempts + challenge-bound response
+- [x] Generic Bonjour receiver identity (no configured device-name leak)
+- [x] Windows native DMP framing/sequence contract
 - [ ] Apple receiver CI build confirmed green
 - [ ] First-run permission education
 - [ ] Production TLS 1.3 transport

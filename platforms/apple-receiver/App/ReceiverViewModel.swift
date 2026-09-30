@@ -23,8 +23,11 @@ final class ReceiverViewModel: ObservableObject {
     private let trustedPeerStore: TrustedPeerStore
     private var lastKeyframeRequestTime: TimeInterval = 0
     private var lastTelemetrySentTime: TimeInterval = 0
+    private var admissionTimeoutTask: Task<Void, Never>?
     private var pairingTimeoutTask: Task<Void, Never>?
     private var receiverChallenge: Data?
+    private var invalidPairingAttempts = 0
+    private static let maximumInvalidPairingAttempts = 3
 
     init(
         listener: ReceiverListener = ReceiverListener(),
@@ -44,12 +47,15 @@ final class ReceiverViewModel: ObservableObject {
             switch state {
             case .connected:
                 resetAuthorization()
+                invalidPairingAttempts = 0
                 lastProtocolError = nil
                 videoDecoder.reset()
                 videoSurface.clear()
                 sendReceiverHello()
+                scheduleAdmissionTimeout()
             case .stopped, .failed:
                 resetAuthorization()
+                invalidPairingAttempts = 0
                 videoDecoder.reset()
                 videoSurface.clear()
             default:
@@ -109,6 +115,10 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     func updatePanelDescriptor(_ descriptor: PanelDescriptor) {
+        guard descriptor.isValid else {
+            lastProtocolError = "DisplayMesh receiver panel descriptor is invalid"
+            return
+        }
         guard panelDescriptor != descriptor else { return }
         panelDescriptor = descriptor
         sendPanelDescriptorIfAuthorized()
@@ -135,7 +145,8 @@ final class ReceiverViewModel: ObservableObject {
             pendingPeerPreviouslyTrusted = false
             sessionAuthorized = false
             sendPairingResponse(accepted: false)
-            rotateReceiverChallenge()
+            listener.disconnectCurrent()
+            resetAuthorization()
             return
         }
 
@@ -145,24 +156,31 @@ final class ReceiverViewModel: ObservableObject {
                 ?? "Could not persist DisplayMesh trusted identity"
             sessionAuthorized = false
             sendPairingResponse(accepted: false)
-            rotateReceiverChallenge()
+            listener.disconnectCurrent()
+            resetAuthorization()
             return
         }
         trustedPeerCount = trustedPeerStore.count
 
+        admissionTimeoutTask?.cancel()
+        admissionTimeoutTask = nil
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = true
+        invalidPairingAttempts = 0
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
-        receiverChallenge = nil
         lastProtocolError = nil
         sendPairingResponse(accepted: true)
+        receiverChallenge = nil
+        sendCapabilitiesIfAuthorized()
         sendPanelDescriptorIfAuthorized()
         requestKeyframe(force: true)
     }
 
     func rejectPairing() {
+        admissionTimeoutTask?.cancel()
+        admissionTimeoutTask = nil
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = false
@@ -171,10 +189,25 @@ final class ReceiverViewModel: ObservableObject {
         videoDecoder.reset()
         videoSurface.clear()
         sendPairingResponse(accepted: false)
-        rotateReceiverChallenge()
+        listener.disconnectCurrent()
+        resetAuthorization()
     }
 
     private func handle(_ frame: DMPFrame) {
+        guard ReceiverProtocolGate.permits(
+            frame.type,
+            authorized: sessionAuthorized
+        ) else {
+            lastProtocolError =
+                "Rejected unexpected DMP \(frame.type) frame " +
+                (sessionAuthorized ? "after authorization" : "before authorization")
+            listener.disconnectCurrent()
+            resetAuthorization()
+            videoDecoder.reset()
+            videoSurface.clear()
+            return
+        }
+
         switch frame.type {
         case .hello:
             lastProtocolError = "Unexpected host hello frame"
@@ -199,6 +232,9 @@ final class ReceiverViewModel: ObservableObject {
                     )
                 }
 
+                admissionTimeoutTask?.cancel()
+                admissionTimeoutTask = nil
+
                 switch trustedPeerStore.status(for: request) {
                 case .identityChanged:
                     pendingPairing = nil
@@ -207,7 +243,8 @@ final class ReceiverViewModel: ObservableObject {
                     lastProtocolError =
                         PairingValidationError.identityChanged.localizedDescription
                     sendPairingResponse(accepted: false)
-                    rotateReceiverChallenge()
+                    listener.disconnectCurrent()
+                    resetAuthorization()
 
                 case .trusted:
                     pendingPairing = request
@@ -224,12 +261,7 @@ final class ReceiverViewModel: ObservableObject {
                     schedulePairingTimeout()
                 }
             } catch {
-                pendingPairing = nil
-                pendingPeerPreviouslyTrusted = false
-                sessionAuthorized = false
-                lastProtocolError = error.localizedDescription
-                sendPairingResponse(accepted: false)
-                rotateReceiverChallenge()
+                recordInvalidPairing(error)
             }
 
         case .video:
@@ -246,10 +278,34 @@ final class ReceiverViewModel: ObservableObject {
                 requestKeyframe()
             }
 
-        case .capabilities, .panelDescriptor, .input, .telemetry,
-             .keyframeRequest, .error:
+        case .capabilities:
+            break
+
+        case .error:
+            lastProtocolError =
+                String(data: frame.payload, encoding: .utf8)
+                ?? "DisplayMesh host reported a binary protocol error"
+
+        case .panelDescriptor, .input, .telemetry, .keyframeRequest:
             break
         }
+    }
+
+    private func recordInvalidPairing(_ error: Error) {
+        invalidPairingAttempts += 1
+        pendingPairing = nil
+        pendingPeerPreviouslyTrusted = false
+        sessionAuthorized = false
+        lastProtocolError = error.localizedDescription
+        sendPairingResponse(accepted: false)
+
+        guard invalidPairingAttempts < Self.maximumInvalidPairingAttempts else {
+            listener.disconnectCurrent()
+            resetAuthorization()
+            return
+        }
+
+        rotateReceiverChallenge()
     }
 
     private func requestKeyframe(force: Bool = false) {
@@ -297,10 +353,16 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     private func sendPairingResponse(accepted: Bool) {
+        guard let receiverChallenge else {
+            lastProtocolError = "DisplayMesh pairing response has no active challenge"
+            return
+        }
+
         let response = PairingResponse(
             accepted: accepted,
-            receiverName: UIDevice.current.name,
-            protocolVersion: Int(DMPFrame.version)
+            receiverName: "DisplayMesh Receiver",
+            protocolVersion: Int(DMPFrame.version),
+            challenge: receiverChallenge
         )
 
         guard let payload = try? JSONEncoder().encode(response) else { return }
@@ -319,6 +381,28 @@ final class ReceiverViewModel: ObservableObject {
         listener.send(type: .telemetry, payload: payload)
     }
 
+    private func scheduleAdmissionTimeout() {
+        admissionTimeoutTask?.cancel()
+        admissionTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled, let self else { return }
+            expireAdmission()
+        }
+    }
+
+    private func expireAdmission() {
+        guard !sessionAuthorized,
+              pendingPairing == nil else {
+            return
+        }
+
+        admissionTimeoutTask = nil
+        lastProtocolError =
+            PairingValidationError.admissionExpired.localizedDescription
+        listener.disconnectCurrent()
+        resetAuthorization()
+    }
+
     private func schedulePairingTimeout() {
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = Task { [weak self] in
@@ -335,12 +419,30 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask = nil
         lastProtocolError = PairingValidationError.expired.localizedDescription
         sendPairingResponse(accepted: false)
-        rotateReceiverChallenge()
+        listener.disconnectCurrent()
+        resetAuthorization()
+    }
+
+    private func sendCapabilitiesIfAuthorized() {
+        guard sessionAuthorized else { return }
+
+        let capabilities = ReceiverCapabilities.development(
+            panel: panelDescriptor
+        )
+        guard capabilities.isValid,
+              let payload = try? JSONEncoder().encode(capabilities) else {
+            lastProtocolError =
+                "DisplayMesh receiver capabilities are invalid"
+            return
+        }
+
+        listener.send(type: .capabilities, payload: payload)
     }
 
     private func sendPanelDescriptorIfAuthorized() {
         guard sessionAuthorized,
               let panelDescriptor,
+              panelDescriptor.isValid,
               let payload = try? JSONEncoder().encode(panelDescriptor) else {
             return
         }
@@ -349,6 +451,8 @@ final class ReceiverViewModel: ObservableObject {
     }
 
     private func resetAuthorization() {
+        admissionTimeoutTask?.cancel()
+        admissionTimeoutTask = nil
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = false
@@ -365,6 +469,7 @@ private enum PairingValidationError: LocalizedError {
     case invalidSignature
     case identityChanged
     case trustStoreUnavailable(String)
+    case admissionExpired
     case expired
 
     var errorDescription: String? {
@@ -377,6 +482,8 @@ private enum PairingValidationError: LocalizedError {
             return "This computer's DisplayMesh identity changed. Forget trusted computers before pairing it again."
         case .trustStoreUnavailable(let detail):
             return "DisplayMesh cannot verify trusted computers: \(detail)"
+        case .admissionExpired:
+            return "DisplayMesh connection did not present a valid pairing request in time"
         case .expired:
             return "DisplayMesh pairing request expired"
         }

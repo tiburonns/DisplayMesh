@@ -120,6 +120,7 @@ DisplayMesh optimizes for interaction latency rather than perfect frame delivery
 - input/control priority over video backlog
 - `TCP_NODELAY` for interactive TCP sessions
 - bitrate reduction before queue growth
+- receiver decode feedback can lower/recover the macOS development encoder bitrate with hysteresis
 - adaptive stream raster when the network cannot sustain native panel pixels
 
 ## Resolution / refresh targets
@@ -153,7 +154,7 @@ A host backend exposes:
 
 The shared core wraps host backends in a managed lifecycle. Session startup is ordered as virtual-display creation followed by capture. If capture startup fails, the core immediately attempts to destroy the newly created display. Session shutdown stops capture before destroying the display and is idempotent when already idle. Cleanup failures remain visible as a failed lifecycle state rather than being reported as success.
 
-The current TCP development path also treats transport connection lifetime as a protocol boundary: frame sequences restart at 1 in each direction, gaps/replays close the connection, pairing/panel waits are bounded, and receiver decode telemetry is returned to the host for future adaptation work.
+The current TCP development path also treats transport connection lifetime as a protocol boundary: frame sequences restart at 1 in each direction, gaps/replays close the connection, pairing/panel waits are bounded, and receiver decode telemetry is returned to the host for future adaptation work. DMP header parsing applies per-message payload budgets before buffering a body, reserved input flags are rejected, and the Apple receiver disconnects frames that arrive in an invalid authorization phase. Malformed pairing is capped per connection instead of allowing an unbounded approval/challenge loop.
 
 A receiver backend exposes:
 

@@ -11,6 +11,49 @@ enum DMPMessageType: UInt8 {
     case telemetry = 0x30
     case keyframeRequest = 0x31
     case error = 0x7f
+
+    var maximumPayloadSize: Int {
+        switch self {
+        case .hello: 4 * 1024
+        case .capabilities: 64 * 1024
+        case .panelDescriptor: 16 * 1024
+        case .pairing: 16 * 1024
+        case .video: DMPFrame.maximumPayloadSize
+        case .input: 40
+        case .telemetry: 16 * 1024
+        case .keyframeRequest: 0
+        case .error: 8 * 1024
+        }
+    }
+
+    var exactPayloadSize: Int? {
+        switch self {
+        case .input: 40
+        case .keyframeRequest: 0
+        default: nil
+        }
+    }
+
+    func validatePayloadSize(_ size: Int) throws {
+        if let exactPayloadSize {
+            guard size == exactPayloadSize else {
+                throw DMPProtocolError.invalidPayloadLength(
+                    type: rawValue,
+                    size: size,
+                    expected: exactPayloadSize
+                )
+            }
+            return
+        }
+
+        guard size <= maximumPayloadSize else {
+            throw DMPProtocolError.payloadTooLargeForMessage(
+                type: rawValue,
+                size: size,
+                maximum: maximumPayloadSize
+            )
+        }
+    }
 }
 
 enum DMPProtocolError: Error, LocalizedError, Equatable {
@@ -18,12 +61,20 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case unsupportedVersion(UInt8)
     case unsupportedMessageType(UInt8)
     case payloadTooLarge(Int)
+    case payloadTooLargeForMessage(type: UInt8, size: Int, maximum: Int)
+    case invalidPayloadLength(type: UInt8, size: Int, expected: Int)
     case malformedVideoPacket
     case connectionClosed
     case pairingRejected
     case unexpectedSequence(expected: UInt32, received: UInt32)
     case timeout(String)
     case invalidReceiverHello
+    case invalidReceiverTelemetry
+    case invalidReceiverCapabilities
+    case incompatibleReceiverCapabilities
+    case invalidPanelDescriptor
+    case invalidPairingResponse
+    case invalidSessionPhase(String)
     case invalidPairingRequest
 
     var errorDescription: String? {
@@ -36,6 +87,20 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return String(format: "Unsupported DMP message type: 0x%02X", rawValue)
         case .payloadTooLarge(let size):
             return "DMP payload exceeds the maximum size: \(size)"
+        case .payloadTooLargeForMessage(let type, let size, let maximum):
+            return String(
+                format: "DMP message 0x%02X payload is too large: %d bytes (max %d)",
+                type,
+                size,
+                maximum
+            )
+        case .invalidPayloadLength(let type, let size, let expected):
+            return String(
+                format: "DMP message 0x%02X payload has invalid size: %d bytes (expected %d)",
+                type,
+                size,
+                expected
+            )
         case .malformedVideoPacket:
             return "Malformed DMP video packet"
         case .connectionClosed:
@@ -48,6 +113,18 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "Timed out waiting for \(operation)"
         case .invalidReceiverHello:
             return "The receiver sent an invalid DisplayMesh hello challenge"
+        case .invalidReceiverTelemetry:
+            return "The receiver sent invalid DisplayMesh telemetry"
+        case .invalidReceiverCapabilities:
+            return "The receiver sent invalid DisplayMesh capabilities"
+        case .incompatibleReceiverCapabilities:
+            return "The receiver does not support the current H.264/TCP development path"
+        case .invalidPanelDescriptor:
+            return "The receiver sent an invalid DisplayMesh panel descriptor"
+        case .invalidPairingResponse:
+            return "The receiver pairing response does not match the active challenge"
+        case .invalidSessionPhase(let detail):
+            return "Unexpected DMP frame for session phase: \(detail)"
         case .invalidPairingRequest:
             return "The DisplayMesh pairing request is invalid"
         }
@@ -69,6 +146,7 @@ struct DMPFrame: Equatable {
         guard payload.count <= Self.maximumPayloadSize else {
             throw DMPProtocolError.payloadTooLarge(payload.count)
         }
+        try type.validatePayloadSize(payload.count)
 
         var result = Data(capacity: Self.headerSize + payload.count)
         result.append(Self.magic)
@@ -100,6 +178,41 @@ struct DMPSequenceTracker {
     }
 }
 
+struct ReceiverCapabilities: Codable, Equatable {
+    static let schemaVersion = 1
+    static let h264 = "h264"
+    static let tcp = "tcp"
+
+    let schemaVersion: Int
+    let protocolVersion: Int
+    let codecs: [String]
+    let connectionBindings: [String]
+    let inputKinds: [String]
+    let telemetrySupported: Bool
+    let maximumVideoPayloadBytes: Int
+    let encryptedTransport: Bool
+
+    var isValid: Bool {
+        schemaVersion == Self.schemaVersion
+            && protocolVersion == Int(DMPFrame.version)
+            && !codecs.isEmpty
+            && codecs.count <= 8
+            && connectionBindings.count <= 8
+            && inputKinds.count <= 8
+            && Set(codecs).count == codecs.count
+            && Set(connectionBindings).count == connectionBindings.count
+            && Set(inputKinds).count == inputKinds.count
+            && (1...DMPFrame.maximumPayloadSize)
+                .contains(maximumVideoPayloadBytes)
+    }
+
+    var supportsDevelopmentHost: Bool {
+        isValid
+            && codecs.contains(Self.h264)
+            && connectionBindings.contains(Self.tcp)
+    }
+}
+
 struct ReceiverTelemetry: Codable, Equatable {
     static let version = 1
 
@@ -112,6 +225,18 @@ struct ReceiverTelemetry: Codable, Equatable {
     let averageDecodeMilliseconds: Double
     let hardwareAccelerated: Bool?
     let lastVideoSequence: UInt32?
+
+    var isValid: Bool {
+        protocolVersion == Self.version
+            && decodedFrames <= receivedFrames
+            && droppedFrames <= receivedFrames
+            && framesPerSecond.isFinite
+            && (0...480).contains(framesPerSecond)
+            && megabitsPerSecond.isFinite
+            && (0...2_000).contains(megabitsPerSecond)
+            && averageDecodeMilliseconds.isFinite
+            && (0...10_000).contains(averageDecodeMilliseconds)
+    }
 }
 
 struct DMPFrameDecoder {
@@ -153,6 +278,7 @@ struct DMPFrameDecoder {
         guard payloadSize <= DMPFrame.maximumPayloadSize else {
             throw DMPProtocolError.payloadTooLarge(payloadSize)
         }
+        try type.validatePayloadSize(payloadSize)
 
         let totalSize = DMPFrame.headerSize + payloadSize
         guard buffer.count >= totalSize else { return nil }
@@ -217,7 +343,12 @@ struct PairingRequest: Codable, Equatable {
     let signature: Data
 
     var normalizedVerificationCode: String {
-        verificationCode.filter(\.isNumber)
+        String(
+            decoding: verificationCode.utf8.filter {
+                (48...57).contains($0)
+            },
+            as: UTF8.self
+        )
     }
 
     var identityFingerprint: String {
@@ -229,8 +360,17 @@ struct PairingRequest: Codable, Equatable {
 
     var hasValidShape: Bool {
         let peerNameBytes = peerName.utf8.count
+        let hasControlCharacters = peerName.unicodeScalars.contains {
+            CharacterSet.controlCharacters.contains($0)
+        }
+        let trimmedName = peerName.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+
         return protocolVersion == Int(DMPFrame.version)
             && (1...128).contains(peerNameBytes)
+            && !trimmedName.isEmpty
+            && !hasControlCharacters
             && verificationCode == normalizedVerificationCode
             && normalizedVerificationCode.count == 6
             && UUID(uuidString: peerID) != nil
@@ -306,10 +446,17 @@ struct PairingRequest: Codable, Equatable {
     }
 }
 
-struct PairingResponse: Codable {
+struct PairingResponse: Codable, Equatable {
     let accepted: Bool
     let receiverName: String
     let protocolVersion: Int
+    let challenge: Data
+
+    func isValid(expectedChallenge: Data) -> Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && challenge.count == ReceiverHello.challengeSize
+            && challenge == expectedChallenge
+    }
 }
 
 struct ReceiverPanelDescriptor: Codable {
@@ -326,6 +473,15 @@ struct ReceiverPanelDescriptor: Codable {
     let orientation: Orientation
     let maximumTouchPoints: Int
     let supportsPencil: Bool
+
+    var isValid: Bool {
+        (320...16_384).contains(pixelWidth)
+            && (320...16_384).contains(pixelHeight)
+            && nativeScale.isFinite
+            && (0.5...8).contains(nativeScale)
+            && (1...240).contains(maximumFramesPerSecond)
+            && (0...32).contains(maximumTouchPoints)
+    }
 }
 
 private extension Data {

@@ -19,6 +19,54 @@ pub enum DmpMessageType {
     Error = 0x7f,
 }
 
+impl DmpMessageType {
+    pub const fn maximum_payload_len(self) -> usize {
+        match self {
+            Self::Hello => 4 * 1024,
+            Self::Capabilities => 64 * 1024,
+            Self::PanelDescriptor => 16 * 1024,
+            Self::Pairing => 16 * 1024,
+            Self::Video => DMP_MAX_PAYLOAD_LEN,
+            Self::Input => 40,
+            Self::Telemetry => 16 * 1024,
+            Self::KeyframeRequest => 0,
+            Self::Error => 8 * 1024,
+        }
+    }
+
+    pub const fn exact_payload_len(self) -> Option<usize> {
+        match self {
+            Self::Input => Some(40),
+            Self::KeyframeRequest => Some(0),
+            _ => None,
+        }
+    }
+
+    pub fn validate_payload_len(self, size: usize) -> Result<(), DmpFrameError> {
+        if let Some(expected) = self.exact_payload_len() {
+            if size != expected {
+                return Err(DmpFrameError::InvalidPayloadLength {
+                    message_type: self,
+                    size,
+                    expected,
+                });
+            }
+            return Ok(());
+        }
+
+        let maximum = self.maximum_payload_len();
+        if size > maximum {
+            return Err(DmpFrameError::PayloadTooLargeForType {
+                message_type: self,
+                size,
+                maximum,
+            });
+        }
+
+        Ok(())
+    }
+}
+
 impl TryFrom<u8> for DmpMessageType {
     type Error = DmpFrameError;
 
@@ -51,6 +99,7 @@ impl DmpFrame {
         if self.payload.len() > DMP_MAX_PAYLOAD_LEN {
             return Err(DmpFrameError::PayloadTooLarge(self.payload.len()));
         }
+        self.message_type.validate_payload_len(self.payload.len())?;
 
         let mut encoded = Vec::with_capacity(DMP_HEADER_LEN + self.payload.len());
         encoded.extend_from_slice(&DMP_MAGIC);
@@ -86,6 +135,7 @@ impl DmpFrame {
         if payload_len > DMP_MAX_PAYLOAD_LEN {
             return Err(DmpFrameError::PayloadTooLarge(payload_len));
         }
+        message_type.validate_payload_len(payload_len)?;
 
         let total_len = DMP_HEADER_LEN + payload_len;
         if buffer.len() < total_len {
@@ -143,6 +193,16 @@ pub enum DmpFrameError {
     UnsupportedVersion(u8),
     UnsupportedMessageType(u8),
     PayloadTooLarge(usize),
+    PayloadTooLargeForType {
+        message_type: DmpMessageType,
+        size: usize,
+        maximum: usize,
+    },
+    InvalidPayloadLength {
+        message_type: DmpMessageType,
+        size: usize,
+        expected: usize,
+    },
     UnexpectedSequence { expected: u32, received: u32 },
 }
 
@@ -157,6 +217,22 @@ impl fmt::Display for DmpFrameError {
                 write!(f, "unsupported DMP message type: {message_type:#04x}")
             }
             Self::PayloadTooLarge(size) => write!(f, "DMP payload is too large: {size} bytes"),
+            Self::PayloadTooLargeForType {
+                message_type,
+                size,
+                maximum,
+            } => write!(
+                f,
+                "DMP {message_type:?} payload is too large: {size} bytes (max {maximum})"
+            ),
+            Self::InvalidPayloadLength {
+                message_type,
+                size,
+                expected,
+            } => write!(
+                f,
+                "DMP {message_type:?} payload has invalid size: {size} bytes (expected {expected})"
+            ),
             Self::UnexpectedSequence { expected, received } => write!(
                 f,
                 "unexpected DMP sequence: expected {expected}, received {received}"
@@ -181,6 +257,16 @@ mod tests {
         };
 
         let encoded = source.encode().unwrap();
+        assert_eq!(
+            encoded,
+            vec![
+                0x44, 0x4d, 0x50, 0x31,
+                0x01, 0x30, 0x01, 0x02,
+                0x00, 0x00, 0x00, 0x2a,
+                0x00, 0x00, 0x00, 0x05,
+                b'h', b'e', b'l', b'l', b'o',
+            ]
+        );
         let (decoded, consumed) = DmpFrame::decode(&encoded).unwrap().unwrap();
 
         assert_eq!(decoded, source);
@@ -250,6 +336,59 @@ mod tests {
         assert_eq!(tracker.expected(), 0);
         tracker.accept(0).unwrap();
         assert_eq!(tracker.expected(), 1);
+    }
+
+    #[test]
+    fn control_payload_budget_is_enforced_before_body_arrives() {
+        let mut header = Vec::new();
+        header.extend_from_slice(&DMP_MAGIC);
+        header.push(DMP_VERSION);
+        header.push(DmpMessageType::Pairing as u8);
+        header.extend_from_slice(&0_u16.to_be_bytes());
+        header.extend_from_slice(&1_u32.to_be_bytes());
+        header.extend_from_slice(&(32_u32 * 1024).to_be_bytes());
+
+        assert_eq!(
+            DmpFrame::decode(&header),
+            Err(DmpFrameError::PayloadTooLargeForType {
+                message_type: DmpMessageType::Pairing,
+                size: 32 * 1024,
+                maximum: 16 * 1024,
+            })
+        );
+    }
+
+    #[test]
+    fn exact_payload_sizes_are_enforced() {
+        let input = DmpFrame {
+            message_type: DmpMessageType::Input,
+            flags: 0,
+            sequence: 1,
+            payload: vec![0; 39],
+        };
+        assert_eq!(
+            input.encode(),
+            Err(DmpFrameError::InvalidPayloadLength {
+                message_type: DmpMessageType::Input,
+                size: 39,
+                expected: 40,
+            })
+        );
+
+        let keyframe = DmpFrame {
+            message_type: DmpMessageType::KeyframeRequest,
+            flags: 0,
+            sequence: 1,
+            payload: vec![1],
+        };
+        assert_eq!(
+            keyframe.encode(),
+            Err(DmpFrameError::InvalidPayloadLength {
+                message_type: DmpMessageType::KeyframeRequest,
+                size: 1,
+                expected: 0,
+            })
+        );
     }
 
     #[test]

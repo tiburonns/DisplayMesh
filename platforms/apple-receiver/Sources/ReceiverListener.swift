@@ -40,7 +40,7 @@ final class ReceiverListener {
         let newListener = try NWListener(using: parameters, on: Self.port)
         newListener.newConnectionLimit = 1
         newListener.service = NWListener.Service(
-            name: UIDevice.current.name,
+            name: "DisplayMesh",
             type: "_displaymesh._tcp"
         )
 
@@ -55,6 +55,25 @@ final class ReceiverListener {
         listener = newListener
         publish(.starting)
         newListener.start(queue: queue)
+    }
+
+    func disconnectCurrent() {
+        queue.async { [weak self] in
+            guard let self, let activeConnection = connection else { return }
+
+            connection = nil
+            activeConnection.stateUpdateHandler = nil
+            activeConnection.cancel()
+            decoder = DMPFrameDecoder()
+            incomingSequence.reset()
+            nextSequence = 1
+
+            if listener != nil {
+                publish(.ready(port: Self.port.rawValue))
+            } else {
+                publish(.stopped)
+            }
+        }
     }
 
     func stop() {
@@ -82,9 +101,10 @@ final class ReceiverListener {
                 sequence: nextSequence,
                 payload: payload
             )
-            nextSequence &+= 1
 
             guard let data = try? frame.encoded() else { return }
+            nextSequence &+= 1
+
             connection.send(
                 content: data,
                 completion: .contentProcessed { [weak self, weak connection] error in
