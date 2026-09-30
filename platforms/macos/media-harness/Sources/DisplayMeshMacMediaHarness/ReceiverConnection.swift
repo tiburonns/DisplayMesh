@@ -60,7 +60,7 @@ final class ReceiverConnection {
         setConnectionReady(false)
 
         try await withCheckedThrowingContinuation { continuation in
-            var resolved = false
+            let attempt = ConnectionAttemptGate()
 
             newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
                 guard let self, let newConnection else { return }
@@ -69,23 +69,20 @@ final class ReceiverConnection {
                 switch state {
                 case .ready:
                     setConnectionReady(true)
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume()
                     }
                     receiveNext(on: newConnection)
 
                 case .failed(let error):
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume(throwing: error)
                     }
                     handleTransportFailure(error, connection: newConnection)
 
                 case .cancelled:
                     let error = DMPProtocolError.connectionClosed
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume(throwing: error)
                     }
                     handleTransportFailure(error, connection: newConnection)
@@ -101,9 +98,8 @@ final class ReceiverConnection {
                 deadline: .now() + max(timeoutSeconds, 0)
             ) { [weak self, weak newConnection] in
                 guard let self, let newConnection else { return }
-                guard connection === newConnection, !resolved else { return }
+                guard connection === newConnection, attempt.claim() else { return }
 
-                resolved = true
                 let error = DMPProtocolError.timeout("transport connection")
                 continuation.resume(throwing: error)
                 handleTransportFailure(error, connection: newConnection)
