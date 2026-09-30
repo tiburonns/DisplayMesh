@@ -3,6 +3,7 @@
 #include <mfapi.h>
 #include <mferror.h>
 
+#include <cstdio>
 #include <utility>
 
 namespace displaymesh::media {
@@ -41,16 +42,33 @@ private:
 MftLiveEncodeAdapter::
 MftLiveEncodeAdapter(
     IMFTransform* encoder,
-    SharedSurfaceEncodeInput& input,
+    InputSampleFactory inputFactory,
     PacketHandler packetHandler) noexcept
     : encoder_(encoder),
-      input_(input),
-      packetHandler_(
+      inputFactory_(std::move(inputFactory)),
+      packetHandler_(std::move(packetHandler)) {}
+
+MftLiveEncodeAdapter::
+MftLiveEncodeAdapter(
+    IMFTransform* encoder,
+    SharedSurfaceEncodeInput& input,
+    PacketHandler packetHandler) noexcept
+    : MftLiveEncodeAdapter(
+          encoder,
+          [&input](
+              const EncodeWorkItem& item,
+              Microsoft::WRL::ComPtr<IMFSample>&
+                  sample) {
+              return input.CreateSample(
+                  item,
+                  sample);
+          },
           std::move(packetHandler)) {}
 
 bool MftLiveEncodeAdapter::IsReady()
     const noexcept {
     return encoder_ != nullptr &&
+        static_cast<bool>(inputFactory_) &&
         static_cast<bool>(packetHandler_);
 }
 
@@ -69,13 +87,13 @@ bool MftLiveEncodeAdapter::ProcessInput(
     Microsoft::WRL::ComPtr<IMFSample>
         sample;
     HRESULT hr =
-        input_.CreateSample(
+        inputFactory_(
             item,
             sample);
     if (FAILED(hr) || sample == nullptr) {
         ++stats_.inputFailures;
         error = HrMessage(
-            "Create shared DXGI input sample",
+            "Create input sample",
             FAILED(hr) ? hr : E_FAIL);
         return false;
     }

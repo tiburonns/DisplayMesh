@@ -2,6 +2,7 @@
 
 #define NOMINMAX
 #include <Windows.h>
+#include <mfidl.h>
 #include <mftransform.h>
 #include <wrl/client.h>
 
@@ -26,12 +27,22 @@ struct MftLiveAdapterStats {
 
 class MftLiveEncodeAdapter {
 public:
+    using InputSampleFactory =
+        std::function<HRESULT(
+            const EncodeWorkItem&,
+            Microsoft::WRL::ComPtr<IMFSample>&)>;
+
     using PacketHandler =
         std::function<bool(
             std::span<const std::uint8_t>,
             const H264NormalizeReport&,
             const H264PacketizeReport&,
             std::string&)>;
+
+    MftLiveEncodeAdapter(
+        IMFTransform* encoder,
+        InputSampleFactory inputFactory,
+        PacketHandler packetHandler) noexcept;
 
     MftLiveEncodeAdapter(
         IMFTransform* encoder,
@@ -61,7 +72,7 @@ private:
 
     Microsoft::WRL::ComPtr<IMFTransform>
         encoder_;
-    SharedSurfaceEncodeInput& input_;
+    InputSampleFactory inputFactory_;
     PacketHandler packetHandler_;
     MftEncodedSampleProcessor
         sampleProcessor_;
