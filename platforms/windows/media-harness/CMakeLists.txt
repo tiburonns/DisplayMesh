@@ -9,6 +9,7 @@ add_library(displaymesh_windows_media STATIC
     WindowsMediaProbe.cpp
     BoundedEncodeWorker.cpp
     H264AnnexBPacketizer.cpp
+    H264AccessUnitNormalizer.cpp
     MftEncoderPumpState.cpp
 )
 
@@ -96,6 +97,36 @@ if(BUILD_TESTING)
     add_test(
         NAME h264-dmp-frame-integration
         COMMAND h264-dmp-frame-integration-tests
+    )
+
+    add_executable(
+        h264-access-unit-normalizer-tests
+        tests/H264AccessUnitNormalizerTests.cpp
+    )
+
+    target_link_libraries(
+        h264-access-unit-normalizer-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-access-unit-normalizer
+        COMMAND h264-access-unit-normalizer-tests
+    )
+
+    add_executable(
+        h264-normalizer-packetizer-integration-tests
+        tests/H264NormalizerPacketizerIntegrationTests.cpp
+    )
+
+    target_link_libraries(
+        h264-normalizer-packetizer-integration-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-normalizer-packetizer-integration
+        COMMAND h264-normalizer-packetizer-integration-tests
     )
 
     add_executable(

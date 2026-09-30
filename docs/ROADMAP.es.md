@@ -31,6 +31,7 @@
 
 - [x] Receiver H.264/Metal y harness de media macOS.
 - [x] Contrato de estados del pump asíncrono Media Foundation en Windows (NeedInput / HaveOutput / drain).
+- [x] Normalización H.264 de salida Windows (Annex-B + AVC con longitudes de 4 bytes) antes del packetizer DMP.
 - [ ] Backend productivo completo de encode Windows y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
