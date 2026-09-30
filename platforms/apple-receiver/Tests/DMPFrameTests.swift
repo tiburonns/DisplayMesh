@@ -5,13 +5,25 @@ final class DMPFrameTests: XCTestCase {
     func testFrameRoundTrip() throws {
         let frame = DMPFrame(
             type: .telemetry,
-            flags: 0x1020,
+            flags: 0x0102,
             sequence: 42,
             payload: Data("hello".utf8)
         )
 
+        let encoded = try frame.encoded()
+        XCTAssertEqual(
+            encoded,
+            Data([
+                0x44, 0x4D, 0x50, 0x31,
+                0x01, 0x30, 0x01, 0x02,
+                0x00, 0x00, 0x00, 0x2A,
+                0x00, 0x00, 0x00, 0x05,
+                0x68, 0x65, 0x6C, 0x6C, 0x6F,
+            ])
+        )
+
         var decoder = DMPFrameDecoder()
-        decoder.append(try frame.encoded())
+        decoder.append(encoded)
 
         XCTAssertEqual(try decoder.nextFrame(), frame)
         XCTAssertNil(try decoder.nextFrame())
@@ -44,6 +56,51 @@ final class DMPFrameTests: XCTestCase {
         tracker.reset()
         try tracker.accept(1)
         XCTAssertThrowsError(try tracker.accept(3))
+    }
+
+    func testPairingPayloadBudgetRejectsHeaderBeforeBodyArrives() {
+        let header = Data([
+            0x44, 0x4D, 0x50, 0x31,
+            DMPFrame.version,
+            DMPMessageType.pairing.rawValue,
+            0, 0,
+            0, 0, 0, 1,
+            0, 0, 0x80, 0,
+        ])
+
+        var decoder = DMPFrameDecoder()
+        decoder.append(header)
+
+        XCTAssertThrowsError(try decoder.nextFrame()) { error in
+            XCTAssertEqual(
+                error as? DMPFrameError,
+                .payloadTooLargeForMessage(
+                    type: DMPMessageType.pairing.rawValue,
+                    size: 32 * 1024,
+                    maximum: 16 * 1024
+                )
+            )
+        }
+    }
+
+    func testExactPayloadBudgetsRejectMalformedInteractiveFrames() {
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .input,
+                flags: 0,
+                sequence: 1,
+                payload: Data(repeating: 0, count: 39)
+            ).encoded()
+        )
+
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .keyframeRequest,
+                flags: 0,
+                sequence: 1,
+                payload: Data([1])
+            ).encoded()
+        )
     }
 
     func testTelemetryRoundTrip() throws {

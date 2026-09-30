@@ -15,6 +15,15 @@ struct PanelDescriptor: Codable, Equatable {
     let maximumTouchPoints: Int
     let supportsPencil: Bool
 
+    var isValid: Bool {
+        (320...16_384).contains(pixelWidth)
+            && (320...16_384).contains(pixelHeight)
+            && nativeScale.isFinite
+            && (0.5...8).contains(nativeScale)
+            && (1...240).contains(maximumFramesPerSecond)
+            && (0...32).contains(maximumTouchPoints)
+    }
+
     @MainActor
     static func current(for view: UIView) -> PanelDescriptor {
         let screen = view.window?.windowScene?.screen ?? UIScreen.main

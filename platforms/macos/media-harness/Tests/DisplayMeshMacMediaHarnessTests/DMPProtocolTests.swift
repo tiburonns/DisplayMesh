@@ -6,11 +6,21 @@ final class DMPProtocolTests: XCTestCase {
     func testFrameRoundTripAcrossFragments() throws {
         let original = DMPFrame(
             type: .telemetry,
-            flags: 0x1020,
+            flags: 0x0102,
             sequence: 42,
             payload: Data("hello".utf8)
         )
         let encoded = try original.encoded()
+        XCTAssertEqual(
+            encoded,
+            Data([
+                0x44, 0x4D, 0x50, 0x31,
+                0x01, 0x30, 0x01, 0x02,
+                0x00, 0x00, 0x00, 0x2A,
+                0x00, 0x00, 0x00, 0x05,
+                0x68, 0x65, 0x6C, 0x6C, 0x6F,
+            ])
+        )
 
         var decoder = DMPFrameDecoder()
         decoder.append(encoded.prefix(7))
@@ -31,6 +41,119 @@ final class DMPProtocolTests: XCTestCase {
         tracker.reset()
         try tracker.accept(1)
         XCTAssertThrowsError(try tracker.accept(3))
+    }
+
+    func testPairingPayloadBudgetRejectsHeaderBeforeBodyArrives() {
+        let header = Data([
+            0x44, 0x4D, 0x50, 0x31,
+            DMPFrame.version,
+            DMPMessageType.pairing.rawValue,
+            0, 0,
+            0, 0, 0, 1,
+            0, 0, 0x80, 0,
+        ])
+
+        var decoder = DMPFrameDecoder()
+        decoder.append(header)
+
+        XCTAssertThrowsError(try decoder.nextFrame()) { error in
+            XCTAssertEqual(
+                error as? DMPProtocolError,
+                .payloadTooLargeForMessage(
+                    type: DMPMessageType.pairing.rawValue,
+                    size: 32 * 1024,
+                    maximum: 16 * 1024
+                )
+            )
+        }
+    }
+
+    func testExactPayloadBudgetsRejectMalformedInteractiveFrames() {
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .input,
+                flags: 0,
+                sequence: 1,
+                payload: Data(repeating: 0, count: 39)
+            ).encoded()
+        )
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .keyframeRequest,
+                flags: 0,
+                sequence: 1,
+                payload: Data([1])
+            ).encoded()
+        )
+    }
+
+    func testInputDecoderRejectsReservedFlags() {
+        var payload = Data(repeating: 0, count: DMPInputSample.encodedSize)
+        payload[0] = DMPInputSample.version
+        payload[1] = DMPInputSample.Kind.touch.rawValue
+        payload[2] = DMPInputSample.Phase.began.rawValue
+        payload[3] = 0x01
+
+        XCTAssertThrowsError(try DMPInputSample.decode(payload)) { error in
+            XCTAssertEqual(
+                error as? DMPInputDecodeError,
+                .unsupportedFlags(0x01)
+            )
+        }
+    }
+
+    func testPanelDescriptorValidationRejectsUnreasonableValues() {
+        XCTAssertTrue(
+            ReceiverPanelDescriptor(
+                pixelWidth: 2732,
+                pixelHeight: 2048,
+                nativeScale: 2,
+                maximumFramesPerSecond: 120,
+                orientation: .landscape,
+                maximumTouchPoints: 10,
+                supportsPencil: true
+            ).isValid
+        )
+
+        XCTAssertFalse(
+            ReceiverPanelDescriptor(
+                pixelWidth: 32,
+                pixelHeight: 32,
+                nativeScale: .nan,
+                maximumFramesPerSecond: 0,
+                orientation: .unknown,
+                maximumTouchPoints: 100,
+                supportsPencil: false
+            ).isValid
+        )
+    }
+
+    func testReceiverCapabilitiesValidation() {
+        let supported = ReceiverCapabilities(
+            schemaVersion: ReceiverCapabilities.schemaVersion,
+            protocolVersion: Int(DMPFrame.version),
+            codecs: ["h264"],
+            connectionBindings: ["tcp"],
+            inputKinds: ["touch"],
+            telemetrySupported: true,
+            maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
+            encryptedTransport: false
+        )
+        XCTAssertTrue(supported.isValid)
+        XCTAssertTrue(supported.supportsDevelopmentHost)
+
+        let incompatible = ReceiverCapabilities(
+            schemaVersion: ReceiverCapabilities.schemaVersion,
+            protocolVersion: Int(DMPFrame.version),
+            codecs: ["hevc"],
+            connectionBindings: ["tcp"],
+            inputKinds: ["touch"],
+            telemetrySupported: true,
+            maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
+            encryptedTransport: false
+        )
+        XCTAssertTrue(incompatible.isValid)
+        XCTAssertFalse(incompatible.supportsDevelopmentHost)
     }
 
     func testReceiverTelemetryRoundTrip() throws {
@@ -74,6 +197,32 @@ final class DMPProtocolTests: XCTestCase {
         XCTAssertFalse(
             request.isAuthentic(expectedChallenge: wrongChallenge)
         )
+    }
+
+    func testPairingShapeRejectsControlCharactersAndUnicodeDigits() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = Data(
+            repeating: 0x5A,
+            count: ReceiverHello.challengeSize
+        )
+
+        let controlName = try PairingRequest.signed(
+            peerName: "Mac\nInjected",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(controlName.hasValidShape)
+
+        let unicodeCode = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "١٢٣٤٥٦",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(unicodeCode.hasValidShape)
     }
 
     func testPairingShapeRejectsFormattedCode() throws {

@@ -113,3 +113,52 @@ final class PairingIdentityTests: XCTestCase {
         XCTAssertEqual(store.status(for: changed), .identityChanged)
     }
 }
+
+
+extension PairingIdentityTests {
+    func testPairingResponseIsBoundToActiveChallenge() throws {
+        let challenge = try ReceiverHello.make().challenge
+        let response = PairingResponse(
+            accepted: true,
+            receiverName: "Test iPad",
+            protocolVersion: Int(DMPFrame.version),
+            challenge: challenge
+        )
+
+        XCTAssertTrue(
+            response.isValid(expectedChallenge: challenge)
+        )
+
+        var different = challenge
+        different[0] ^= 0xFF
+        XCTAssertFalse(
+            response.isValid(expectedChallenge: different)
+        )
+    }
+}
+
+
+extension PairingIdentityTests {
+    func testPairingShapeRejectsControlCharactersAndNonASCIICode() throws {
+        let privateKey = P256.Signing.PrivateKey()
+        let challenge = try ReceiverHello.make().challenge
+
+        let controlName = try PairingRequest.signed(
+            peerName: "Mac\nInjected",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(controlName.hasValidShape)
+
+        let unicodeCode = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "١٢٣٤٥٦",
+            challenge: challenge,
+            privateKey: privateKey
+        )
+        XCTAssertFalse(unicodeCode.hasValidShape)
+    }
+}

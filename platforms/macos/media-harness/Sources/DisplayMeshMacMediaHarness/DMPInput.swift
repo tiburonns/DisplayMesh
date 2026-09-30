@@ -6,6 +6,7 @@ enum DMPInputDecodeError: Error, LocalizedError, Equatable {
     case unsupportedVersion(UInt8)
     case unsupportedKind(UInt8)
     case unsupportedPhase(UInt8)
+    case unsupportedFlags(UInt8)
     case invalidCoordinates
     case invalidPressure
     case invalidStylusData
@@ -20,6 +21,8 @@ enum DMPInputDecodeError: Error, LocalizedError, Equatable {
             return "Unsupported DMP input kind: \(kind)"
         case .unsupportedPhase(let phase):
             return "Unsupported DMP input phase: \(phase)"
+        case .unsupportedFlags(let flags):
+            return String(format: "Unsupported DMP input flags: 0x%02X", flags)
         case .invalidCoordinates:
             return "DMP input coordinates are outside the normalized display surface"
         case .invalidPressure:
@@ -101,6 +104,10 @@ struct DMPInputSample: Equatable {
     }
 
     private func validate() throws {
+        guard flags == 0 else {
+            throw DMPInputDecodeError.unsupportedFlags(flags)
+        }
+
         guard normalizedX.isFinite,
               normalizedY.isFinite,
               (0...1).contains(normalizedX),

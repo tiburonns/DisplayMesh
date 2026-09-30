@@ -110,6 +110,10 @@ impl DmpInputSample {
     }
 
     pub fn validate(self) -> Result<(), DmpInputError> {
+        if self.flags != 0 {
+            return Err(DmpInputError::UnsupportedFlags(self.flags));
+        }
+
         if !self.normalized_x.is_finite()
             || !self.normalized_y.is_finite()
             || !(0.0..=1.0).contains(&self.normalized_x)
@@ -139,6 +143,7 @@ pub enum DmpInputError {
     UnsupportedVersion(u8),
     UnsupportedKind(u8),
     UnsupportedPhase(u8),
+    UnsupportedFlags(u8),
     InvalidCoordinates,
     InvalidPressure,
     InvalidStylusData,
@@ -158,6 +163,9 @@ impl fmt::Display for DmpInputError {
             }
             Self::UnsupportedPhase(phase) => {
                 write!(f, "unsupported DMP input phase: {phase}")
+            }
+            Self::UnsupportedFlags(flags) => {
+                write!(f, "unsupported DMP input flags: {flags:#04x}")
             }
             Self::InvalidCoordinates => f.write_str("DMP input coordinates are invalid"),
             Self::InvalidPressure => f.write_str("DMP input pressure is invalid"),
@@ -209,6 +217,16 @@ mod tests {
         let mut source = sample();
         source.normalized_x = 1.1;
         assert_eq!(source.encode(), Err(DmpInputError::InvalidCoordinates));
+    }
+
+    #[test]
+    fn reserved_flags_are_rejected() {
+        let mut source = sample();
+        source.flags = 0x01;
+        assert_eq!(
+            source.encode(),
+            Err(DmpInputError::UnsupportedFlags(0x01))
+        );
     }
 
     #[test]

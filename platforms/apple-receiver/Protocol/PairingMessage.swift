@@ -63,7 +63,12 @@ struct PairingRequest: Codable, Equatable {
     let signature: Data
 
     var normalizedVerificationCode: String {
-        verificationCode.filter(\.isNumber)
+        String(
+            decoding: verificationCode.utf8.filter {
+                (48...57).contains($0)
+            },
+            as: UTF8.self
+        )
     }
 
     var identityFingerprint: String {
@@ -75,8 +80,17 @@ struct PairingRequest: Codable, Equatable {
 
     var hasValidShape: Bool {
         let peerNameBytes = peerName.utf8.count
+        let hasControlCharacters = peerName.unicodeScalars.contains {
+            CharacterSet.controlCharacters.contains($0)
+        }
+        let trimmedName = peerName.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+
         return protocolVersion == Int(DMPFrame.version)
             && (1...128).contains(peerNameBytes)
+            && !trimmedName.isEmpty
+            && !hasControlCharacters
             && verificationCode == normalizedVerificationCode
             && normalizedVerificationCode.count == 6
             && UUID(uuidString: peerID) != nil
@@ -156,4 +170,11 @@ struct PairingResponse: Codable, Equatable {
     let accepted: Bool
     let receiverName: String
     let protocolVersion: Int
+    let challenge: Data
+
+    func isValid(expectedChallenge: Data) -> Bool {
+        protocolVersion == Int(DMPFrame.version)
+            && challenge.count == ReceiverHello.challengeSize
+            && challenge == expectedChallenge
+    }
 }
