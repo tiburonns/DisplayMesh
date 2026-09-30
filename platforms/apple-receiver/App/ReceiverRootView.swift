@@ -63,7 +63,7 @@ struct ReceiverRootView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
-        .onChange(of: scenePhase) { phase in
+        .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background:
                 resumeReceiverWhenActive = receiver.isListening

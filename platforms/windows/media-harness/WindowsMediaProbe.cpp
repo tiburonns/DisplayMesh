@@ -1,6 +1,7 @@
 #include "WindowsMediaProbe.h"
 
 #include <codecapi.h>
+#include <icodecapi.h>
 #include <d3d10.h>
 #include <mfapi.h>
 #include <mferror.h>

@@ -311,8 +311,8 @@ final class H264VideoDecoder {
                     return
                 }
 
-                var pointers = [spsBase, ppsBase]
-                var sizes = [sequenceParameterSet.count, pictureParameterSet.count]
+                let pointers = [spsBase, ppsBase]
+                let sizes = [sequenceParameterSet.count, pictureParameterSet.count]
 
                 creationStatus = pointers.withUnsafeBufferPointer { pointerBuffer in
                     sizes.withUnsafeBufferPointer { sizeBuffer in

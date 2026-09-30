@@ -70,7 +70,7 @@ impl DmpMessageType {
 impl TryFrom<u8> for DmpMessageType {
     type Error = DmpFrameError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, DmpFrameError> {
         match value {
             0x01 => Ok(Self::Hello),
             0x02 => Ok(Self::Capabilities),

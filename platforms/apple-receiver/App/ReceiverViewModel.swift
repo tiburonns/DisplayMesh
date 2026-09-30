@@ -170,8 +170,8 @@ final class ReceiverViewModel: ObservableObject {
 
     func acceptPairing() {
         guard let request = pendingPairing,
-              let receiverChallenge,
-              request.isAuthentic(expectedChallenge: receiverChallenge) else {
+              let activeReceiverChallenge = receiverChallenge,
+              request.isAuthentic(expectedChallenge: activeReceiverChallenge) else {
             lastProtocolError = PairingValidationError.invalidRequest.localizedDescription
             pendingPairing = nil
             pendingPeerPreviouslyTrusted = false
