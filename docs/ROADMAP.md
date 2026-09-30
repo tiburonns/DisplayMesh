@@ -72,7 +72,8 @@
 - [x] Real three-slot D3D11 shared-texture pool with NT handles, keyed mutexes and WARP lifecycle validation
 - [x] Shared D3D11 NT handle → timed Media Foundation DXGI input sample adapter with geometry/format validation
 - [x] Latest-frame work item carries slot/generation/timing through stale-safe shared-surface → MF sample admission
-- [ ] Wire the live IddCx producer, GPU BGRA→NV12 conversion and asynchronous MFT events into the bounded encode worker
+- [x] Coordinate asynchronous MFT NeedInput/HaveOutput credits with the bounded latest-frame worker
+- [ ] Wire the live IddCx producer, GPU BGRA→NV12 conversion and concrete IMFTransform ProcessInput/ProcessOutput calls into the coordinator
 - [x] Windows H.264 output normalizer (Annex-B + 4-byte AVC length prefixes)
 - [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)

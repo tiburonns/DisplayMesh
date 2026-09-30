@@ -32,3 +32,19 @@ El harness incorpora una fábrica de samples que abre los NT handles del pool D3
 ## Identidad de frame hasta el encoder
 
 `EncodeWorkItem` conserva secuencia, timestamp, duración, generación de superficie, slot y geometría desde el mailbox latest-frame-wins. `SharedSurfaceEncodeInput` exige que esa identidad todavía coincida con el pool D3D11 actual antes de crear un `IMFSample`. Por tanto, un frame anunciado antes de un resize se rechaza antes de llegar al MFT.
+
+
+## Coordinación de encode en vivo
+
+La ruta multimedia de Windows ahora incluye `LiveEncodeCoordinator`, que une el modelo asíncrono de créditos `NeedInput` / `HaveOutput` de Media Foundation con el worker acotado de último frame.
+
+El coordinador:
+
+- conserva sólo el frame más reciente mientras no exista crédito de entrada;
+- reserva exactamente un crédito MFT por frame programado;
+- impide que una ráfaga de frames reutilice un solo evento `NeedInput`;
+- falla de forma cerrada si falla el handler de entrada o salida;
+- descarta trabajo pendiente no programado al comenzar drain;
+- expone estadísticas separadas del coordinador, worker y pump.
+
+Esta es la capa determinista de orquestación. El siguiente paso en Windows es integrar las llamadas reales `IMFTransform::ProcessInput` / `ProcessOutput` y después conectar el productor vivo de superficies IddCx.
