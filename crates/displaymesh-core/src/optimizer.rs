@@ -254,10 +254,12 @@ mod tests {
             vec![Codec::H264],
             vec![DisplayPreset::PRESETS[0]],
         );
-        let mut base = SessionConfig::default();
-        base.role = Role::Receiver;
-        base.mode = DisplayMode::Mirror;
-        base.encryption_required = false;
+        let base = SessionConfig {
+            role: Role::Receiver,
+            mode: DisplayMode::Mirror,
+            encryption_required: false,
+            ..SessionConfig::default()
+        };
 
         let recommendation =
             SessionOptimizer::recommend(&base, &peers, &peers, PerformanceProfile::Balanced)

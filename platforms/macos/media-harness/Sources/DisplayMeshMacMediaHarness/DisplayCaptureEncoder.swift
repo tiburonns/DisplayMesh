@@ -1,7 +1,7 @@
 import CoreMedia
 import CoreVideo
 import Foundation
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 import VideoToolbox
 
 struct HostEncoderMetrics {
@@ -313,6 +313,9 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate, @
         configuration.capturesAudio = false
         configuration.showsCursor = true
 
+        let updatedFrameDuration =
+            configuration.minimumFrameInterval
+
         do {
             try await snapshot.stream.updateConfiguration(configuration)
         } catch {
@@ -353,7 +356,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate, @
                         )
                         currentWidth = snapshot.dimensions.width
                         currentHeight = snapshot.dimensions.height
-                        frameDuration = configuration.minimumFrameInterval
+                        frameDuration = updatedFrameDuration
                         forceNextKeyframe = true
                         rasterReconfigurationInProgress = false
                         continuation.resume()

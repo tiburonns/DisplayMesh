@@ -11,7 +11,7 @@
 #include "SharedSurfaceEncodeInput.h"
 
 using Microsoft::WRL::ComPtr;
-using displaymesh::displaymesh::bridge::
+using displaymesh::bridge::
     SharedD3D11TexturePool;
 using displaymesh::media::
     EncodeWorkItem;

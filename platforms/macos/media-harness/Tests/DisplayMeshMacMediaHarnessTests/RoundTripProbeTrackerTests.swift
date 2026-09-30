@@ -8,8 +8,11 @@ final class RoundTripProbeTrackerTests: XCTestCase {
 
         XCTAssertEqual(token, 1)
         XCTAssertNil(tracker.begin(now: 10.1))
+        let measured =
+            tracker.complete(token: 1, now: 10.025)
+        XCTAssertNotNil(measured)
         XCTAssertEqual(
-            tracker.complete(token: 1, now: 10.025),
+            measured ?? -1,
             25,
             accuracy: 0.001
         )
