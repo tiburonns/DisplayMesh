@@ -1,5 +1,6 @@
 import Combine
 import CoreMedia
+import CryptoKit
 import Foundation
 import UIKit
 
@@ -27,6 +28,8 @@ final class ReceiverViewModel: ObservableObject {
     private var admissionTimeoutTask: Task<Void, Never>?
     private var pairingTimeoutTask: Task<Void, Never>?
     private var receiverChallenge: Data?
+    private var pendingKeyAgreementPrivateKey:
+        P256.KeyAgreement.PrivateKey?
     private var invalidPairingAttempts = 0
     private static let maximumInvalidPairingAttempts = 3
 
@@ -170,10 +173,16 @@ final class ReceiverViewModel: ObservableObject {
     func acceptPairing() {
         guard let request = pendingPairing,
               let receiverChallenge,
-              request.isAuthentic(expectedChallenge: receiverChallenge) else {
-            lastProtocolError = PairingValidationError.invalidRequest.localizedDescription
+              let keyAgreementPrivateKey =
+                pendingKeyAgreementPrivateKey,
+              request.isAuthentic(
+                  expectedChallenge: receiverChallenge
+              ) else {
+            lastProtocolError =
+                PairingValidationError.invalidRequest.localizedDescription
             pendingPairing = nil
             pendingPeerPreviouslyTrusted = false
+            pendingKeyAgreementPrivateKey = nil
             sessionAuthorized = false
             listener.disconnectCurrent()
             resetAuthorization()
@@ -185,28 +194,68 @@ final class ReceiverViewModel: ObservableObject {
                 trustedPeerStore.lastErrorDescription
                 ?? "Could not persist DisplayMesh trusted identity"
             sessionAuthorized = false
-            sendPairingResponse(accepted: false, request: request)
+            sendPairingResponse(
+                accepted: false,
+                request: request
+            )
             listener.disconnectCurrent()
             resetAuthorization()
             return
         }
         trustedPeerCount = trustedPeerStore.count
 
-        admissionTimeoutTask?.cancel()
-        admissionTimeoutTask = nil
-        pairingTimeoutTask?.cancel()
-        pairingTimeoutTask = nil
-        sessionAuthorized = true
-        updateIdleTimerPolicy()
-        invalidPairingAttempts = 0
-        pendingPairing = nil
-        pendingPeerPreviouslyTrusted = false
-        lastProtocolError = nil
-        sendPairingResponse(accepted: true, request: request)
-        receiverChallenge = nil
-        sendCapabilitiesIfAuthorized()
-        sendPanelDescriptorIfAuthorized()
-        requestKeyframe(force: true)
+        do {
+            let hostKey = try P256.KeyAgreement.PublicKey(
+                rawRepresentation:
+                    request.keyAgreementPublicKey
+            )
+            let sharedSecret =
+                try keyAgreementPrivateKey
+                    .sharedSecretFromKeyAgreement(
+                        with: hostKey
+                    )
+            let secureSession =
+                try DMPSecureSession.derive(
+                    role: .receiver,
+                    sharedSecret: sharedSecret,
+                    receiverChallenge: request.challenge,
+                    hostChallenge: request.hostChallenge
+                )
+
+            admissionTimeoutTask?.cancel()
+            admissionTimeoutTask = nil
+            pairingTimeoutTask?.cancel()
+            pairingTimeoutTask = nil
+            sessionAuthorized = true
+            updateIdleTimerPolicy()
+            invalidPairingAttempts = 0
+            pendingPairing = nil
+            pendingPeerPreviouslyTrusted = false
+            lastProtocolError = nil
+
+            sendPairingResponse(
+                accepted: true,
+                request: request
+            )
+            listener.activateSecureSession(
+                secureSession
+            )
+            pendingKeyAgreementPrivateKey = nil
+            receiverChallenge = nil
+
+            sendCapabilitiesIfAuthorized()
+            sendPanelDescriptorIfAuthorized()
+            requestKeyframe(force: true)
+        } catch {
+            lastProtocolError =
+                PairingValidationError
+                    .secureSessionFailed(
+                        error.localizedDescription
+                    )
+                    .localizedDescription
+            listener.disconnectCurrent()
+            resetAuthorization()
+        }
     }
 
     func rejectPairing() {
@@ -258,6 +307,13 @@ final class ReceiverViewModel: ObservableObject {
                       ) else {
                     throw PairingValidationError.invalidSignature
                 }
+
+                _ = try P256.KeyAgreement.PublicKey(
+                    rawRepresentation:
+                        request.keyAgreementPublicKey
+                )
+                pendingKeyAgreementPrivateKey =
+                    P256.KeyAgreement.PrivateKey()
 
                 guard trustedPeerStore.isOperational else {
                     throw PairingValidationError.trustStoreUnavailable(
@@ -332,6 +388,7 @@ final class ReceiverViewModel: ObservableObject {
         invalidPairingAttempts += 1
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
+        pendingKeyAgreementPrivateKey = nil
         sessionAuthorized = false
         lastProtocolError = error.localizedDescription
 
@@ -392,7 +449,9 @@ final class ReceiverViewModel: ObservableObject {
         accepted: Bool,
         request: PairingRequest
     ) {
-        guard let receiverIdentity else {
+        guard let receiverIdentity,
+              let keyAgreementPrivateKey =
+                pendingKeyAgreementPrivateKey else {
             lastProtocolError =
                 PairingValidationError
                     .receiverIdentityUnavailable
@@ -406,7 +465,10 @@ final class ReceiverViewModel: ObservableObject {
                 accepted: accepted,
                 receiverName: "DisplayMesh Receiver",
                 receiverChallenge: request.challenge,
-                hostChallenge: request.hostChallenge
+                hostChallenge: request.hostChallenge,
+                keyAgreementPublicKey:
+                    keyAgreementPrivateKey
+                        .publicKey.rawRepresentation
             )
             let payload = try JSONEncoder().encode(response)
             listener.send(type: .pairing, payload: payload)
@@ -519,6 +581,7 @@ final class ReceiverViewModel: ObservableObject {
         sessionAuthorized = false
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
+        pendingKeyAgreementPrivateKey = nil
         receiverChallenge = nil
         lastKeyframeRequestTime = 0
         lastTelemetrySentTime = 0
@@ -532,6 +595,7 @@ private enum PairingValidationError: LocalizedError {
     case identityChanged
     case trustStoreUnavailable(String)
     case receiverIdentityUnavailable
+    case secureSessionFailed(String)
     case admissionExpired
     case expired
 
@@ -547,6 +611,8 @@ private enum PairingValidationError: LocalizedError {
             return "DisplayMesh cannot verify trusted computers: \(detail)"
         case .receiverIdentityUnavailable:
             return "DisplayMesh receiver identity is unavailable; pairing is disabled"
+        case .secureSessionFailed(let detail):
+            return "DisplayMesh secure-session setup failed: \(detail)"
         case .admissionExpired:
             return "DisplayMesh connection did not present a valid pairing request in time"
         case .expired:

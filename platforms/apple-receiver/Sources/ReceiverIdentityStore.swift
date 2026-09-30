@@ -17,7 +17,8 @@ struct ReceiverIdentity {
         accepted: Bool,
         receiverName: String,
         receiverChallenge: Data,
-        hostChallenge: Data
+        hostChallenge: Data,
+        keyAgreementPublicKey: Data
     ) throws -> PairingResponse {
         try PairingResponse.signed(
             accepted: accepted,
@@ -25,7 +26,8 @@ struct ReceiverIdentity {
             receiverID: receiverID,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey: keyAgreementPublicKey
         )
     }
 }
