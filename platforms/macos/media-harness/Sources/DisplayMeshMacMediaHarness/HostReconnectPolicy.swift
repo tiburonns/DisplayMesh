@@ -32,8 +32,13 @@ enum HostReconnectPolicy {
         }
 
         switch protocolError {
-        case .connectionClosed, .timeout:
+        case .connectionClosed:
             return true
+        case .timeout(let operation):
+            return operation == "transport connection"
+                || operation == "receiver hello challenge"
+                || operation == "receiver capabilities"
+                || operation == "receiver panel descriptor"
         case .invalidMagic,
              .unsupportedVersion,
              .unsupportedMessageType,

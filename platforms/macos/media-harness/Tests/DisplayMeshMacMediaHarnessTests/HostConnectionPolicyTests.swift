@@ -78,7 +78,17 @@ final class HostConnectionPolicyTests: XCTestCase {
         )
         XCTAssertTrue(
             HostReconnectPolicy.isRetryable(
-                DMPProtocolError.timeout("transport")
+                DMPProtocolError.timeout("transport connection")
+            )
+        )
+        XCTAssertTrue(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.timeout("receiver capabilities")
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.timeout("pairing approval")
             )
         )
         XCTAssertFalse(

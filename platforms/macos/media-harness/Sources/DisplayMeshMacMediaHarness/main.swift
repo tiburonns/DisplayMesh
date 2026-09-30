@@ -439,7 +439,8 @@ struct DisplayMeshMacMediaHarness {
             try Task.checkCancellation()
 
             guard receiver.isConnected else {
-                throw DMPProtocolError.connectionClosed
+                throw receiver.lastDisconnectError
+                    ?? DMPProtocolError.connectionClosed
             }
 
             if let durationSeconds,
