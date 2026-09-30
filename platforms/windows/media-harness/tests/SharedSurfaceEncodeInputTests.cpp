@@ -84,10 +84,14 @@ ComPtr<ID3D11Device> CreateWarpDevice() {
     return device;
 }
 
-EncodeWorkItem WorkForSlot(
+EncodeWorkItem WorkForSequence(
     const SharedD3D11TexturePool& pool,
-    std::uint32_t slotIndex,
     std::uint64_t sequence) {
+    const auto slotIndex =
+        static_cast<std::uint32_t>(
+            sequence %
+            bridge::kFrameMailboxSlotCount);
+
     const auto* slot = pool.Slot(slotIndex);
     assert(slot != nullptr);
 
@@ -133,7 +137,7 @@ int main() {
         factory);
 
     const auto current =
-        WorkForSlot(pool, 1, 10);
+        WorkForSequence(pool, 10);
 
     ComPtr<IMFSample> sample;
     assert(SUCCEEDED(
@@ -165,7 +169,7 @@ int main() {
     assert(sample == nullptr);
 
     const auto resized =
-        WorkForSlot(pool, 1, 11);
+        WorkForSequence(pool, 11);
 
     assert(SUCCEEDED(
         bridge.CreateSample(
