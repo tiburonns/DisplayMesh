@@ -330,8 +330,8 @@ impl eframe::App for DisplayMeshApp {
                 "DisplayMesh está diseñado para sesiones USB y Wi-Fi de primera clase. Hoy el validador end-to-end de desarrollo expone sólo Wi-Fi/LAN; USB sigue siendo un milestone de transporte. Los receivers iPhone/iPad apuntan a resolución Retina nativa y entrada táctil/stylus.",
             ));
             ui.label(self.tr(
-                "The development validator advertises only the transport that exists end to end today: H.264 over plaintext TCP on Wi-Fi/LAN. Production defaults still require encrypted transport.",
-                "El validador de desarrollo sólo anuncia el transporte que existe de extremo a extremo hoy: H.264 sobre TCP sin cifrar por Wi-Fi/LAN. La configuración de producción sigue exigiendo transporte cifrado.",
+                "The development validator advertises only the transport that exists end to end today: H.264 over plaintext TCP on Wi-Fi/LAN. Production policy rejects plaintext even if a peer advertises it.",
+                "El validador de desarrollo sólo anuncia el transporte que existe de extremo a extremo hoy: H.264 sobre TCP sin cifrar por Wi-Fi/LAN. La política de producción rechaza plaintext aunque un peer lo anuncie.",
             ));
             ui.add_space(18.0);
 
