@@ -51,6 +51,7 @@
 - [x] EN/ES/Sistema, pairing explícito, estado de seguridad visible y proyecto reproducible del receiver.
 - [x] Guard de secuencia/replay por conexión DMP.
 - [x] Timeouts de pairing y descriptor de panel en la ruta de desarrollo macOS.
+- [x] Deadline acotado de conexión macOS y cierre fail-closed ante control/telemetría malformados.
 - [x] Presupuestos DMP por tipo y tamaños exactos para frames interactivos.
 - [x] Gate de admisión por fase/autorización en el receiver.
 - [x] Pairing malformado acotado y respuesta ligada al challenge activo.

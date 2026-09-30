@@ -193,6 +193,8 @@ The shared development capability scaffold intentionally advertises only the imp
 
 - TLS 1.3 is required for normal remote sessions.
 - A connected development peer must present a valid signed pairing request within a bounded admission window or the receiver closes the connection.
+- Host transport establishment is also bounded: a TCP connection that never reaches a usable state is cancelled instead of leaving session setup suspended indefinitely.
+- Malformed hello, pairing, capability, panel or telemetry payloads fail closed and tear down the current transport connection rather than attempting to resynchronize it.
 - First pairing requires explicit user confirmation; the approval window is bounded and rejection/expiry closes that connection so a retry starts with a fresh challenge and sequence space.
 - A paired peer gets a persistent local identity record.
 - A device identity change invalidates silent reconnect.
