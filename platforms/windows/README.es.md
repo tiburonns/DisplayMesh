@@ -20,13 +20,14 @@ Implementado en código:
 - lifecycle real de adquisición/liberación del swap-chain IddCx
 - puente de touch multi-contacto para Windows
 - validación CI del hardware ID, paquete, modos y regla de no hacer readback a CPU
+- pool reutilizable de tres texturas D3D11 compartidas con NT handles, keyed mutex y recreación segura por generación
 
 Pendiente:
 - conectar el bridge driver/GPU con el worker Media Foundation sin readback a CPU
 
 - compilar el driver con un toolchain WDK real
 - instalarlo/test-firmarlo en hardware Windows o VM adecuada
-- conectar las texturas D3D11 con H.264 de Media Foundation
+- conectar el productor IddCx con el pool D3D11 compartido y el worker H.264 de Media Foundation
 - modos dinámicos según el receiver
 - integrar la sesión DMP autenticada con el inyector táctil
 - firma de producción del driver

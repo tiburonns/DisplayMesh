@@ -16,12 +16,13 @@ Implemented in source:
 - real IddCx swap-chain acquisition/release lifecycle
 - Windows multi-contact touch injection bridge
 - CI contract checks for hardware ID, driver package, modes and no-CPU-readback invariant
+- reusable three-slot D3D11 shared-texture pool with NT handles, keyed mutexes and generation-safe resize/recreation
 
 Still pending:
 
 - compile the driver with a real WDK toolchain
 - install/test-sign it on Windows hardware or a suitable VM
-- connect D3D11 desktop textures to Media Foundation H.264
+- connect the IddCx desktop texture producer to the shared D3D11 pool and Media Foundation H.264 worker
 - dynamic receiver-native monitor modes
 - integrate authenticated DMP input with the touch injector
 - production driver signing

@@ -34,7 +34,8 @@
 - [x] Normalización H.264 de salida Windows (Annex-B + AVC con longitudes de 4 bytes) antes del packetizer DMP.
 - [x] Pipeline IMFSample codificado → normalización H.264 → payload DMP con timing validado.
 - [x] Contrato de generación/geometría para slots GPU compartidos y rechazo de anuncios obsoletos.
-- [ ] Backend productivo completo de encode Windows, shared handles reales y validación de hardware.
+- [x] Pool real de tres texturas D3D11 compartidas con NT handles, keyed mutex y validación de lifecycle mediante WARP.
+- [ ] Conectar las superficies producidas por IddCx con el worker Media Foundation; backend productivo completo y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
 ## M3 — USB + red

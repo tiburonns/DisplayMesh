@@ -26,9 +26,11 @@ The requested receiver mode is added to the monitor/target mode list on the next
 - sequence gaps report how many stale frames were intentionally skipped,
 - metadata publication uses lock-free atomics on the supported x64/ARM64 Windows targets.
 
-This mailbox does not carry pixels. The production frame bridge will keep pixels in shared D3D11 textures and use the mailbox only to announce which GPU slot is freshest. `SharedGpuSlotContract.h` binds slot index + monotonically increasing generation + geometry, so texture recreation can invalidate old announcements before a consumer touches a shared handle.
+The mailbox does not carry pixels. `SharedD3D11TexturePool` now owns exactly three real D3D11 textures created with NT shared handles + keyed mutex support, while `SharedGpuSlotContract.h` binds slot index + monotonically increasing generation + geometry. Pool recreation is atomic: a new generation replaces the old slots only after all three textures/handles are created successfully, so resize failure cannot leave a partially updated pool and stale announcements cannot target recreated textures.
 
 This gives DisplayMesh deterministic **latest-frame-wins** behavior: congestion can reduce visual frame count, but it cannot turn into seconds of accumulated interaction latency.
+
+The bridge-probe test suite creates the shared texture pool on the Windows WARP D3D11 device, reopens every NT handle through `ID3D11Device1::OpenSharedResource1`, verifies keyed-mutex/share flags, then recreates the pool at a new raster and confirms the previous generation is rejected. WARP validates ownership/lifecycle without claiming physical-GPU performance.
 
 ## Build and test
 
