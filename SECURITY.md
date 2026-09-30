@@ -85,7 +85,7 @@ Production negotiation must reject any configuration with encryption disabled, e
 
 The Apple receiver and macOS media harness now share a mirrored secure-session primitive based on ephemeral P-256 key agreement, HKDF-SHA256 directional keys and ChaCha20-Poly1305 authenticated encryption. Authentication data binds DMP protocol version, message type, flags and sequence number.
 
-This primitive is **not yet wired into the DMP TCP framing path**. The receiver capability named encryptedTransport must therefore remain false and plaintext TCP remains development-only until key exchange is connected to pairing and every post-pairing frame is required to authenticate/decrypt successfully.
+The secure-session primitive is now wired into the macOS ↔ Apple DMP TCP framing path. Ephemeral P-256 key-agreement public keys are covered by the signed mutual pairing transcript, and every post-pairing frame is required to authenticate/decrypt successfully. The current binding is encrypted and authenticated at the DMP payload layer; a separately reviewed production transport remains a release gate.
 
 
 ## Protected frame codec staging
@@ -98,4 +98,4 @@ DisplayMesh now has a mirrored Apple/macOS protected-frame codec that enforces t
 - ChaCha20-Poly1305 overhead is included in per-message wire-size validation, including exact-size input and keyframe-request messages;
 - the encrypted flag, message type and sequence remain authenticated metadata.
 
-This is a stronger staging boundary than the raw AEAD primitive alone, but the active TCP listener/connection do not yet install the codec from pairing key-agreement material. Production security is therefore **not** claimed yet.
+The active TCP listener/connection now install the codec from pairing-bound ephemeral key-agreement material before capabilities or media are admitted. Production readiness still requires the remaining transport review, hardware acceptance, signing and packaging gates.

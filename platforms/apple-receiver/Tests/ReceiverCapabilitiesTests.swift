@@ -14,7 +14,8 @@ final class ReceiverCapabilitiesTests: XCTestCase {
         )
 
         let capabilities = ReceiverCapabilities.development(
-            panel: panel
+            panel: panel,
+            encryptedTransport: true
         )
 
         XCTAssertTrue(capabilities.isValid)

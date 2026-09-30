@@ -66,4 +66,4 @@ La implementación ya define en código ejecutable el límite de protección pos
 
 La validación del tamaño de payload cifrado contempla los 28 bytes de overhead del formato combinado de ChaChaPoly, incluidos mensajes de tamaño exacto como input y solicitud de keyframe.
 
-La ruta TCP de desarrollo todavía debe intercambiar las claves públicas efímeras P-256 dentro del transcript de pairing firmado e instalar este codec en ambos sockets antes de capabilities/media.
+La ruta TCP de desarrollo ya intercambia las claves públicas efímeras P-256 dentro del transcript de pairing firmado e instala este codec en ambos sockets antes de capabilities/media.

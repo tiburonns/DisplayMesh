@@ -49,7 +49,9 @@ required_files = [
     RECEIVER / "Tests" / "ReceiverTelemetryCadencePolicyTests.swift",
     RECEIVER / "Sources" / "ReceiverIdentityStore.swift",
     RECEIVER / "Sources" / "DMPSecureSession.swift",
+    RECEIVER / "Sources" / "DMPProtectedFrameCodec.swift",
     RECEIVER / "Tests" / "SecureSessionTests.swift",
+    RECEIVER / "Tests" / "ProtectedFrameCodecTests.swift",
 ]
 
 errors: list[str] = []
@@ -136,7 +138,7 @@ if root_readme.is_file() and f"Current `main`: {workspace_version}" not in root_
 settings = RECEIVER / "App" / "SettingsView.swift"
 if settings.is_file():
     settings_text = settings.read_text(encoding="utf-8")
-    forbidden_claims = ("TLS 1.3 enabled", "Encrypted transport active")
+    forbidden_claims = ("TLS 1.3 enabled",)
     for claim in forbidden_claims:
         if claim in settings_text:
             errors.append(f"development receiver makes unsupported security claim: {claim}")
@@ -238,6 +240,7 @@ if pairing_source.is_file():
         "identityFingerprint",
         "challenge: Data",
         "hostChallenge: Data",
+        "keyAgreementPublicKey: Data",
         "receiverID: String",
         "DMP1-PAIRING-RESPONSE",
     ):
@@ -268,6 +271,14 @@ if 'name: "DisplayMesh"' not in listener_source:
     errors.append("privacy contract failed: Bonjour must advertise the generic DisplayMesh service name")
 if "func disconnectCurrent()" not in listener_source:
     errors.append("transport contract failed: receiver needs explicit active-connection teardown")
+for required_token in (
+    "DMPProtectedFrameCodec",
+    "installSecureSession",
+    "protectedCodec.outboundFrame",
+    "protectedCodec.inboundFrame",
+):
+    if required_token not in listener_source:
+        errors.append(f"secure transport wiring is missing token: {required_token}")
 
 panel_source = (RECEIVER / "Sources" / "PanelDescriptor.swift").read_text(encoding="utf-8")
 if "var isValid: Bool" not in panel_source:
@@ -277,7 +288,7 @@ capabilities_source = (RECEIVER / "Protocol" / "ReceiverCapabilities.swift").rea
 for required_token in (
     'codecs: [Self.h264]',
     'connectionBindings: [Self.tcp]',
-    'encryptedTransport: false',
+    'encryptedTransport: encryptedTransport',
     'supportsDevelopmentHost',
 ):
     if required_token not in capabilities_source:

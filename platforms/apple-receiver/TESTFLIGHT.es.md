@@ -1,6 +1,6 @@
 # DisplayMesh Receiver 0.2.3 — Preflight de TestFlight
 
-El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo DisplayMesh esté listo para producción. Esto **no** convierte el transporte TCP sin cifrar en una función segura de producción.
+El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo DisplayMesh esté listo para producción. La ruta actual macOS ↔ Apple protege todos los frames DMP posteriores al pairing mediante una sesión autenticada efímera P-256 / HKDF-SHA256 / ChaCha20-Poly1305. Esto **no** significa que el transporte final de producción ya haya completado su revisión independiente de seguridad.
 
 ## Gates de código
 
@@ -34,7 +34,7 @@ Ejecuta `./platforms/apple-receiver/preflight-testflight.sh` desde la raíz. Val
 
 ## Export compliance
 
-El receiver ahora contiene código CryptoKit para identidad P-256 persistente y una implementación de sesión segura en preparación basada en P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305. No se debe fijar una exención de export compliance en el plist antes de la primera subida.
+El receiver usa CryptoKit para identidad P-256 persistente y para la sesión DMP activa posterior al pairing basada en P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305. No se debe fijar una exención de export compliance en el plist antes de la primera subida.
 
 Para el primer TestFlight, deja `ITSAppUsesNonExemptEncryption` sin definir y responde el cuestionario de cifrado de App Store Connect según la build realmente enviada y las regiones de distribución. Después de que Apple determine si este uso es exento o requiere documentación, registra el resultado y sólo entonces añade la clave/código correspondiente para futuras releases.
 
@@ -42,4 +42,4 @@ Para el primer TestFlight, deja `ITSAppUsesNonExemptEncryption` sin definir y re
 
 Genera el proyecto con XcodeGen 2.46.0, ábrelo en Xcode 26+, selecciona tu Team de pago, Archive, Validate App y súbelo a **Internal TestFlight**.
 
-El receiver sigue siendo candidato interno/de desarrollo mientras DMP use TCP sin cifrar. La distribución de producción continúa bloqueada por `docs/QUALITY_GATES.md`.
+El receiver sigue siendo candidato interno/de desarrollo con payloads DMP autenticados y cifrados sobre el binding TCP actual. La distribución de producción continúa sujeta a los gates de seguridad, firma y hardware de `docs/QUALITY_GATES.md`.
