@@ -15,8 +15,9 @@ At runtime it verifies that a Windows machine can:
 5. require a D3D11-aware encoder,
 6. configure H.264 output and NV12 input,
 7. request low-latency operation,
-8. wrap the NV12 `ID3D11Texture2D` in a Media Foundation DXGI buffer/sample without CPU readback,
-9. normalize hardware H.264 output from Annex-B or 4-byte AVC length-prefixed access units before DMP packetization.
+8. wrap an NV12 `ID3D11Texture2D` in a Media Foundation DXGI buffer/sample without CPU readback,
+9. reopen DisplayMesh NT shared D3D11 handles and validate geometry/format before wrapping them in timed `IMFSample` objects,
+10. normalize hardware H.264 output from Annex-B or 4-byte AVC length-prefixed access units before DMP packetization.
 
 This is the correct foundation for DisplayMesh's Windows sender. Hardware MFTs are asynchronous. The harness now includes a deterministic MFT pump state contract for NeedInput / HaveOutput / drain sequencing, alongside the bounded latest-frame worker, so the eventual hardware event pump cannot block the IddCx swap-chain thread or submit input after drain has started.
 
@@ -45,7 +46,7 @@ A successful result proves capability/configuration on that machine. It does **n
 
 ## Next integration
 
-The bounded worker, MFT event-pump state contract, and encoded-output processor are now present. Media Foundation output samples are read as contiguous encoded buffers, their timing is converted into DMP units, H.264 is normalized, and the result is packetized for DMP. The next runtime step is to bind real MFT events and live DXGI input samples to that contract:
+The bounded worker, MFT event-pump state contract, encoded-output processor, shared D3D11 pool and shared-handle DXGI sample factory are now present. The factory reopens the NT shared texture, rejects geometry/format mismatches, keeps the sample GPU-backed, and assigns Media Foundation timestamps/durations without mapping pixels to CPU memory. Media Foundation output samples are then normalized and packetized for DMP. The next runtime step is to bind the live IddCx producer and actual asynchronous MFT events to this contract:
 
 ```text
 IddCx BGRA texture

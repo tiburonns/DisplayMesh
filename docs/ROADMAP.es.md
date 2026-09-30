@@ -35,7 +35,8 @@
 - [x] Pipeline IMFSample codificado → normalización H.264 → payload DMP con timing validado.
 - [x] Contrato de generación/geometría para slots GPU compartidos y rechazo de anuncios obsoletos.
 - [x] Pool real de tres texturas D3D11 compartidas con NT handles, keyed mutex y validación de lifecycle mediante WARP.
-- [ ] Conectar las superficies producidas por IddCx con el worker Media Foundation; backend productivo completo y validación de hardware.
+- [x] Adaptador NT handle D3D11 compartido → sample DXGI temporizado de Media Foundation con validación de geometría/formato.
+- [ ] Conectar las superficies producidas por IddCx y los eventos MFT reales con el worker Media Foundation; backend productivo completo y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
 ## M3 — USB + red
