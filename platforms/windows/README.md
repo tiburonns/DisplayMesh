@@ -89,6 +89,6 @@ This is an admission/state-machine boundary, **not** the Windows pairing/crypto 
 
 ## Session-gated input routing
 
-`input-bridge/DmpInputRouter` joins the protocol admission gate and the 40-byte input decoder. Even a structurally valid touch sample is rejected unless the host session is already in `streaming`; non-input frames and reserved outer/input flags are rejected before injection.
+`input-bridge/DmpInputRouter` joins the protocol admission gate and the 40-byte input decoder. Even a structurally valid touch sample is rejected unless the host session is already in `streaming`; non-input frames and reserved DMP input-payload flags are rejected before injection.
 
 The remaining integration is the actual Windows network/pairing service: it must advance `DmpHostSessionGate` only after identity/pairing/capability validation, decode frames through the native DMP library, then pass authorized input frames through this router into `TouchInjector`.

@@ -180,28 +180,6 @@ void TestNonInputFrameRejected() {
             error));
 }
 
-void TestOuterFlagsRejected() {
-    DmpHostSessionGate gate;
-    AdvanceToStreaming(gate);
-
-    InputSample sample{};
-    std::string error;
-
-    DmpFrame frame{
-        DmpMessageType::Input,
-        1,
-        12,
-        MakeValidInputPayload(),
-    };
-
-    assert(
-        !DecodeSessionAuthorizedInput(
-            frame,
-            gate,
-            sample,
-            error));
-}
-
 void TestPayloadValidationStillApplies() {
     DmpHostSessionGate gate;
     AdvanceToStreaming(gate);
@@ -257,7 +235,6 @@ int main() {
     TestInputBlockedBeforeStreaming();
     TestValidInputRoutesWhileStreaming();
     TestNonInputFrameRejected();
-    TestOuterFlagsRejected();
     TestPayloadValidationStillApplies();
     TestResetImmediatelyBlocksInput();
     return 0;

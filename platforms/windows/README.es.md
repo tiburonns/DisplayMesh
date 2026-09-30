@@ -80,6 +80,6 @@ Es una frontera de admisión/estado, **no** la implementación criptográfica de
 
 ## Routing de input condicionado por sesión
 
-`input-bridge/DmpInputRouter` une el gate de admisión del protocolo con el decoder de input de 40 bytes. Incluso un sample touch estructuralmente válido se rechaza mientras la sesión host no esté en `streaming`; frames que no sean input y flags reservados también se rechazan antes de la inyección.
+`input-bridge/DmpInputRouter` une el gate de admisión del protocolo con el decoder de input de 40 bytes. Incluso un sample touch estructuralmente válido se rechaza mientras la sesión host no esté en `streaming`; frames que no sean input y los flags reservados del payload DMP Input también se rechazan antes de la inyección.
 
 La integración pendiente es el servicio real de red/pairing Windows: deberá avanzar `DmpHostSessionGate` sólo después de validar identidad/pairing/capabilities, decodificar frames con la biblioteca DMP nativa y entregar únicamente input autorizado a `TouchInjector`.

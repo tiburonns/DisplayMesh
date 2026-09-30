@@ -181,7 +181,6 @@ input_router_source = windows_input_router.read_text(encoding="utf-8")
 for token in [
     "CanRouteInput",
     "DmpMessageType::Input",
-    "frame.flags != 0",
     "DecodeInputSample",
 ]:
     if token not in input_router_source:

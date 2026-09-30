@@ -19,12 +19,6 @@ bool DecodeSessionAuthorizedInput(
         return false;
     }
 
-    if (frame.flags != 0) {
-        error =
-            "DMP input frame flags are reserved and must be zero";
-        return false;
-    }
-
     return DecodeInputSample(
         frame.payload,
         output,
