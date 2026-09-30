@@ -65,6 +65,7 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         )
 
         XCTAssertEqual(decision?.bitrateMbps, 21)
+        XCTAssertEqual(decision?.rasterScale, 1.0)
         XCTAssertEqual(decision?.requestKeyframe, false)
     }
 
@@ -87,6 +88,7 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         )
 
         XCTAssertEqual(decision?.bitrateMbps, 30)
+        XCTAssertEqual(decision?.rasterScale, 1.0)
         XCTAssertEqual(decision?.requestKeyframe, true)
     }
 
@@ -114,7 +116,76 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         }
 
         XCTAssertEqual(decision?.bitrateMbps, 13)
+        XCTAssertEqual(decision?.rasterScale, 1.0)
         XCTAssertEqual(decision?.requestKeyframe, false)
+    }
+
+    func testPersistentSevereStressStepsRasterDownWithHysteresis() {
+        var controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 40,
+            targetFramesPerSecond: 60
+        )
+
+        _ = controller.update(
+            telemetry(received: 60, dropped: 0)
+        )
+
+        var decision: ReceiverAdaptationDecision?
+        for index in 1...3 {
+            decision = controller.update(
+                telemetry(
+                    received: 60 + UInt64(index * 60),
+                    dropped: UInt64(index * 8),
+                    fps: 35,
+                    decodeMilliseconds: 24
+                )
+            )
+        }
+
+        XCTAssertEqual(decision?.rasterScale, 0.85)
+        XCTAssertEqual(controller.rasterScale, 0.85)
+        XCTAssertEqual(decision?.requestKeyframe, true)
+    }
+
+    func testHealthyLinkRestoresRasterOnlyAfterBitrateRecovered() {
+        var controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 24,
+            initialRasterScale: 0.75,
+            maximumBitrateMbps: 24,
+            targetFramesPerSecond: 60
+        )
+
+        _ = controller.update(
+            telemetry(received: 60, dropped: 0)
+        )
+
+        var decision: ReceiverAdaptationDecision?
+        for index in 1...12 {
+            if let next = controller.update(
+                telemetry(
+                    received: 60 + UInt64(index * 60),
+                    dropped: 0,
+                    fps: 60,
+                    decodeMilliseconds: 3
+                )
+            ) {
+                decision = next
+            }
+        }
+
+        XCTAssertEqual(controller.rasterScale, 0.85)
+        XCTAssertEqual(decision?.rasterScale, 0.85)
+        XCTAssertEqual(decision?.requestKeyframe, true)
+    }
+
+    func testRasterScaleInitializationSnapsToSupportedStep() {
+        let controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 24,
+            initialRasterScale: 0.81,
+            targetFramesPerSecond: 60
+        )
+
+        XCTAssertEqual(controller.rasterScale, 0.85)
     }
 
     func testCounterResetDoesNotLookLikeCongestion() {

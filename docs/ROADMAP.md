@@ -90,7 +90,7 @@
 - [ ] USB device discovery
 - [x] Signed macOS development host pairing request + Keychain identity persistence
 - [x] Apple receiver ↔ macOS development pairing handshake
-- [x] Adaptive bitrate/raster decision engine
+- [x] Adaptive bitrate/raster decision engine with 100/85/75/67% hysteresis
 - [x] Wire receiver decode/drop telemetry into the macOS development adaptive controller
 - [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder
 - [ ] Apply adaptive stream raster to capture/encode
