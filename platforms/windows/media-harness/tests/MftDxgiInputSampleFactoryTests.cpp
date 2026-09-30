@@ -4,10 +4,12 @@
 #include <d3d11_1.h>
 #include <mfapi.h>
 #include <mfidl.h>
+#include <objbase.h>
 #include <wrl/client.h>
 
 #include <cassert>
 #include <cstdint>
+#include <limits>
 
 #include "MftDxgiInputSampleFactory.h"
 #include "SharedD3D11TexturePool.h"
@@ -19,6 +21,27 @@ using displaymesh::media::
     MftDxgiInputSampleFactory;
 
 namespace {
+
+class ComGuard {
+public:
+    ComGuard() noexcept
+        : result_(CoInitializeEx(
+              nullptr,
+              COINIT_MULTITHREADED)) {}
+
+    ~ComGuard() {
+        if (SUCCEEDED(result_)) {
+            CoUninitialize();
+        }
+    }
+
+    HRESULT Result() const noexcept {
+        return result_;
+    }
+
+private:
+    HRESULT result_{};
+};
 
 class MfGuard {
 public:
@@ -102,6 +125,9 @@ void ValidateDxgiBuffer(
 }  // namespace
 
 int main() {
+    ComGuard com;
+    assert(SUCCEEDED(com.Result()));
+
     MfGuard mf;
     assert(SUCCEEDED(mf.Result()));
 
@@ -113,6 +139,10 @@ int main() {
 
     const auto* slot = pool.Slot(0);
     assert(slot != nullptr);
+
+    MftDxgiInputSampleFactory missingDevice(
+        nullptr);
+    assert(!missingDevice.IsReady());
 
     MftDxgiInputSampleFactory factory(
         device.Get());
@@ -171,6 +201,26 @@ int main() {
             slot->Descriptor(),
             0,
             0,
+            invalid)));
+
+    assert(FAILED(
+        missingDevice.CreateFromSharedHandle(
+            slot->SharedHandle(),
+            slot->Descriptor(),
+            0,
+            16'667,
+            invalid)));
+
+    const auto overflowingTimestamp =
+        static_cast<std::uint64_t>(
+            std::numeric_limits<LONGLONG>::max()) /
+            10 + 1;
+    assert(FAILED(
+        factory.CreateFromSharedHandle(
+            slot->SharedHandle(),
+            slot->Descriptor(),
+            overflowingTimestamp,
+            16'667,
             invalid)));
 
     SharedD3D11TexturePool

@@ -46,7 +46,7 @@ A successful result proves capability/configuration on that machine. It does **n
 
 ## Next integration
 
-The bounded worker, MFT event-pump state contract, encoded-output processor, shared D3D11 pool and shared-handle DXGI sample factory are now present. The factory reopens the NT shared texture, rejects geometry/format mismatches, keeps the sample GPU-backed, and assigns Media Foundation timestamps/durations without mapping pixels to CPU memory. Media Foundation output samples are then normalized and packetized for DMP. The next runtime step is to bind the live IddCx producer and actual asynchronous MFT events to this contract:
+The bounded worker, MFT event-pump state contract, encoded-output processor, shared D3D11 pool and shared-handle DXGI sample factory are now present. The factory reopens an NT shared texture, rejects geometry/format mismatches, keeps the sample GPU-backed, and assigns Media Foundation timestamps/durations without mapping pixels to CPU memory. The WARP contract test intentionally wraps the pool's BGRA surface to validate shared-handle ownership; **this is not a claim that BGRA is fed directly to the H.264 encoder**. The live sender still performs GPU BGRA → NV12 conversion before submitting NV12 to the encoder MFT. Media Foundation H.264 output is then normalized and packetized for DMP. The next runtime step is to bind the live IddCx producer, GPU conversion stage and actual asynchronous MFT events to this contract:
 
 ```text
 IddCx BGRA texture

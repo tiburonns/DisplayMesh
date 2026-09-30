@@ -11,7 +11,9 @@ MftDxgiInputSampleFactory(
     ID3D11Device* device) noexcept {
     if (device != nullptr) {
         device->QueryInterface(
-            IID_PPV_ARGS(&device_));
+            __uuidof(ID3D11Device1),
+            reinterpret_cast<void**>(
+                device_.ReleaseAndGetAddressOf()));
     }
 }
 

@@ -26,4 +26,4 @@ El siguiente paso es conectar un worker asíncrono y acotado entre IddCx y el MF
 
 ## Entrada DXGI compartida
 
-El harness incorpora una fábrica de samples que abre los NT handles del pool D3D11 compartido mediante `ID3D11Device1::OpenSharedResource1`, valida tamaño/formato, exige la superficie compartida con keyed mutex y la envuelve con `MFCreateDXGISurfaceBuffer`. Los tests usan WARP para validar ownership, timing y recreación sin convertir esa prueba en una afirmación de rendimiento de GPU física.
+El harness incorpora una fábrica de samples que abre los NT handles del pool D3D11 compartido mediante `ID3D11Device1::OpenSharedResource1`, valida tamaño/formato, exige la superficie compartida con keyed mutex y la envuelve con `MFCreateDXGISurfaceBuffer`. El test WARP envuelve intencionalmente la superficie BGRA para validar ownership y timing; **no significa que BGRA se envíe directamente al encoder H.264**. La ruta real conserva la conversión GPU BGRA → NV12 antes de entregar NV12 al MFT. WARP valida lifecycle sin convertir esa prueba en una afirmación de rendimiento de GPU física.
