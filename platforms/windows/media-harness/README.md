@@ -63,3 +63,19 @@ network / USB transport
 ```
 
 No ordinary frame should be copied to CPU memory.
+
+
+## Live encode coordination
+
+The Windows media path now includes `LiveEncodeCoordinator`, which joins Media Foundation's asynchronous `NeedInput` / `HaveOutput` credit model to the existing bounded latest-frame worker.
+
+The coordinator:
+
+- keeps only the newest frame while no input credit exists;
+- reserves exactly one MFT input credit per scheduled frame;
+- does not let a burst of producer frames reuse one `NeedInput` event;
+- fails closed if the input or output handler fails;
+- drops unscheduled waiting work when drain begins;
+- exposes coordinator, worker and pump statistics independently.
+
+This is the deterministic orchestration layer. The next Windows step is concrete `IMFTransform::ProcessInput` / `ProcessOutput` integration and then wiring the live IddCx surface producer into it.

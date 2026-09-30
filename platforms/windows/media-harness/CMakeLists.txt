@@ -44,6 +44,7 @@ add_library(displaymesh_windows_media STATIC
     H264AccessUnitNormalizer.cpp
     MftEncodedSampleProcessor.cpp
     MftEncoderPumpState.cpp
+    LiveEncodeCoordinator.cpp
     MftDxgiInputSampleFactory.cpp
     SharedSurfaceEncodeInput.cpp
 )
@@ -194,6 +195,21 @@ if(BUILD_TESTING)
     add_test(
         NAME mft-encoder-pump-state
         COMMAND mft-encoder-pump-state-tests
+    )
+
+    add_executable(
+        live-encode-coordinator-tests
+        tests/LiveEncodeCoordinatorTests.cpp
+    )
+
+    target_link_libraries(
+        live-encode-coordinator-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME live-encode-coordinator
+        COMMAND live-encode-coordinator-tests
     )
 
     add_executable(
