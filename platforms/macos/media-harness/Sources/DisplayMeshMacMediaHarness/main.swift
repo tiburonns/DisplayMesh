@@ -286,6 +286,32 @@ struct DisplayMeshMacMediaHarness {
             throw DMPProtocolError.pairingRejected
         }
 
+        let receiverTrust = ReceiverTrustStore()
+        guard receiverTrust.isOperational else {
+            throw DMPProtocolError.receiverTrustStoreUnavailable(
+                receiverTrust.lastErrorDescription
+                    ?? "Unknown Keychain error"
+            )
+        }
+
+        switch receiverTrust.status(for: pairing) {
+        case .identityChanged:
+            throw DMPProtocolError.receiverIdentityChanged
+        case .new:
+            guard receiverTrust.trust(pairing) else {
+                throw DMPProtocolError.receiverTrustStoreUnavailable(
+                    receiverTrust.lastErrorDescription
+                        ?? "Could not persist receiver identity"
+                )
+            }
+        case .trusted:
+            break
+        }
+
+        print(
+            "RECEIVER IDENTITY: " +
+            pairing.identityFingerprint.uppercased()
+        )
         print("Paired with \(pairing.receiverName). Negotiating receiver capabilities …")
         let capabilities = try await receiver.waitForReceiverCapabilities()
         guard capabilities.supportsDevelopmentHost else {

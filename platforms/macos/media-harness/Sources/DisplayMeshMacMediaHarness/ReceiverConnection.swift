@@ -29,6 +29,7 @@ final class ReceiverConnection {
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
     private var helloWaitToken: UUID?
 
+    private var pairingRequest: PairingRequest?
     private var pairingResponse: PairingResponse?
     private var pairingContinuation: CheckedContinuation<PairingResponse, Error>?
     private var pairingWaitToken: UUID?
@@ -206,6 +207,7 @@ final class ReceiverConnection {
             )
         }
 
+        pairingRequest = request
         setProtocolPhase(.awaitingPairingResponse)
         let payload = try JSONEncoder().encode(request)
         send(type: .pairing, payload: payload)
@@ -544,8 +546,11 @@ final class ReceiverConnection {
                         UInt8(clamping: response.protocolVersion)
                     )
                 }
-                guard let challenge = receiverHello?.challenge,
-                      response.isValid(expectedChallenge: challenge) else {
+                guard let request = pairingRequest,
+                      response.isAuthentic(
+                          expectedReceiverChallenge: request.challenge,
+                          expectedHostChallenge: request.hostChallenge
+                      ) else {
                     throw DMPProtocolError.invalidPairingResponse
                 }
                 pairingResponse = response
@@ -686,6 +691,7 @@ final class ReceiverConnection {
         receiverHello = nil
         setProtocolPhase(.awaitingHello)
         helloWaitToken = nil
+        pairingRequest = nil
         pairingResponse = nil
         receiverCapabilities = nil
         capabilitiesWaitToken = nil

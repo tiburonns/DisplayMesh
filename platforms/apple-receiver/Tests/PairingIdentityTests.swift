@@ -13,6 +13,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: peerID,
             verificationCode: "123456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
 
@@ -39,6 +40,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123 456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
         XCTAssertFalse(formattedCode.hasValidShape)
@@ -48,6 +50,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
         XCTAssertFalse(oversizedName.hasValidShape)
@@ -62,6 +65,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: UUID().uuidString,
             verificationCode: "123456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
 
@@ -71,6 +75,7 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "654321",
             protocolVersion: valid.protocolVersion,
             challenge: valid.challenge,
+            hostChallenge: valid.hostChallenge,
             identityPublicKey: valid.identityPublicKey,
             signature: valid.signature
         )
@@ -94,6 +99,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: peerID,
             verificationCode: "123456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -107,6 +113,7 @@ final class PairingIdentityTests: XCTestCase {
             peerID: peerID,
             verificationCode: "123456",
             challenge: hello.challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -118,21 +125,39 @@ final class PairingIdentityTests: XCTestCase {
 extension PairingIdentityTests {
     func testPairingResponseIsBoundToActiveChallenge() throws {
         let challenge = try ReceiverHello.make().challenge
-        let response = PairingResponse(
+        let hostChallenge = PairingRequest.makeHostChallenge()
+        let response = try PairingResponse.signed(
             accepted: true,
             receiverName: "Test iPad",
-            protocolVersion: Int(DMPFrame.version),
-            challenge: challenge
+            receiverID: UUID().uuidString,
+            challenge: challenge,
+            hostChallenge: hostChallenge,
+            privateKey: P256.Signing.PrivateKey()
         )
 
         XCTAssertTrue(
-            response.isValid(expectedChallenge: challenge)
+            response.isAuthentic(
+                expectedReceiverChallenge: challenge,
+                expectedHostChallenge: hostChallenge
+            )
         )
 
         var different = challenge
         different[0] ^= 0xFF
         XCTAssertFalse(
-            response.isValid(expectedChallenge: different)
+            response.isAuthentic(
+                expectedReceiverChallenge: different,
+                expectedHostChallenge: hostChallenge
+            )
+        )
+
+        var differentHost = hostChallenge
+        differentHost[0] ^= 0xFF
+        XCTAssertFalse(
+            response.isAuthentic(
+                expectedReceiverChallenge: challenge,
+                expectedHostChallenge: differentHost
+            )
         )
     }
 }
@@ -148,6 +173,7 @@ extension PairingIdentityTests {
             peerID: UUID().uuidString,
             verificationCode: "123456",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
         XCTAssertFalse(controlName.hasValidShape)
@@ -157,6 +183,7 @@ extension PairingIdentityTests {
             peerID: UUID().uuidString,
             verificationCode: "١٢٣٤٥٦",
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
         XCTAssertFalse(unicodeCode.hasValidShape)
