@@ -42,7 +42,8 @@
 
 ## M3 — USB + red
 
-- [ ] Discovery productivo, QUIC/TLS, TCP/TLS, usbmux macOS/Windows, pairing host, handoff Wi‑Fi↔USB.
+- [x] Descubrimiento Bonjour del receiver Apple desde el host macOS, fallando explícitamente si hay varios receivers.
+- [ ] Discovery equivalente en Windows, QUIC/TLS, TCP/TLS, usbmux macOS/Windows y handoff Wi‑Fi↔USB.
 - [x] Motor adaptativo con histéresis de raster 100/85/75/67%, conectado a telemetría del receiver y al bitrate del encoder VideoToolbox macOS.
 - [x] Aplicar raster dinámico a ScreenCaptureKit + VideoToolbox en la ruta macOS de desarrollo.
 - [ ] Completar adaptación equivalente en Windows.

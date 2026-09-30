@@ -144,6 +144,34 @@ final class HostConnectionPolicyTests: XCTestCase {
         )
     }
 
+    func testBonjourDiscoveryCardinalityIsFailClosed() {
+        XCTAssertEqual(
+            ReceiverDiscoveryPolicy
+                .classify(count: 0),
+            .none
+        )
+        XCTAssertEqual(
+            ReceiverDiscoveryPolicy
+                .classify(count: 1),
+            .one
+        )
+        XCTAssertEqual(
+            ReceiverDiscoveryPolicy
+                .classify(count: 2),
+            .multiple(2)
+        )
+        XCTAssertEqual(
+            ReceiverDiscoveryPolicy
+                .classify(count: 8),
+            .multiple(8)
+        )
+        XCTAssertEqual(
+            ReceiverDiscoveryPolicy
+                .serviceType,
+            "_displaymesh._tcp"
+        )
+    }
+
     func testHumanPairingWindowIsLongerThanMachinePhases() {
         XCTAssertGreaterThan(
             HostConnectionPolicy.pairingTimeoutSeconds,

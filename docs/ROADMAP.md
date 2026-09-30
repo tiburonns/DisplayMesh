@@ -89,7 +89,8 @@
 
 ## M3 — USB + network sessions
 
-- [ ] Bonjour discovery over Wi-Fi/LAN
+- [x] macOS host Bonjour discovery for the Apple receiver with explicit multi-receiver ambiguity failure
+- [ ] Product-wide Bonjour discovery over Wi-Fi/LAN (Windows host still pending)
 - [ ] QUIC + TLS 1.3 for Wi-Fi/LAN
 - [ ] TCP + TLS binding
 - [ ] macOS usbmux host transport
