@@ -68,3 +68,18 @@ Mouse movement, buttons, scroll and keyboard must be tested in both macOS→Wind
 ## Acceptance result
 
 A DisplayMesh build can be called a usable preview only after virtual display creation, video transport and clean teardown work on at least one supported Mac and one supported Windows PC. A production release additionally requires signing/notarization/driver-signing paths appropriate to each OS.
+
+
+## Protocol/session guardrail acceptance
+
+Before hardware performance sign-off, verify the deterministic protocol suites cover:
+
+- per-message frame payload budgets and exact 40-byte input / empty keyframe-request payloads;
+- reserved DMP input flags rejected consistently by Rust, Swift and Windows decoders;
+- sequence gap/replay rejection per transport connection;
+- receiver authorization-phase admission and bounded malformed pairing attempts;
+- receiver capabilities and panel descriptor validation before video starts;
+- generic Bonjour naming and active-session replacement rejection;
+- Windows DMP encode/decode golden frame and sequence tracker.
+
+These checks are defense-in-depth for the plaintext development path; they are not a substitute for the production TLS gate.

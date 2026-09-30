@@ -68,3 +68,18 @@ Mouse, botones, scroll y teclado deben probarse en macOS→Windows y Windows→m
 ## Resultado
 
 Una build puede llamarse preview utilizable sólo cuando creación del monitor virtual, transporte de video y cierre limpio funcionen en al menos una Mac y una PC Windows soportadas. Una release de producción requiere además firma/notarización/firma de driver adecuadas para cada sistema.
+
+
+## Aceptación de guardrails de protocolo/sesión
+
+Antes de aprobar rendimiento en hardware, verifica que las pruebas deterministas cubran:
+
+- presupuestos de payload por tipo y tamaños exactos de input (40 bytes) / keyframe request (vacío);
+- rechazo coherente de flags DMP reservados en Rust, Swift y Windows;
+- rechazo de gaps/replays de secuencia por conexión;
+- admisión del receiver según fase y pairing malformado acotado;
+- validación de capabilities y descriptor de panel antes de video;
+- Bonjour genérico y rechazo de reemplazo de una sesión activa;
+- golden frame y tracker de secuencia del framing DMP Windows.
+
+Estos checks endurecen la ruta plaintext de desarrollo, pero no sustituyen el gate TLS de producción.

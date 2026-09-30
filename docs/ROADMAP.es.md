@@ -49,6 +49,11 @@
 - [x] EN/ES/Sistema, pairing explícito, estado de seguridad visible y proyecto reproducible del receiver.
 - [x] Guard de secuencia/replay por conexión DMP.
 - [x] Timeouts de pairing y descriptor de panel en la ruta de desarrollo macOS.
+- [x] Presupuestos DMP por tipo y tamaños exactos para frames interactivos.
+- [x] Gate de admisión por fase/autorización en el receiver.
+- [x] Pairing malformado acotado y respuesta ligada al challenge activo.
+- [x] Bonjour genérico sin exponer el nombre configurado del dispositivo.
+- [x] Framing/secuencia DMP nativos en Windows.
 - [x] Telemetría de decode del receiver enviada al host de desarrollo macOS.
 - [x] Identidad P-256 persistente del host macOS y verificación del pairing en receiver.
 - [ ] Primer uso/permisos, TLS 1.3, identidad mutua de producción, telemetría E2E, updates y firma/notarización.

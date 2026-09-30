@@ -7,6 +7,8 @@ La implementación de Windows se divide en la capa de producto/servicio, bootstr
 ## Estado actual
 
 Implementado en código:
+- biblioteca nativa de framing/secuencia DMP con presupuestos por tipo
+- mailbox latest-frame-wins para mantener latencia acotada
 
 - bootstrap con `SwDeviceCreate`
 - paquete de driver UMDF/IddCx en `idd/`
@@ -20,6 +22,7 @@ Implementado en código:
 - validación CI del hardware ID, paquete, modos y regla de no hacer readback a CPU
 
 Pendiente:
+- conectar el bridge driver/GPU con el worker Media Foundation sin readback a CPU
 
 - compilar el driver con un toolchain WDK real
 - instalarlo/test-firmarlo en hardware Windows o VM adecuada
