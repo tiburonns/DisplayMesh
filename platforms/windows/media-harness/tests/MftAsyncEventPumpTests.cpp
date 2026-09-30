@@ -374,14 +374,18 @@ void TestAsyncEventsDriveCoordinator() {
     assert(
         coordinator.BeginDrain(
             error));
+    assert(
+        coordinator.PumpPhase() ==
+        MftPumpPhase::Draining);
+
     assert(SUCCEEDED(
         raw->Queue(
             METransformDrainComplete)));
 
     assert(WaitUntil([&] {
         return coordinator
-            .PumpStats()
-            .outputSignals == 0;
+            .PumpPhase() ==
+            MftPumpPhase::Stopped;
     }));
 
     assert(pump->IsRunning());

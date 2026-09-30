@@ -235,6 +235,13 @@ LiveEncodeCoordinator::PumpStats()
     return pump_.Stats();
 }
 
+MftPumpPhase
+LiveEncodeCoordinator::PumpPhase()
+    const noexcept {
+    std::lock_guard lock(mutex_);
+    return pump_.Phase();
+}
+
 std::string
 LiveEncodeCoordinator::LastError() const {
     std::lock_guard lock(mutex_);

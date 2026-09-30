@@ -70,6 +70,9 @@ public:
     MftPumpStats
     PumpStats() const noexcept;
 
+    MftPumpPhase
+    PumpPhase() const noexcept;
+
     std::string
     LastError() const;
 
