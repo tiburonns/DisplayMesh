@@ -16,6 +16,8 @@ pub enum DmpMessageType {
     Input = 0x20,
     Telemetry = 0x30,
     KeyframeRequest = 0x31,
+    Ping = 0x32,
+    Pong = 0x33,
     Error = 0x7f,
 }
 
@@ -30,6 +32,7 @@ impl DmpMessageType {
             Self::Input => 40,
             Self::Telemetry => 16 * 1024,
             Self::KeyframeRequest => 0,
+            Self::Ping | Self::Pong => 8,
             Self::Error => 8 * 1024,
         }
     }
@@ -38,6 +41,7 @@ impl DmpMessageType {
         match self {
             Self::Input => Some(40),
             Self::KeyframeRequest => Some(0),
+            Self::Ping | Self::Pong => Some(8),
             _ => None,
         }
     }
@@ -80,6 +84,8 @@ impl TryFrom<u8> for DmpMessageType {
             0x20 => Ok(Self::Input),
             0x30 => Ok(Self::Telemetry),
             0x31 => Ok(Self::KeyframeRequest),
+            0x32 => Ok(Self::Ping),
+            0x33 => Ok(Self::Pong),
             0x7f => Ok(Self::Error),
             _ => Err(DmpFrameError::UnsupportedMessageType(value)),
         }
@@ -389,6 +395,31 @@ mod tests {
                 expected: 0,
             })
         );
+
+        for message_type in [DmpMessageType::Ping, DmpMessageType::Pong] {
+            let valid = DmpFrame {
+                message_type,
+                flags: 0,
+                sequence: 1,
+                payload: vec![0; 8],
+            };
+            assert!(valid.encode().is_ok());
+
+            let invalid = DmpFrame {
+                message_type,
+                flags: 0,
+                sequence: 1,
+                payload: vec![0; 7],
+            };
+            assert_eq!(
+                invalid.encode(),
+                Err(DmpFrameError::InvalidPayloadLength {
+                    message_type,
+                    size: 7,
+                    expected: 8,
+                })
+            );
+        }
     }
 
     #[test]
