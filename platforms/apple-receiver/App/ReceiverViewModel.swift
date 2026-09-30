@@ -61,6 +61,8 @@ final class ReceiverViewModel: ObservableObject {
             default:
                 break
             }
+
+            updateIdleTimerPolicy()
         }
 
         listener.onFrame = { [weak self] frame in
@@ -98,7 +100,7 @@ final class ReceiverViewModel: ObservableObject {
 
         do {
             try listener.start()
-            UIApplication.shared.isIdleTimerDisabled = true
+            updateIdleTimerPolicy()
         } catch {
             listenerState = .failed(error.localizedDescription)
             UIApplication.shared.isIdleTimerDisabled = false
@@ -111,7 +113,7 @@ final class ReceiverViewModel: ObservableObject {
         resetAuthorization()
         videoDecoder.reset()
         videoSurface.clear()
-        UIApplication.shared.isIdleTimerDisabled = false
+        updateIdleTimerPolicy()
     }
 
     func updatePanelDescriptor(_ descriptor: PanelDescriptor) {
@@ -167,6 +169,7 @@ final class ReceiverViewModel: ObservableObject {
         pairingTimeoutTask?.cancel()
         pairingTimeoutTask = nil
         sessionAuthorized = true
+        updateIdleTimerPolicy()
         invalidPairingAttempts = 0
         pendingPairing = nil
         pendingPeerPreviouslyTrusted = false
@@ -450,6 +453,14 @@ final class ReceiverViewModel: ObservableObject {
         listener.send(type: .panelDescriptor, payload: payload)
     }
 
+    private func updateIdleTimerPolicy() {
+        UIApplication.shared.isIdleTimerDisabled =
+            ReceiverAwakePolicy.shouldKeepScreenAwake(
+                listenerState: listenerState,
+                sessionAuthorized: sessionAuthorized
+            )
+    }
+
     private func resetAuthorization() {
         admissionTimeoutTask?.cancel()
         admissionTimeoutTask = nil
@@ -461,6 +472,7 @@ final class ReceiverViewModel: ObservableObject {
         receiverChallenge = nil
         lastKeyframeRequestTime = 0
         lastTelemetrySentTime = 0
+        updateIdleTimerPolicy()
     }
 }
 
