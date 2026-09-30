@@ -9,6 +9,8 @@ enum DMPSecureRole {
 enum DMPSecureSessionError: Error, LocalizedError {
     case invalidChallengeLength
     case invalidCiphertext
+    case encryptedFrameBeforeActivation
+    case plaintextFrameAfterActivation
 
     var errorDescription: String? {
         switch self {
@@ -16,6 +18,10 @@ enum DMPSecureSessionError: Error, LocalizedError {
             return "DisplayMesh secure-session challenges are invalid"
         case .invalidCiphertext:
             return "DisplayMesh secure-session payload authentication failed"
+        case .encryptedFrameBeforeActivation:
+            return "DisplayMesh received encrypted data before the secure session was established"
+        case .plaintextFrameAfterActivation:
+            return "DisplayMesh rejected plaintext data after secure-session activation"
         }
     }
 }

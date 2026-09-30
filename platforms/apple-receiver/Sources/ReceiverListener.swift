@@ -27,6 +27,7 @@ final class ReceiverListener {
     private var decoder = DMPFrameDecoder()
     private var incomingSequence = DMPSequenceTracker()
     private var nextSequence: UInt32 = 1
+    private var secureSession: DMPSecureSession?
 
     func start() throws {
         guard listener == nil else { return }
@@ -57,6 +58,12 @@ final class ReceiverListener {
         newListener.start(queue: queue)
     }
 
+    func activateSecureSession(_ session: DMPSecureSession) {
+        queue.async { [weak self] in
+            self?.secureSession = session
+        }
+    }
+
     func disconnectCurrent() {
         queue.async { [weak self] in
             guard let self, let activeConnection = connection else { return }
@@ -67,6 +74,7 @@ final class ReceiverListener {
             decoder = DMPFrameDecoder()
             incomingSequence.reset()
             nextSequence = 1
+            secureSession = nil
 
             if listener != nil {
                 publish(.ready(port: Self.port.rawValue))
@@ -87,6 +95,7 @@ final class ReceiverListener {
             decoder = DMPFrameDecoder()
             incomingSequence.reset()
             nextSequence = 1
+            secureSession = nil
             publish(.stopped)
         }
     }
@@ -95,27 +104,49 @@ final class ReceiverListener {
         queue.async { [weak self] in
             guard let self, let connection else { return }
 
-            let frame = DMPFrame(
-                type: type,
-                flags: flags,
-                sequence: nextSequence,
-                payload: payload
-            )
+            do {
+                let sequence = nextSequence
+                let wireFlags: UInt16
+                let wirePayload: Data
 
-            guard let data = try? frame.encoded() else { return }
-            nextSequence &+= 1
-
-            connection.send(
-                content: data,
-                completion: .contentProcessed { [weak self, weak connection] error in
-                    guard let self, let connection, let error else { return }
-                    queue.async {
-                        guard self.connection === connection else { return }
-                        self.publish(.failed(error.localizedDescription))
-                        connection.cancel()
-                    }
+                if let secureSession {
+                    wireFlags =
+                        flags | DMPFrame.encryptedPayloadFlag
+                    wirePayload = try secureSession.seal(
+                        payload,
+                        type: type,
+                        flags: flags,
+                        sequence: sequence
+                    )
+                } else {
+                    wireFlags = flags
+                    wirePayload = payload
                 }
-            )
+
+                let frame = DMPFrame(
+                    type: type,
+                    flags: wireFlags,
+                    sequence: sequence,
+                    payload: wirePayload
+                )
+                let data = try frame.encoded()
+                nextSequence &+= 1
+
+                connection.send(
+                    content: data,
+                    completion: .contentProcessed { [weak self, weak connection] error in
+                        guard let self, let connection, let error else { return }
+                        queue.async {
+                            guard self.connection === connection else { return }
+                            self.publish(.failed(error.localizedDescription))
+                            connection.cancel()
+                        }
+                    }
+                )
+            } catch {
+                publish(.failed(error.localizedDescription))
+                connection.cancel()
+            }
         }
     }
 
@@ -151,6 +182,7 @@ final class ReceiverListener {
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
         nextSequence = 1
+        secureSession = nil
 
         newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
             guard let self, let newConnection else { return }
@@ -194,7 +226,9 @@ final class ReceiverListener {
                     decoder.append(data)
                     while let frame = try decoder.nextFrame() {
                         try incomingSequence.accept(frame.sequence)
-                        publish(frame)
+                        let clearFrame =
+                            try decodeInboundFrame(frame)
+                        publish(clearFrame)
                     }
                 } catch {
                     publish(.failed(error.localizedDescription))
@@ -216,6 +250,42 @@ final class ReceiverListener {
 
             receiveNext(on: connection)
         }
+    }
+
+    private func decodeInboundFrame(
+        _ frame: DMPFrame
+    ) throws -> DMPFrame {
+        if let secureSession {
+            guard frame.flags & DMPFrame.encryptedPayloadFlag != 0 else {
+                throw DMPSecureSessionError
+                    .plaintextFrameAfterActivation
+            }
+
+            let plaintext = try secureSession.open(
+                frame.payload,
+                type: frame.type,
+                flags: frame.flags,
+                sequence: frame.sequence
+            )
+            try frame.type.validatePayloadSize(
+                plaintext.count
+            )
+
+            return DMPFrame(
+                type: frame.type,
+                flags:
+                    frame.flags
+                    & ~DMPFrame.encryptedPayloadFlag,
+                sequence: frame.sequence,
+                payload: plaintext
+            )
+        }
+
+        guard frame.flags & DMPFrame.encryptedPayloadFlag == 0 else {
+            throw DMPSecureSessionError
+                .encryptedFrameBeforeActivation
+        }
+        return frame
     }
 
     private func publish(_ state: ReceiverListenerState) {
