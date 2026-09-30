@@ -58,3 +58,12 @@ El scaffold compartido de capacidades de desarrollo anuncia deliberadamente sól
 Una segunda conexión entrante no puede expulsar la conexión activa del receiver; otro peer debe esperar hasta que la sesión actual termine.
 
 La especificación sigue siendo un contrato de desarrollo: transporte TLS/QUIC, identidad persistente y aceptación end-to-end permanecen sujetos a los gates del roadmap.
+
+
+## Etapa del codec de frames protegidos
+
+La implementación ya define en código ejecutable el límite de protección posterior al pairing. Antes de instalar una sesión segura, sólo `hello` y `pairing` pueden emitirse/aceptarse mediante el codec protegido. Después de instalarla, todos los demás mensajes DMP usan ChaCha20-Poly1305 y sus equivalentes en plaintext se rechazan.
+
+La validación del tamaño de payload cifrado contempla los 28 bytes de overhead del formato combinado de ChaChaPoly, incluidos mensajes de tamaño exacto como input y solicitud de keyframe.
+
+La ruta TCP de desarrollo todavía debe intercambiar las claves públicas efímeras P-256 dentro del transcript de pairing firmado e instalar este codec en ambos sockets antes de capabilities/media.

@@ -92,6 +92,7 @@
 - [x] macOS host Bonjour discovery for the Apple receiver with explicit multi-receiver ambiguity failure
 - [ ] Product-wide Bonjour discovery over Wi-Fi/LAN (Windows host still pending)
 - [ ] QUIC + TLS 1.3 for Wi-Fi/LAN
+- [x] Post-pairing frame protection policy/codec (pending handshake key-exchange wiring)
 - [ ] TCP + TLS binding
 - [ ] macOS usbmux host transport
 - [ ] Windows usbmux-compatible host transport
@@ -144,6 +145,7 @@
 - [ ] Apple receiver CI build confirmed green
 - [x] First-run Local Network permission education before Bonjour/listener startup
 - [ ] Production TLS 1.3 transport
+- [x] Fail-closed encrypted DMP frame codec and encrypted-wire payload validation
 - [ ] Mutual production peer identity persistence (host identity side implemented in development path)
 - [ ] End-to-end RTT / queue-depth telemetry
 - [ ] Automatic updates

@@ -253,3 +253,12 @@ The Apple/macOS implementation now has a mirrored AEAD primitive intended for th
 - AAD binds DMP version, message type, flags and sequence number.
 
 This section describes the staged cryptographic primitive, **not the current wire state**. Until the pairing exchange carries ephemeral key-agreement material and the transport layer seals/opens every post-pairing frame, the TCP binding remains plaintext and the encryptedTransport capability remains false.
+
+
+## Protected frame codec staging
+
+The implementation now defines the post-pairing frame-protection contract in executable code. Before a secure session is installed, only `hello` and `pairing` may be emitted/accepted by the protected codec. After installation, every other DMP message is ChaCha20-Poly1305 protected and plaintext equivalents are rejected.
+
+Encrypted payload wire validation accounts for the 28-byte ChaChaPoly combined overhead. This is required for exact-size messages such as input samples and keyframe requests.
+
+The active development TCP path still needs to exchange ephemeral P-256 key-agreement public keys during the signed pairing transcript and install this codec on both sockets before capabilities/media begin.
