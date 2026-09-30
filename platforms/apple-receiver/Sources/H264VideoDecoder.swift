@@ -35,6 +35,14 @@ final class H264VideoDecoder {
     private var inFlightFrames = 0
     private let maximumInFlightFrames = 3
 
+    private struct PendingPresentation {
+        let imageBuffer: CVPixelBuffer
+        let timestamp: CMTime
+    }
+
+    private var presentationGate = LatestFramePresentationGate()
+    private var pendingPresentation: PendingPresentation?
+
     private var metrics = ReceiverVideoMetrics()
     private var metricsWindowStart = ProcessInfo.processInfo.systemUptime
     private var decodedInWindow: UInt64 = 0
@@ -226,9 +234,10 @@ final class H264VideoDecoder {
                         timescale: 1_000_000
                     )
 
-                DispatchQueue.main.async { [weak self] in
-                    self?.onFrame?(imageBuffer, timestamp)
-                }
+                self.enqueuePresentationLocked(
+                    imageBuffer,
+                    timestamp: timestamp
+                )
             }
         }
 
@@ -470,6 +479,62 @@ final class H264VideoDecoder {
         publishMetricsLocked(force: true)
     }
 
+    private func enqueuePresentationLocked(
+        _ imageBuffer: CVPixelBuffer,
+        timestamp: CMTime
+    ) {
+        let decision = presentationGate.enqueue()
+
+        if decision.replacedPendingFrame {
+            metrics.droppedFrames &+= 1
+            publishMetricsLocked()
+        }
+
+        pendingPresentation = PendingPresentation(
+            imageBuffer: imageBuffer,
+            timestamp: timestamp
+        )
+
+        guard decision.shouldScheduleDrain else {
+            return
+        }
+
+        schedulePresentationDrainLocked()
+    }
+
+    private func schedulePresentationDrainLocked() {
+        DispatchQueue.main.async { [weak self] in
+            self?.drainLatestPresentationOnMain()
+        }
+    }
+
+    private func drainLatestPresentationOnMain() {
+        let presentation: PendingPresentation? = queue.sync {
+            guard presentationGate.takePending() else {
+                return nil
+            }
+
+            let latest = pendingPresentation
+            pendingPresentation = nil
+            return latest
+        }
+
+        if let presentation {
+            onFrame?(
+                presentation.imageBuffer,
+                presentation.timestamp
+            )
+        }
+
+        queue.async { [weak self] in
+            guard let self else { return }
+
+            if self.presentationGate.completePresentation() {
+                self.schedulePresentationDrainLocked()
+            }
+        }
+    }
+
     private func requestKeyframeLocked() {
         DispatchQueue.main.async { [weak self] in
             self?.onNeedsKeyframe?()
@@ -535,6 +600,8 @@ final class H264VideoDecoder {
 
         session = nil
         metrics.hardwareAccelerated = nil
+        pendingPresentation = nil
+        presentationGate.reset()
     }
 
     private func resetLocked(clearParameterSets: Bool) {

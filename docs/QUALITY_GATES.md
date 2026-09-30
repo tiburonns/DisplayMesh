@@ -55,6 +55,7 @@ Initial acceptance:
 - 1440p60 on supported hardware,
 - bounded decode/render queue,
 - stale video frames are dropped instead of increasing interaction latency,
+- decoded-frame presentation is latest-frame-wins so MainActor/UI stalls cannot grow an unbounded display queue,
 - input has priority over queued video,
 - reconnect does not leak old session state.
 - capture-start failure tears down any virtual display created for that attempt,

@@ -43,6 +43,8 @@ required_files = [
     RECEIVER / "Sources" / "TrustedPeerStore.swift",
     RECEIVER / "Sources" / "ReceiverProtocolGate.swift",
     RECEIVER / "Tests" / "ReceiverProtocolGateTests.swift",
+    RECEIVER / "Sources" / "LatestFramePresentationGate.swift",
+    RECEIVER / "Tests" / "LatestFramePresentationGateTests.swift",
 ]
 
 errors: list[str] = []
@@ -167,6 +169,34 @@ if view_model.is_file():
     ):
         if required_token not in view_model_text:
             errors.append(f"receiver lifecycle hardening is missing token: {required_token}")
+
+presentation_gate = RECEIVER / "Sources" / "LatestFramePresentationGate.swift"
+if presentation_gate.is_file():
+    presentation_text = presentation_gate.read_text(encoding="utf-8")
+    for required_token in (
+        "replacedPendingFrame",
+        "shouldScheduleDrain",
+        "completePresentation",
+        "drainScheduled",
+    ):
+        if required_token not in presentation_text:
+            errors.append(
+                f"receiver latest-frame presentation contract is missing token: {required_token}"
+            )
+
+decoder_source = RECEIVER / "Sources" / "H264VideoDecoder.swift"
+if decoder_source.is_file():
+    decoder_text = decoder_source.read_text(encoding="utf-8")
+    for required_token in (
+        "LatestFramePresentationGate",
+        "pendingPresentation",
+        "enqueuePresentationLocked",
+        "drainLatestPresentationOnMain",
+    ):
+        if required_token not in decoder_text:
+            errors.append(
+                f"receiver bounded presentation contract is missing token: {required_token}"
+            )
 
 trust_store = RECEIVER / "Sources" / "TrustedPeerStore.swift"
 if trust_store.is_file():
