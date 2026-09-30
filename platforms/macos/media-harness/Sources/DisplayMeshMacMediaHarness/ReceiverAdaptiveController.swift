@@ -2,11 +2,15 @@ import Foundation
 
 struct ReceiverAdaptationDecision: Equatable {
     let bitrateMbps: Int
+    let rasterScale: Double
     let requestKeyframe: Bool
 }
 
 struct ReceiverAdaptiveController {
+    static let rasterSteps: [Double] = [1.0, 0.85, 0.75, 0.67]
+
     private(set) var bitrateMbps: Int
+    private(set) var rasterScale: Double
 
     private let minimumBitrateMbps: Int
     private let maximumBitrateMbps: Int
@@ -16,9 +20,12 @@ struct ReceiverAdaptiveController {
     private var previousDroppedFrames: UInt64?
     private var stressedSamples = 0
     private var healthySamples = 0
+    private var severeRasterStressSamples = 0
+    private var rasterRecoverySamples = 0
 
     init(
         initialBitrateMbps: Int,
+        initialRasterScale: Double = 1.0,
         minimumBitrateMbps: Int = 6,
         maximumBitrateMbps: Int = 120,
         targetFramesPerSecond: Int
@@ -32,6 +39,7 @@ struct ReceiverAdaptiveController {
             max(initialBitrateMbps, self.minimumBitrateMbps),
             self.maximumBitrateMbps
         )
+        self.rasterScale = Self.nearestRasterScale(initialRasterScale)
         self.targetFramesPerSecond = Double(max(1, targetFramesPerSecond))
     }
 
@@ -91,45 +99,98 @@ struct ReceiverAdaptiveController {
 
         if stressed {
             healthySamples = 0
+            rasterRecoverySamples = 0
             stressedSamples += 1
+            if severeStress {
+                severeRasterStressSamples += 1
+            } else {
+                severeRasterStressSamples = 0
+            }
 
-            guard severeStress || stressedSamples >= 2 else {
+            let shouldReduceBitrate = severeStress || stressedSamples >= 2
+            let shouldReduceRaster = severeRasterStressSamples >= 3
+
+            guard shouldReduceBitrate || shouldReduceRaster else {
                 return nil
             }
 
-            stressedSamples = 0
-            let reductionPercent = severeStress ? 25 : 12
-            let reduced = max(
-                minimumBitrateMbps,
-                bitrateMbps * (100 - reductionPercent) / 100
-            )
-            guard reduced < bitrateMbps else { return nil }
+            var changed = false
+            var requestKeyframe = severeStress
 
-            bitrateMbps = reduced
+            if shouldReduceBitrate {
+                stressedSamples = 0
+                let reductionPercent = severeStress ? 25 : 12
+                let reduced = max(
+                    minimumBitrateMbps,
+                    bitrateMbps * (100 - reductionPercent) / 100
+                )
+                if reduced < bitrateMbps {
+                    bitrateMbps = reduced
+                    changed = true
+                }
+            }
+
+            if shouldReduceRaster,
+               let lower = Self.lowerRasterStep(from: rasterScale) {
+                rasterScale = lower
+                severeRasterStressSamples = 0
+                requestKeyframe = true
+                changed = true
+            }
+
+            guard changed else { return nil }
+
             return ReceiverAdaptationDecision(
                 bitrateMbps: bitrateMbps,
-                requestKeyframe: severeStress
+                rasterScale: rasterScale,
+                requestKeyframe: requestKeyframe
             )
         }
+
+        severeRasterStressSamples = 0
 
         if healthy {
             stressedSamples = 0
             healthySamples += 1
+            rasterRecoverySamples += 1
 
-            guard healthySamples >= 6 else { return nil }
-            healthySamples = 0
+            var changed = false
 
-            let increase = max(1, bitrateMbps / 12)
-            let increased = min(
-                maximumBitrateMbps,
-                bitrateMbps + increase
-            )
-            guard increased > bitrateMbps else { return nil }
+            if healthySamples >= 6 {
+                healthySamples = 0
+                let increase = max(1, bitrateMbps / 12)
+                let increased = min(
+                    maximumBitrateMbps,
+                    bitrateMbps + increase
+                )
+                if increased > bitrateMbps {
+                    bitrateMbps = increased
+                    changed = true
+                }
+            }
 
-            bitrateMbps = increased
+            var requestKeyframe = false
+            let bitrateRecovered =
+                bitrateMbps >= max(
+                    minimumBitrateMbps,
+                    maximumBitrateMbps * 9 / 10
+                )
+
+            if rasterRecoverySamples >= 12,
+               bitrateRecovered,
+               let higher = Self.higherRasterStep(from: rasterScale) {
+                rasterScale = higher
+                rasterRecoverySamples = 0
+                requestKeyframe = true
+                changed = true
+            }
+
+            guard changed else { return nil }
+
             return ReceiverAdaptationDecision(
                 bitrateMbps: bitrateMbps,
-                requestKeyframe: false
+                rasterScale: rasterScale,
+                requestKeyframe: requestKeyframe
             )
         }
 
@@ -140,5 +201,30 @@ struct ReceiverAdaptiveController {
     private mutating func resetTrend() {
         stressedSamples = 0
         healthySamples = 0
+        severeRasterStressSamples = 0
+        rasterRecoverySamples = 0
+    }
+
+    private static func nearestRasterScale(_ value: Double) -> Double {
+        guard value.isFinite else { return 1.0 }
+        return rasterSteps.min {
+            abs($0 - value) < abs($1 - value)
+        } ?? 1.0
+    }
+
+    private static func lowerRasterStep(from value: Double) -> Double? {
+        guard let index = rasterSteps.firstIndex(of: nearestRasterScale(value)),
+              index + 1 < rasterSteps.count else {
+            return nil
+        }
+        return rasterSteps[index + 1]
+    }
+
+    private static func higherRasterStep(from value: Double) -> Double? {
+        guard let index = rasterSteps.firstIndex(of: nearestRasterScale(value)),
+              index > 0 else {
+            return nil
+        }
+        return rasterSteps[index - 1]
     }
 }

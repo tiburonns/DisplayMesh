@@ -36,7 +36,7 @@
 ## M3 — USB + red
 
 - [ ] Discovery productivo, QUIC/TLS, TCP/TLS, usbmux macOS/Windows, pairing host, handoff Wi‑Fi↔USB.
-- [x] Motor adaptativo conectado a telemetría del receiver y al bitrate del encoder VideoToolbox macOS.
+- [x] Motor adaptativo con histéresis de raster 100/85/75/67%, conectado a telemetría del receiver y al bitrate del encoder VideoToolbox macOS.
 - [ ] Aplicar el escalado dinámico de raster y completar adaptación en Windows.
 
 ## M4 — Input
