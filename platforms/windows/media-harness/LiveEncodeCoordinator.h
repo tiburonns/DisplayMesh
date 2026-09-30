@@ -70,6 +70,9 @@ public:
     MftPumpStats
     PumpStats() const noexcept;
 
+    std::string
+    LastError() const;
+
 private:
     void ProcessInput(
         const EncodeWorkItem& item);

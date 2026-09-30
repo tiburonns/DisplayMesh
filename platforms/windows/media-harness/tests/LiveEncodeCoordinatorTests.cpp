@@ -197,6 +197,16 @@ void TestInputFailureFailsClosed() {
     assert(
         coordinator.PumpStats()
             .rejectedTransitions == 0);
+    assert(WaitUntil([&] {
+        return coordinator
+            .WorkerStats()
+            .handlerFailures == 1;
+    }));
+    assert(
+        coordinator.WorkerStats().encoded == 0);
+    assert(
+        coordinator.LastError() ==
+        "ProcessInput failed");
 
     coordinator.Stop();
 }

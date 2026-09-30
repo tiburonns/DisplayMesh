@@ -1,5 +1,6 @@
 #include "LiveEncodeCoordinator.h"
 
+#include <stdexcept>
 #include <utility>
 
 namespace displaymesh::media {
@@ -234,6 +235,12 @@ LiveEncodeCoordinator::PumpStats()
     return pump_.Stats();
 }
 
+std::string
+LiveEncodeCoordinator::LastError() const {
+    std::lock_guard lock(mutex_);
+    return lastWorkerError_;
+}
+
 bool LiveEncodeCoordinator::
 ScheduleLatestLocked(
     std::string& error) noexcept {
@@ -277,6 +284,8 @@ void LiveEncodeCoordinator::ProcessInput(
                 ? "Media Foundation input handler failed"
                 : handlerError;
         pump_.Fail();
+        throw std::runtime_error(
+            lastWorkerError_);
     }
 }
 
