@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 #include <limits>
+#include <utility>
 
 namespace displaymesh::media {
 namespace {
@@ -128,7 +130,8 @@ bool ParseAnnexB(
         }
 
         const std::uint8_t nalType =
-            data[payloadOffset] & 0x1fU;
+            static_cast<std::uint8_t>(
+                data[payloadOffset] & 0x1fU);
 
         if (nalType == 0) {
             error =
