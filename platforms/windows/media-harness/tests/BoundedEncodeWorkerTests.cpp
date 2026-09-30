@@ -87,6 +87,10 @@ void TestValidationAndStaleRejection() {
         bridge::kFrameMailboxSlotCount;
     assert(!worker.Submit(invalidSlot));
 
+    auto wrongMappedSlot = Item(1);
+    wrongMappedSlot.slotIndex = 0;
+    assert(!worker.Submit(wrongMappedSlot));
+
     assert(worker.Submit(Item(2)));
     assert(!worker.Submit(Item(1)));
 
@@ -99,7 +103,7 @@ void TestValidationAndStaleRejection() {
     const auto stats = worker.Stats();
     assert(stats.submitted == 1);
     assert(stats.encoded == 1);
-    assert(stats.rejectedInvalid == 4);
+    assert(stats.rejectedInvalid == 5);
     assert(stats.rejectedStale == 1);
     assert(!worker.IsRunning());
 }
@@ -131,6 +135,11 @@ void TestAnnouncementRoundTripPreservesGpuIdentity() {
         frame.slotIndex);
     assert(item.width == frame.width);
     assert(item.height == frame.height);
+    assert(item.IsValid());
+
+    auto wrongMapping = item;
+    wrongMapping.slotIndex = 1;
+    assert(!wrongMapping.IsValid());
 
     const auto roundTrip =
         item.Announcement();

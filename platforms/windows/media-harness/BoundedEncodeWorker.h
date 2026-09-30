@@ -34,6 +34,20 @@ struct EncodeWorkItem {
         };
     }
 
+    bool IsValid() const noexcept {
+        return sequence != 0 &&
+            durationMicros != 0 &&
+            surfaceGeneration != 0 &&
+            slotIndex <
+                bridge::kFrameMailboxSlotCount &&
+            slotIndex ==
+                static_cast<std::uint32_t>(
+                    sequence %
+                    bridge::kFrameMailboxSlotCount) &&
+            width != 0 &&
+            height != 0;
+    }
+
     bridge::FrameAnnouncement
     Announcement() const noexcept {
         return bridge::FrameAnnouncement{

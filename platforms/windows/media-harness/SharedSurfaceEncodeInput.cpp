@@ -8,11 +8,14 @@ HRESULT SharedSurfaceEncodeInput::CreateSample(
         sample) noexcept {
     sample.Reset();
 
+    if (!item.IsValid()) {
+        return E_INVALIDARG;
+    }
+
     const auto announcement =
         item.Announcement();
 
-    if (item.durationMicros == 0 ||
-        !pool_.Matches(announcement)) {
+    if (!pool_.Matches(announcement)) {
         return E_INVALIDARG;
     }
 

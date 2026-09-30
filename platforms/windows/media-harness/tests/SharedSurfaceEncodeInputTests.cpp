@@ -174,7 +174,9 @@ int main() {
     assert(sample != nullptr);
 
     auto wrongSlot = resized;
-    wrongSlot.slotIndex = 2;
+    wrongSlot.slotIndex =
+        (resized.slotIndex + 1) %
+        bridge::kFrameMailboxSlotCount;
     sample.Reset();
     assert(FAILED(
         bridge.CreateSample(

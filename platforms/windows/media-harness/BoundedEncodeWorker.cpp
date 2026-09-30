@@ -74,13 +74,7 @@ bool BoundedEncodeWorker::Submit(
         return false;
     }
 
-    if (item.sequence == 0 ||
-        item.durationMicros == 0 ||
-        item.surfaceGeneration == 0 ||
-        item.slotIndex >=
-            bridge::kFrameMailboxSlotCount ||
-        item.width == 0 ||
-        item.height == 0) {
+    if (!item.IsValid()) {
         ++stats_.rejectedInvalid;
         return false;
     }
