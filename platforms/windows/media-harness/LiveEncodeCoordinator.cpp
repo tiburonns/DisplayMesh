@@ -252,6 +252,11 @@ ScheduleLatestLocked(
         return false;
     }
 
+    if (!pump_.MarkInputSubmitted(error)) {
+        pump_.Fail();
+        return false;
+    }
+
     waitingForCredit_.reset();
     ++stats_.framesScheduled;
     error.clear();
@@ -271,22 +276,6 @@ void LiveEncodeCoordinator::ProcessInput(
             handlerError.empty()
                 ? "Media Foundation input handler failed"
                 : handlerError;
-        pump_.Fail();
-        return;
-    }
-
-    std::lock_guard lock(mutex_);
-
-    if (!running_) {
-        return;
-    }
-
-    std::string transitionError;
-    if (!pump_.MarkInputSubmitted(
-            transitionError)) {
-        ++stats_.inputHandlerFailures;
-        lastWorkerError_ =
-            transitionError;
         pump_.Fail();
     }
 }
