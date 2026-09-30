@@ -5,7 +5,11 @@ struct ReceiverRootView: View {
     @EnvironmentObject private var receiver: ReceiverViewModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingSettings = false
+    @State private var showingLocalNetworkEducation = false
+    @State private var startAfterEducationDismiss = false
     @State private var resumeReceiverWhenActive = false
+    @AppStorage("displaymesh.receiver.localNetworkEducation.v1")
+    private var hasAcknowledgedLocalNetworkEducation = false
 
     var body: some View {
         ZStack {
@@ -45,6 +49,18 @@ struct ReceiverRootView: View {
                 .environmentObject(languageStore)
                 .environmentObject(receiver)
                 .environment(\.locale, languageStore.selection.locale)
+        }
+        .sheet(
+            isPresented: $showingLocalNetworkEducation,
+            onDismiss: {
+                guard startAfterEducationDismiss else { return }
+                startAfterEducationDismiss = false
+                receiver.startReceiver()
+            }
+        ) {
+            localNetworkEducation
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: scenePhase) { phase in
             switch phase {
@@ -143,7 +159,7 @@ struct ReceiverRootView: View {
             listenerDetail
 
             Button {
-                receiver.startReceiver()
+                requestReceiverStart()
             } label: {
                 Label("action.startReceiver", systemImage: "play.fill")
                     .font(.headline)
@@ -300,6 +316,71 @@ struct ReceiverRootView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+        }
+    }
+
+    private var localNetworkEducation: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                Label {
+                    Text("permission.localNetwork.title")
+                        .font(.title2.bold())
+                } icon: {
+                    Image(systemName: "network")
+                        .font(.title2)
+                }
+
+                Text("permission.localNetwork.detail")
+                    .foregroundStyle(.secondary)
+
+                Label(
+                    "permission.localNetwork.localOnly",
+                    systemImage: "house.and.flag.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+
+                Label(
+                    "permission.localNetwork.securityNote",
+                    systemImage: "exclamationmark.shield.fill"
+                )
+                .font(.footnote)
+                .foregroundStyle(.orange)
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: 10) {
+                    Button {
+                        hasAcknowledgedLocalNetworkEducation = true
+                        startAfterEducationDismiss = true
+                        showingLocalNetworkEducation = false
+                    } label: {
+                        Text("permission.localNetwork.continue")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button("permission.localNetwork.notNow") {
+                        startAfterEducationDismiss = false
+                        showingLocalNetworkEducation = false
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(24)
+            .navigationTitle("permission.localNetwork.navigationTitle")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private func requestReceiverStart() {
+        guard !receiver.isListening else { return }
+
+        if hasAcknowledgedLocalNetworkEducation {
+            receiver.startReceiver()
+        } else {
+            startAfterEducationDismiss = false
+            showingLocalNetworkEducation = true
         }
     }
 

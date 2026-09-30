@@ -133,7 +133,7 @@
 - [x] Generic Bonjour receiver identity (no configured device-name leak)
 - [x] Windows native DMP framing/sequence contract
 - [ ] Apple receiver CI build confirmed green
-- [ ] First-run permission education
+- [x] First-run Local Network permission education before Bonjour/listener startup
 - [ ] Production TLS 1.3 transport
 - [ ] Mutual production peer identity persistence (host identity side implemented in development path)
 - [ ] End-to-end RTT / queue-depth telemetry

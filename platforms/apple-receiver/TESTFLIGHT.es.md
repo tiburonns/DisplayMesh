@@ -18,7 +18,9 @@ El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo 
 ## Gates físicos
 
 - Instalar en iPhone y iPad.
-- Aceptar Local Network y verificar Bonjour.
+- Verificar que la explicación de primer uso aparezca antes del prompt de Red local.
+- Aceptar Red local y verificar Bonjour.
+- Relanzar y confirmar que la explicación no se repita después de aceptarla.
 - Emparejar con el media harness de macOS.
 - Verificar decode, keyframe recovery, rotación, diagnósticos y touch/Pencil.
 - Mantener 1080p60 al menos 15 minutos sin crecimiento persistente de cola.

@@ -18,7 +18,9 @@ The iPhone/iPad receiver can be tested through TestFlight before the full Displa
 ## Physical gates
 
 - Install on iPhone and iPad.
+- Verify the first-run education appears before the system Local Network prompt.
 - Accept Local Network permission and verify Bonjour advertisement.
+- Relaunch and confirm the education does not repeat after acknowledgement.
 - Pair with the macOS developer media harness.
 - Verify H.264 decode, keyframe recovery, rotation, FPS/bitrate diagnostics and touch/Pencil samples.
 - Run 1080p60 for at least 15 minutes and verify bounded queue behavior.
