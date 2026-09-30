@@ -23,6 +23,7 @@ struct HostIdentity {
             peerID: peerID,
             verificationCode: verificationCode,
             challenge: challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
             privateKey: privateKey
         )
     }

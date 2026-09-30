@@ -59,6 +59,7 @@ struct PairingRequest: Codable, Equatable {
     let verificationCode: String
     let protocolVersion: Int
     let challenge: Data
+    let hostChallenge: Data
     let identityPublicKey: Data
     let signature: Data
 
@@ -95,6 +96,7 @@ struct PairingRequest: Codable, Equatable {
             && normalizedVerificationCode.count == 6
             && UUID(uuidString: peerID) != nil
             && challenge.count == ReceiverHello.challengeSize
+            && hostChallenge.count == ReceiverHello.challengeSize
             && identityPublicKey.count == 65
             && signature.count == 64
     }
@@ -120,11 +122,24 @@ struct PairingRequest: Codable, Equatable {
         }
     }
 
+    static func makeHostChallenge() -> Data {
+        var generator = SystemRandomNumberGenerator()
+        return Data(
+            (0..<ReceiverHello.challengeSize).map { _ in
+                UInt8.random(
+                    in: UInt8.min...UInt8.max,
+                    using: &generator
+                )
+            }
+        )
+    }
+
     static func signed(
         peerName: String,
         peerID: String,
         verificationCode: String,
         challenge: Data,
+        hostChallenge: Data,
         privateKey: P256.Signing.PrivateKey
     ) throws -> PairingRequest {
         let unsigned = PairingRequest(
@@ -133,6 +148,7 @@ struct PairingRequest: Codable, Equatable {
             verificationCode: verificationCode,
             protocolVersion: Int(DMPFrame.version),
             challenge: challenge,
+            hostChallenge: hostChallenge,
             identityPublicKey: privateKey.publicKey.rawRepresentation,
             signature: Data()
         )
@@ -147,6 +163,7 @@ struct PairingRequest: Codable, Equatable {
             verificationCode: unsigned.verificationCode,
             protocolVersion: unsigned.protocolVersion,
             challenge: unsigned.challenge,
+            hostChallenge: unsigned.hostChallenge,
             identityPublicKey: unsigned.identityPublicKey,
             signature: signature.rawRepresentation
         )
@@ -160,6 +177,7 @@ struct PairingRequest: Codable, Equatable {
             peerName,
             normalizedVerificationCode,
             challenge.base64EncodedString(),
+            hostChallenge.base64EncodedString(),
             identityPublicKey.base64EncodedString(),
         ]
         return Data(fields.joined(separator: "\u{1F}").utf8)
@@ -169,12 +187,112 @@ struct PairingRequest: Codable, Equatable {
 struct PairingResponse: Codable, Equatable {
     let accepted: Bool
     let receiverName: String
+    let receiverID: String
     let protocolVersion: Int
     let challenge: Data
+    let hostChallenge: Data
+    let identityPublicKey: Data
+    let signature: Data
 
-    func isValid(expectedChallenge: Data) -> Bool {
-        protocolVersion == Int(DMPFrame.version)
+    var identityFingerprint: String {
+        SHA256.hash(data: identityPublicKey)
+            .prefix(8)
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    var hasValidShape: Bool {
+        let nameBytes = receiverName.utf8.count
+        let hasControlCharacters = receiverName.unicodeScalars.contains {
+            CharacterSet.controlCharacters.contains($0)
+        }
+
+        return protocolVersion == Int(DMPFrame.version)
+            && (1...128).contains(nameBytes)
+            && !receiverName.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).isEmpty
+            && !hasControlCharacters
+            && UUID(uuidString: receiverID) != nil
             && challenge.count == ReceiverHello.challengeSize
-            && challenge == expectedChallenge
+            && hostChallenge.count == ReceiverHello.challengeSize
+            && identityPublicKey.count == 65
+            && signature.count == 64
+    }
+
+    func isAuthentic(
+        expectedReceiverChallenge: Data,
+        expectedHostChallenge: Data
+    ) -> Bool {
+        guard hasValidShape,
+              challenge == expectedReceiverChallenge,
+              hostChallenge == expectedHostChallenge else {
+            return false
+        }
+
+        do {
+            let publicKey = try P256.Signing.PublicKey(
+                rawRepresentation: identityPublicKey
+            )
+            let signature = try P256.Signing.ECDSASignature(
+                rawRepresentation: signature
+            )
+            return publicKey.isValidSignature(
+                signature,
+                for: signingPayload
+            )
+        } catch {
+            return false
+        }
+    }
+
+    static func signed(
+        accepted: Bool,
+        receiverName: String,
+        receiverID: String,
+        challenge: Data,
+        hostChallenge: Data,
+        privateKey: P256.Signing.PrivateKey
+    ) throws -> PairingResponse {
+        let unsigned = PairingResponse(
+            accepted: accepted,
+            receiverName: receiverName,
+            receiverID: receiverID,
+            protocolVersion: Int(DMPFrame.version),
+            challenge: challenge,
+            hostChallenge: hostChallenge,
+            identityPublicKey: privateKey.publicKey.rawRepresentation,
+            signature: Data()
+        )
+
+        let signature = try privateKey.signature(
+            for: unsigned.signingPayload
+        )
+
+        return PairingResponse(
+            accepted: unsigned.accepted,
+            receiverName: unsigned.receiverName,
+            receiverID: unsigned.receiverID,
+            protocolVersion: unsigned.protocolVersion,
+            challenge: unsigned.challenge,
+            hostChallenge: unsigned.hostChallenge,
+            identityPublicKey: unsigned.identityPublicKey,
+            signature: signature.rawRepresentation
+        )
+    }
+
+    private var signingPayload: Data {
+        let fields = [
+            "DMP1-PAIRING-RESPONSE",
+            String(protocolVersion),
+            accepted ? "1" : "0",
+            receiverID,
+            receiverName,
+            challenge.base64EncodedString(),
+            hostChallenge.base64EncodedString(),
+            identityPublicKey.base64EncodedString(),
+        ]
+        return Data(fields.joined(separator: "\u{1F}").utf8)
     }
 }
+

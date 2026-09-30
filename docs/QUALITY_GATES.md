@@ -36,9 +36,9 @@ The iPhone/iPad receiver must:
 
 Production distribution is blocked until all of the following are true:
 
-- TLS 1.3 or an equivalently reviewed authenticated transport is enabled,
-- peer identity is persisted securely,
-- changed peer identity invalidates silent reconnect,
+- TLS 1.3 or an equivalently reviewed authenticated encrypted transport is enabled,
+- peer identity is persisted securely on both host and receiver,
+- changed peer identity invalidates silent reconnect on both sides,
 - pairing codes are short-lived and bound to the active connection,
 - unauthenticated input/video/control traffic is rejected,
 - secrets and identifiers are excluded from diagnostics.

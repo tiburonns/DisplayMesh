@@ -28,3 +28,10 @@ Debe crear/destruir la pantalla virtual de forma limpia, capturar sólo la panta
 El receiver Apple debe compilar en **Release** para iOS Simulator e iPhoneOS tratando warnings como errores, además de pasar sus tests de protocolo/video/input y validación de recursos.
 
 No se considera release-ready el producto completo mientras falten validaciones de hardware del backend nativo, transporte seguro, firma/entitlements y pruebas de latencia/resolución anunciadas. El receiver puede usarse como candidato de **Internal TestFlight** bajo las limitaciones documentadas.
+
+
+## Seguridad de identidad
+
+El pairing de desarrollo autentica ahora ambos extremos con identidad persistente P-256 y challenges frescos independientes. Host y receiver fijan la clave pública aceptada y deben fallar si un peer conocido presenta otra clave.
+
+Esto **no cifra** el transporte TCP actual. TLS 1.3, o un transporte autenticado/cifrado equivalente revisado, continúa siendo un bloqueo de producción.
