@@ -13,9 +13,7 @@ mod optimizer;
 mod session;
 mod video;
 
-pub use adaptive::{
-    AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile,
-};
+pub use adaptive::{AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile};
 pub use backend::{
     BackendError, BackendLifecycleState, DisplayBackend, ManagedDisplayBackend,
     NativeBackendStatus, NativeProofLevel,

@@ -126,9 +126,7 @@ impl DmpInputSample {
             return Err(DmpInputError::InvalidPressure);
         }
 
-        if !self.altitude.is_finite()
-            || !self.azimuth.is_finite()
-            || !self.barrel_roll.is_finite()
+        if !self.altitude.is_finite() || !self.azimuth.is_finite() || !self.barrel_roll.is_finite()
         {
             return Err(DmpInputError::InvalidStylusData);
         }
@@ -223,10 +221,7 @@ mod tests {
     fn reserved_flags_are_rejected() {
         let mut source = sample();
         source.flags = 0x01;
-        assert_eq!(
-            source.encode(),
-            Err(DmpInputError::UnsupportedFlags(0x01))
-        );
+        assert_eq!(source.encode(), Err(DmpInputError::UnsupportedFlags(0x01)));
     }
 
     #[test]

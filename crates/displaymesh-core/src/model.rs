@@ -241,11 +241,7 @@ impl PeerCapabilities {
         self.wire_protocols.contains(&protocol)
     }
 
-    pub fn supports_binding(
-        &self,
-        medium: ConnectionMedium,
-        protocol: WireProtocol,
-    ) -> bool {
+    pub fn supports_binding(&self, medium: ConnectionMedium, protocol: WireProtocol) -> bool {
         if !self.supports_connection_medium(medium) || !self.supports_wire_protocol(protocol) {
             return false;
         }
@@ -340,7 +336,6 @@ impl TouchPoint {
     }
 }
 
-
 #[cfg(test)]
 mod development_capability_tests {
     use super::*;
@@ -353,14 +348,8 @@ mod development_capability_tests {
         assert_eq!(capabilities.connection_media, vec![ConnectionMedium::Wifi]);
         assert_eq!(capabilities.wire_protocols, vec![WireProtocol::Tcp]);
         assert!(!capabilities.encryption_supported);
-        assert!(capabilities.supports_binding(
-            ConnectionMedium::Wifi,
-            WireProtocol::Tcp
-        ));
-        assert!(!capabilities.supports_binding(
-            ConnectionMedium::Wifi,
-            WireProtocol::Quic
-        ));
+        assert!(capabilities.supports_binding(ConnectionMedium::Wifi, WireProtocol::Tcp));
+        assert!(!capabilities.supports_binding(ConnectionMedium::Wifi, WireProtocol::Quic));
         assert!(!capabilities.supports_connection_medium(ConnectionMedium::Usb));
     }
 }

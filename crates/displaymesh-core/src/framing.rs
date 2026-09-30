@@ -203,7 +203,10 @@ pub enum DmpFrameError {
         size: usize,
         expected: usize,
     },
-    UnexpectedSequence { expected: u32, received: u32 },
+    UnexpectedSequence {
+        expected: u32,
+        received: u32,
+    },
 }
 
 impl fmt::Display for DmpFrameError {
@@ -260,11 +263,8 @@ mod tests {
         assert_eq!(
             encoded,
             vec![
-                0x44, 0x4d, 0x50, 0x31,
-                0x01, 0x30, 0x01, 0x02,
-                0x00, 0x00, 0x00, 0x2a,
-                0x00, 0x00, 0x00, 0x05,
-                b'h', b'e', b'l', b'l', b'o',
+                0x44, 0x4d, 0x50, 0x31, 0x01, 0x30, 0x01, 0x02, 0x00, 0x00, 0x00, 0x2a, 0x00, 0x00,
+                0x00, 0x05, b'h', b'e', b'l', b'l', b'o',
             ]
         );
         let (decoded, consumed) = DmpFrame::decode(&encoded).unwrap().unwrap();
