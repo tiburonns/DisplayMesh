@@ -70,7 +70,8 @@
 - [x] Windows Media Foundation encoded-sample → H.264 normalize → DMP payload pipeline
 - [x] Shared GPU slot generation/geometry contract for safe texture recreation
 - [x] Real three-slot D3D11 shared-texture pool with NT handles, keyed mutexes and WARP lifecycle validation
-- [ ] Wire IddCx-produced shared D3D11 surfaces/handles into the Media Foundation encode worker
+- [x] Shared D3D11 NT handle → timed Media Foundation DXGI input sample adapter with geometry/format validation
+- [ ] Wire IddCx-produced shared D3D11 surfaces/handles and live MFT events into the Media Foundation encode worker
 - [x] Windows H.264 output normalizer (Annex-B + 4-byte AVC length prefixes)
 - [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)

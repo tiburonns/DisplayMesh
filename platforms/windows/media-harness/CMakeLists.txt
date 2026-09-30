@@ -5,6 +5,38 @@ if(NOT WIN32)
     message(FATAL_ERROR "DisplayMesh Windows media harness targets Windows")
 endif()
 
+add_library(displaymesh_shared_d3d11 STATIC
+    ../bridge/SharedD3D11TexturePool.cpp
+)
+
+target_include_directories(
+    displaymesh_shared_d3d11
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/../bridge
+)
+
+target_compile_features(
+    displaymesh_shared_d3d11
+    PUBLIC cxx_std_20
+)
+
+target_compile_definitions(
+    displaymesh_shared_d3d11
+    PUBLIC
+        NOMINMAX
+        UNICODE
+        _UNICODE
+        WINVER=0x0A00
+        _WIN32_WINNT=0x0A00
+)
+
+target_link_libraries(
+    displaymesh_shared_d3d11
+    PUBLIC
+        d3d11
+        dxgi
+)
+
 add_library(displaymesh_windows_media STATIC
     WindowsMediaProbe.cpp
     BoundedEncodeWorker.cpp
@@ -12,10 +44,12 @@ add_library(displaymesh_windows_media STATIC
     H264AccessUnitNormalizer.cpp
     MftEncodedSampleProcessor.cpp
     MftEncoderPumpState.cpp
+    MftDxgiInputSampleFactory.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bridge
 )
 
 target_compile_features(displaymesh_windows_media PUBLIC cxx_std_20)
@@ -27,6 +61,7 @@ target_compile_definitions(displaymesh_windows_media PUBLIC
 )
 
 target_link_libraries(displaymesh_windows_media PUBLIC
+    displaymesh_shared_d3d11
     d3d11
     dxgi
     mf
@@ -158,5 +193,20 @@ if(BUILD_TESTING)
     add_test(
         NAME mft-encoder-pump-state
         COMMAND mft-encoder-pump-state-tests
+    )
+
+    add_executable(
+        mft-dxgi-input-sample-tests
+        tests/MftDxgiInputSampleFactoryTests.cpp
+    )
+
+    target_link_libraries(
+        mft-dxgi-input-sample-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME mft-dxgi-input-sample
+        COMMAND mft-dxgi-input-sample-tests
     )
 endif()
