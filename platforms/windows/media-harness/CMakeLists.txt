@@ -8,6 +8,7 @@ endif()
 add_library(displaymesh_windows_media STATIC
     WindowsMediaProbe.cpp
     BoundedEncodeWorker.cpp
+    H264AnnexBPacketizer.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
@@ -58,5 +59,41 @@ if(BUILD_TESTING)
     add_test(
         NAME bounded-encode-worker
         COMMAND bounded-encode-worker-tests
+    )
+
+    add_executable(
+        h264-dmp-packetizer-tests
+        tests/H264AnnexBPacketizerTests.cpp
+    )
+
+    target_link_libraries(
+        h264-dmp-packetizer-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-dmp-packetizer
+        COMMAND h264-dmp-packetizer-tests
+    )
+
+    add_executable(
+        h264-dmp-frame-integration-tests
+        tests/H264DmpFrameIntegrationTests.cpp
+        ../protocol/DmpFrame.cpp
+    )
+
+    target_include_directories(
+        h264-dmp-frame-integration-tests
+        PRIVATE ../protocol
+    )
+
+    target_link_libraries(
+        h264-dmp-frame-integration-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME h264-dmp-frame-integration
+        COMMAND h264-dmp-frame-integration-tests
     )
 endif()

@@ -71,3 +71,10 @@ Use test signing only on a dedicated development PC/VM. Production distribution 
 `media-harness/BoundedEncodeWorker` provides the low-latency queue policy for the Windows encoder path. At most one frame may wait while another is being processed; newer submissions replace an older pending frame, stale sequence numbers are rejected, shutdown discards pending work, and handler failures cannot kill the worker thread.
 
 This is intentionally a scheduling foundation, not a claim that the IddCx texture is already flowing into Media Foundation. The remaining integration must carry the shared D3D11 surface/handle into this worker without CPU readback and then packetize the encoded H.264 output into DMP.
+
+
+## H.264 Annex-B packetizer
+
+`media-harness/H264AnnexBPacketizer` validates Annex-B access units and produces the same 16-byte DMP video payload header consumed by the Apple receiver. It caches SPS/PPS, repairs an IDR that omits them when valid cached parameter sets exist, normalizes NAL start codes, preserves the DMP payload budget, and fails instead of emitting a non-recoverable keyframe when parameter sets are unavailable.
+
+This component is deterministic and hardware-independent. The remaining Windows M2 work is to feed real Media Foundation encoder output into it and then wrap the resulting video payload in the authenticated DMP transport.
