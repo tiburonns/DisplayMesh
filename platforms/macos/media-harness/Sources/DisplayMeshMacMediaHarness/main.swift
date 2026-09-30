@@ -264,13 +264,21 @@ struct DisplayMeshMacMediaHarness {
             format: "%06d",
             Int.random(in: 0...999_999)
         )
+        let hostKeyAgreement = P256.KeyAgreement.PrivateKey()
+        let hostChallenge = PairingRequest.makeHostChallenge()
         let request = try identity.makePairingRequest(
             peerName: Host.current().localizedName ?? "Mac",
             verificationCode: verificationCode,
-            challenge: hello.challenge
+            challenge: hello.challenge,
+            hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                hostKeyAgreement.publicKey.rawRepresentation
         )
 
-        try receiver.sendPairingRequest(request)
+        try receiver.sendPairingRequest(
+            request,
+            keyAgreementPrivateKey: hostKeyAgreement
+        )
 
         print("")
         print("PAIRING CODE: \(verificationCode)")
