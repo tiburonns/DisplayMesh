@@ -68,3 +68,8 @@
 "permission.localNetwork.securityNote" = "The current development transport is plaintext TCP. Use it only on a network you trust until production encryption is implemented.";
 "permission.localNetwork.continue" = "Continue and Start Receiver";
 "permission.localNetwork.notNow" = "Not Now";
+
+
+"action.tryAgain" = "Try Again";
+"action.openSettings" = "Open Settings";
+"receiver.failureRecoveryHint" = "If you previously denied Local Network access, enable DisplayMesh in Settings. Otherwise, retry the listener and review the error above.";

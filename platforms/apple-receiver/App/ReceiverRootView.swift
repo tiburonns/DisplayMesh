@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ReceiverRootView: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
@@ -157,6 +158,10 @@ struct ReceiverRootView: View {
             }
 
             listenerDetail
+
+            if case .failed = receiver.listenerState {
+                listenerFailureRecovery
+            }
 
             Button {
                 requestReceiverStart()
@@ -317,6 +322,44 @@ struct ReceiverRootView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
+    }
+
+    private var listenerFailureRecovery: some View {
+        VStack(spacing: 10) {
+            Text("receiver.failureRecoveryHint")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            HStack(spacing: 10) {
+                Button {
+                    requestReceiverStart()
+                } label: {
+                    Label(
+                        "action.tryAgain",
+                        systemImage: "arrow.clockwise"
+                    )
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    guard let url = URL(
+                        string: UIApplication.openSettingsURLString
+                    ) else {
+                        return
+                    }
+
+                    UIApplication.shared.open(url)
+                } label: {
+                    Label(
+                        "action.openSettings",
+                        systemImage: "gearshape"
+                    )
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private var localNetworkEducation: some View {
