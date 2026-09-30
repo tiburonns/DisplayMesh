@@ -47,6 +47,9 @@ required_files = [
     RECEIVER / "Tests" / "LatestFramePresentationGateTests.swift",
     RECEIVER / "Sources" / "ReceiverTelemetryCadencePolicy.swift",
     RECEIVER / "Tests" / "ReceiverTelemetryCadencePolicyTests.swift",
+    RECEIVER / "Sources" / "ReceiverIdentityStore.swift",
+    RECEIVER / "Sources" / "DMPSecureSession.swift",
+    RECEIVER / "Tests" / "SecureSessionTests.swift",
 ]
 
 errors: list[str] = []
@@ -106,7 +109,6 @@ if project.is_file():
         f"MARKETING_VERSION: {workspace_version}",
         "CURRENT_PROJECT_VERSION: 3",
         "SWIFT_STRICT_CONCURRENCY: targeted",
-        "ITSAppUsesNonExemptEncryption: false",
     ):
         if required_token not in project_text:
             errors.append(f"project.yml is missing required token: {required_token}")
@@ -235,7 +237,9 @@ if pairing_source.is_file():
         "ReceiverHello",
         "identityFingerprint",
         "challenge: Data",
-        "isValid(expectedChallenge:",
+        "hostChallenge: Data",
+        "receiverID: String",
+        "DMP1-PAIRING-RESPONSE",
     ):
         if required_token not in pairing_text:
             errors.append(f"signed pairing contract is missing token: {required_token}")

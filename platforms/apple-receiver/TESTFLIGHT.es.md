@@ -1,10 +1,10 @@
-# DisplayMesh Receiver 0.2.2 — Preflight de TestFlight
+# DisplayMesh Receiver 0.2.3 — Preflight de TestFlight
 
 El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo DisplayMesh esté listo para producción. Esto **no** convierte el transporte TCP sin cifrar en una función segura de producción.
 
 ## Gates de código
 
-- Proyecto generado 0.2.2 (build 3).
+- Proyecto generado 0.2.3 (build 3).
 - Paridad English/Español/Sistema.
 - Privacy Manifest con required reason de UserDefaults.
 - Builds Release para Simulator e iPhoneOS.
@@ -34,7 +34,9 @@ Ejecuta `./platforms/apple-receiver/preflight-testflight.sh` desde la raíz. Val
 
 ## Export compliance
 
-El receiver usa CryptoKit de Apple para verificar firmas P-256 y no implementa un algoritmo de cifrado propio. El plist actual declara `ITSAppUsesNonExemptEncryption = NO` porque esta build sólo usa criptografía exenta provista por Apple. Hay que reevaluarlo si cambia el cifrado de transporte o se añade criptografía propia/de terceros.
+El receiver ahora contiene código CryptoKit para identidad P-256 persistente y una implementación de sesión segura en preparación basada en P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305. No se debe fijar una exención de export compliance en el plist antes de la primera subida.
+
+Para el primer TestFlight, deja `ITSAppUsesNonExemptEncryption` sin definir y responde el cuestionario de cifrado de App Store Connect según la build realmente enviada y las regiones de distribución. Después de que Apple determine si este uso es exento o requiere documentación, registra el resultado y sólo entonces añade la clave/código correspondiente para futuras releases.
 
 ## Archive
 

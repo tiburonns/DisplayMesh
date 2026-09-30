@@ -35,3 +35,10 @@ No se considera release-ready el producto completo mientras falten validaciones 
 El pairing de desarrollo autentica ahora ambos extremos con identidad persistente P-256 y challenges frescos independientes. Host y receiver fijan la clave pública aceptada y deben fallar si un peer conocido presenta otra clave.
 
 Esto **no cifra** el transporte TCP actual. TLS 1.3, o un transporte autenticado/cifrado equivalente revisado, continúa siendo un bloqueo de producción.
+
+
+## Primitivo de sesión segura
+
+Apple receiver y host macOS ya comparten un primitivo de sesión segura con P-256 ECDH efímero, HKDF-SHA256 con claves direccionales y ChaCha20-Poly1305. El AAD liga versión DMP, tipo de mensaje, flags y secuencia.
+
+Todavía no está conectado al framing TCP. Por ello encryptedTransport debe continuar en false hasta que todos los frames posteriores al pairing se cifren/autentiquen y fallen cerrados ante manipulación.

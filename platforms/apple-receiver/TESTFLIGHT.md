@@ -1,10 +1,10 @@
-# DisplayMesh Receiver 0.2.2 — TestFlight preflight
+# DisplayMesh Receiver 0.2.3 — TestFlight preflight
 
 The iPhone/iPad receiver can be tested through TestFlight before the full DisplayMesh host product is production-ready. This does **not** make plaintext developer transport a production security claim.
 
 ## Source gates
 
-- Generated project version: 0.2.2 (build 3).
+- Generated project version: 0.2.3 (build 3).
 - EN/ES/System localization parity.
 - Privacy Manifest with UserDefaults required-reason declaration.
 - Release builds for iOS Simulator and iPhoneOS.
@@ -34,7 +34,9 @@ Run `./platforms/apple-receiver/preflight-testflight.sh` from the repository roo
 
 ## Export compliance
 
-The receiver uses Apple's CryptoKit for P-256 signing verification and does not implement its own encryption algorithm. The current plist declares `ITSAppUsesNonExemptEncryption = NO` because this build uses only exempt, Apple-provided cryptographic functionality. Re-evaluate this declaration if transport encryption or third-party/custom cryptography changes.
+The receiver now contains CryptoKit code for persistent P-256 identity and a staged P-256 ECDH / HKDF-SHA256 / ChaCha20-Poly1305 secure-session implementation. Do **not** hard-code an export-compliance exemption in the plist before the first upload.
+
+For the first TestFlight upload, leave `ITSAppUsesNonExemptEncryption` unset and answer App Store Connect's encryption questionnaire based on the actual submitted build and distribution regions. After Apple determines whether this use is exempt or requires documentation, record that result and only then add the appropriate plist/export-compliance code for subsequent releases.
 
 ## Archive
 
