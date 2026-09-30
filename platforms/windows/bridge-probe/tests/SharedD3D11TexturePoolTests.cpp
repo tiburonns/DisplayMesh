@@ -108,6 +108,9 @@ int main() {
         pool.Recreate(1920, 1080)));
     assert(pool.Generation() == 1);
 
+    std::array<HANDLE, kFrameMailboxSlotCount>
+        firstHandles{};
+
     for (std::uint32_t index = 0;
          index < kFrameMailboxSlotCount;
          ++index) {
@@ -118,7 +121,29 @@ int main() {
             1,
             1920,
             1080);
+
+        const auto* slot = pool.Slot(index);
+        assert(slot != nullptr);
+        firstHandles[index] =
+            slot->SharedHandle();
     }
+
+    for (std::uint32_t lhs = 0;
+         lhs < kFrameMailboxSlotCount;
+         ++lhs) {
+        for (std::uint32_t rhs = lhs + 1;
+             rhs < kFrameMailboxSlotCount;
+             ++rhs) {
+            assert(
+                firstHandles[lhs] !=
+                firstHandles[rhs]);
+        }
+    }
+
+    assert(
+        pool.Slot(
+            kFrameMailboxSlotCount) ==
+        nullptr);
 
     FrameAnnouncement first{};
     first.sequence = 1;
@@ -153,9 +178,39 @@ int main() {
     resized.height = 1440;
     assert(pool.Matches(resized));
 
+    std::array<HANDLE, kFrameMailboxSlotCount>
+        secondHandles{};
+    for (std::uint32_t index = 0;
+         index < kFrameMailboxSlotCount;
+         ++index) {
+        const auto* slot = pool.Slot(index);
+        assert(slot != nullptr);
+        secondHandles[index] =
+            slot->SharedHandle();
+    }
+
     assert(FAILED(
         pool.Recreate(0, 1440)));
     assert(pool.Generation() == 2);
+    assert(pool.Matches(resized));
+
+    for (std::uint32_t index = 0;
+         index < kFrameMailboxSlotCount;
+         ++index) {
+        const auto* slot = pool.Slot(index);
+        assert(slot != nullptr);
+        assert(
+            slot->SharedHandle() ==
+            secondHandles[index]);
+
+        ValidateSlot(
+            device1.Get(),
+            pool,
+            index,
+            2,
+            2560,
+            1440);
+    }
 
     pool.Reset();
     assert(pool.Generation() == 0);

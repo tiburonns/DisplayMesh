@@ -72,7 +72,9 @@ HRESULT SharedD3D11TexturePool::Recreate(
 }
 
 void SharedD3D11TexturePool::Reset() noexcept {
-    slots_ = {};
+    for (auto& slot : slots_) {
+        slot = SharedD3D11TextureSlot{};
+    }
     contract_.Reset();
     generation_ = 0;
 }
