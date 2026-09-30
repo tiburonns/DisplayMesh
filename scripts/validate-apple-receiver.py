@@ -241,6 +241,10 @@ for required_token in [
     "resumeReceiverWhenActive",
     "case .background:",
     "case .active:",
+    "displaymesh.receiver.localNetworkEducation.v1",
+    "showingLocalNetworkEducation",
+    "requestReceiverStart",
+    "permission.localNetwork.securityNote",
 ]:
     if required_token not in root_view_source:
         errors.append(

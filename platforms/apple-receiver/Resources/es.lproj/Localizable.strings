@@ -59,3 +59,12 @@
 "settings.about.section" = "Acerca de";
 "settings.about.protocol" = "Protocolo";
 "settings.about.version" = "Versión";
+
+
+"permission.localNetwork.navigationTitle" = "Antes de conectar";
+"permission.localNetwork.title" = "Permite acceso a la red local";
+"permission.localNetwork.detail" = "Al continuar, iOS puede solicitar acceso a Red local. DisplayMesh lo necesita para anunciar este receptor mediante Bonjour y aceptar una conexión desde tu Mac o PC.";
+"permission.localNetwork.localOnly" = "Este receptor no necesita un servicio en la nube para transportar la imagen de tu pantalla.";
+"permission.localNetwork.securityNote" = "El transporte de desarrollo actual usa TCP sin cifrar. Úsalo sólo en una red de confianza hasta implementar el cifrado de producción.";
+"permission.localNetwork.continue" = "Continuar e iniciar receptor";
+"permission.localNetwork.notNow" = "Ahora no";

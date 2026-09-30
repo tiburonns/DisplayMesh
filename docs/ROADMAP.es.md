@@ -58,7 +58,8 @@
 - [x] Framing/secuencia DMP nativos en Windows.
 - [x] Telemetría de decode del receiver enviada al host de desarrollo macOS.
 - [x] Identidad P-256 persistente del host macOS y verificación del pairing en receiver.
-- [ ] Primer uso/permisos, TLS 1.3, identidad mutua de producción, telemetría E2E, updates y firma/notarización.
+- [x] Educación previa al permiso de Red local antes de iniciar Bonjour/listener.
+- [ ] TLS 1.3, identidad mutua de producción, telemetría E2E, updates y firma/notarización.
 
 ## M6 — Avanzado
 

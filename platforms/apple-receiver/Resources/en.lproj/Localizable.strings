@@ -59,3 +59,12 @@
 "settings.about.section" = "About";
 "settings.about.protocol" = "Protocol";
 "settings.about.version" = "Version";
+
+
+"permission.localNetwork.navigationTitle" = "Before Connecting";
+"permission.localNetwork.title" = "Allow Local Network Access";
+"permission.localNetwork.detail" = "When you continue, iOS may ask for Local Network access. DisplayMesh needs it to advertise this receiver with Bonjour and accept a connection from your Mac or PC.";
+"permission.localNetwork.localOnly" = "This receiver does not require a cloud service to carry your screen stream.";
+"permission.localNetwork.securityNote" = "The current development transport is plaintext TCP. Use it only on a network you trust until production encryption is implemented.";
+"permission.localNetwork.continue" = "Continue and Start Receiver";
+"permission.localNetwork.notNow" = "Not Now";
