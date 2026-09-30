@@ -29,7 +29,7 @@ swift test --package-path platforms/macos/media-harness
 
 ## Run
 
-First start the DisplayMesh receiver on the iPhone/iPad.
+First start the DisplayMesh receiver on the iPhone/iPad. The harness now discovers a single receiver automatically through the receiver's generic `_displaymesh._tcp` Bonjour service. If zero or multiple receivers are visible, discovery fails explicitly; use `--host` to select a specific receiver rather than connecting to an arbitrary peer.
 
 List capturable displays:
 
@@ -38,15 +38,22 @@ swift run --package-path platforms/macos/media-harness \
   displaymesh-mac-media-harness --list
 ```
 
-Stream the first display:
+Stream the first display using Bonjour discovery:
 
 ```bash
 swift run --package-path platforms/macos/media-harness \
   displaymesh-mac-media-harness \
-  --host 192.168.1.25 \
   --fps 60 \
   --bitrate 24 \
   --reconnect-attempts 3
+```
+
+Or select a receiver explicitly:
+
+```bash
+swift run --package-path platforms/macos/media-harness \
+  displaymesh-mac-media-harness \
+  --host 192.168.1.25
 ```
 
 macOS must grant Screen Recording permission to the harness/Terminal process.

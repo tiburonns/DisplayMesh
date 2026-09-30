@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import Network
 import ScreenCaptureKit
 
 private struct Options {
@@ -94,7 +95,6 @@ private enum CLIError: Error, LocalizedError {
     case missingValue(String)
     case invalidValue(String, String)
     case unknownArgument(String)
-    case receiverRequired
 
     var errorDescription: String? {
         switch self {
@@ -106,8 +106,6 @@ private enum CLIError: Error, LocalizedError {
             return "Invalid value for \(flag): \(value)"
         case .unknownArgument(let argument):
             return "Unknown argument: \(argument)"
-        case .receiverRequired:
-            return "--host <iPhone-or-iPad-IP> is required unless --list is used"
         }
     }
 }
@@ -123,13 +121,14 @@ struct DisplayMeshMacMediaHarness {
                 return
             }
 
-            guard let receiverHost = options.receiverHost else {
-                throw CLIError.receiverRequired
-            }
+            let endpoint =
+                try await resolveReceiverEndpoint(
+                    options: options
+                )
 
             try await run(
                 options: options,
-                receiverHost: receiverHost
+                receiverEndpoint: endpoint
             )
         } catch CLIError.help {
             printUsage()
@@ -156,9 +155,42 @@ struct DisplayMeshMacMediaHarness {
         }
     }
 
+    private static func resolveReceiverEndpoint(
+        options: Options
+    ) async throws -> NWEndpoint {
+        if let receiverHost =
+            options.receiverHost {
+            return .hostPort(
+                host:
+                    NWEndpoint.Host(
+                        receiverHost
+                    ),
+                port:
+                    ReceiverConnection.port
+            )
+        }
+
+        print(
+            "Searching for DisplayMesh receiver via Bonjour …"
+        )
+        let discovery =
+            ReceiverDiscovery()
+        let endpoint =
+            try await discovery
+                .discoverOne()
+
+        print(
+            "Discovered receiver: " +
+            String(
+                describing: endpoint
+            )
+        )
+        return endpoint
+    }
+
     private static func run(
         options: Options,
-        receiverHost: String
+        receiverEndpoint: NWEndpoint
     ) async throws {
         var completedRetries = 0
 
@@ -166,7 +198,8 @@ struct DisplayMeshMacMediaHarness {
             do {
                 try await runOnce(
                     options: options,
-                    receiverHost: receiverHost
+                    receiverEndpoint:
+                        receiverEndpoint
                 )
                 return
             } catch is CancellationError {
@@ -203,13 +236,23 @@ struct DisplayMeshMacMediaHarness {
 
     private static func runOnce(
         options: Options,
-        receiverHost: String
+        receiverEndpoint: NWEndpoint
     ) async throws {
-        let receiver = ReceiverConnection()
+        let receiver =
+            ReceiverConnection()
         defer { receiver.close() }
 
-        print("Connecting to DisplayMesh receiver at \(receiverHost):49655 …")
-        try await receiver.connect(host: receiverHost)
+        print(
+            "Connecting to DisplayMesh receiver at " +
+            String(
+                describing:
+                    receiverEndpoint
+            ) +
+            " …"
+        )
+        try await receiver.connect(
+            endpoint: receiverEndpoint
+        )
 
         let hello = try await receiver.waitForReceiverHello()
         guard hello.isValid else {
@@ -462,9 +505,10 @@ struct DisplayMeshMacMediaHarness {
 
             Usage:
               displaymesh-mac-media-harness --list
-              displaymesh-mac-media-harness --host <receiver-ip> [options]
+              displaymesh-mac-media-harness [--host <receiver-ip>] [options]
 
             Options:
+              --host <ip/name>   Explicit receiver override (default: Bonjour discovery)
               --display <id>     ScreenCaptureKit display ID (default: first)
               --fps <15-240>     Target FPS (default: 60, capped by receiver)
               --bitrate <2-200>  H.264 bitrate in Mbps (default: 24)
@@ -476,7 +520,10 @@ struct DisplayMeshMacMediaHarness {
               --help             Show this help
 
             The receiver must already be listening in the DisplayMesh
-            iPhone/iPad app. This development harness uses plaintext TCP;
+            iPhone/iPad app. Without --host, the harness discovers exactly
+            one _displaymesh._tcp Bonjour service and fails if none or
+            multiple receivers are visible. This development harness uses
+            plaintext TCP;
             production TLS is still a release blocker.
             """
         )

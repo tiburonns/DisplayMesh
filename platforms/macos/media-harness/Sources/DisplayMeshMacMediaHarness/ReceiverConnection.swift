@@ -44,17 +44,39 @@ final class ReceiverConnection {
 
     func connect(
         host: String,
-        timeoutSeconds: TimeInterval = HostConnectionPolicy.connectTimeoutSeconds
+        timeoutSeconds: TimeInterval =
+            HostConnectionPolicy
+                .connectTimeoutSeconds
+    ) async throws {
+        try await connect(
+            endpoint: .hostPort(
+                host: NWEndpoint.Host(host),
+                port: Self.port
+            ),
+            timeoutSeconds:
+                timeoutSeconds
+        )
+    }
+
+    func connect(
+        endpoint: NWEndpoint,
+        timeoutSeconds: TimeInterval =
+            HostConnectionPolicy
+                .connectTimeoutSeconds
     ) async throws {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
 
-        let parameters = NWParameters(tls: nil, tcp: tcp)
-        let newConnection = NWConnection(
-            host: NWEndpoint.Host(host),
-            port: Self.port,
-            using: parameters
-        )
+        let parameters =
+            NWParameters(
+                tls: nil,
+                tcp: tcp
+            )
+        let newConnection =
+            NWConnection(
+                to: endpoint,
+                using: parameters
+            )
 
         resetProtocolState()
         clearLastDisconnectError()

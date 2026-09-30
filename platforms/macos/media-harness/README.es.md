@@ -13,6 +13,8 @@ swift test --package-path platforms/macos/media-harness
 
 La identidad firmada endurece el pairing, pero TCP sigue sin cifrado. Su propósito es validar la ruta real de media antes de integrarla como backend host productivo. No debe confundirse con una release terminada.
 
+El host macOS descubre automáticamente un único receiver mediante el servicio Bonjour genérico `_displaymesh._tcp`. Si encuentra cero o varios receivers falla explícitamente; `--host` permite seleccionar uno de forma manual sin conectar arbitrariamente al dispositivo equivocado.
+
 
 ## Raster adaptativo
 
