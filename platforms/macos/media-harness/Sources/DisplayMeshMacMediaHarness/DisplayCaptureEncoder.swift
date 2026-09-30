@@ -73,6 +73,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var forceNextKeyframe = true
     private var running = false
     private var rasterReconfigurationInProgress = false
+    private var pendingRasterScale: Double?
     private var rasterBaseWidth = 0
     private var rasterBaseHeight = 0
     private var currentWidth = 0
@@ -141,6 +142,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         activeFramesPerSecond = framesPerSecond
         activeBitrateMbps = bitrateMbps
         rasterReconfigurationInProgress = false
+        pendingRasterScale = nil
 
         try createEncoder(
             width: width,
@@ -203,6 +205,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
 
         running = false
         rasterReconfigurationInProgress = false
+        pendingRasterScale = nil
 
         if let stream {
             try? await stream.stopCapture()
@@ -253,15 +256,22 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
             let stream: SCStream
             let dimensions: AdaptiveRasterDimensions
             let framesPerSecond: Int
-            let bitrateMbps: Int
         }
 
         let snapshot: Snapshot? = await withCheckedContinuation { continuation in
             queue.async { [weak self] in
-                guard let self,
-                      running,
-                      !rasterReconfigurationInProgress,
-                      let stream,
+                guard let self, running else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                if rasterReconfigurationInProgress {
+                    pendingRasterScale = scale
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                guard let stream,
                       let dimensions = AdaptiveRasterGeometry.dimensions(
                           baseWidth: rasterBaseWidth,
                           baseHeight: rasterBaseHeight,
@@ -282,8 +292,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
                     returning: Snapshot(
                         stream: stream,
                         dimensions: dimensions,
-                        framesPerSecond: activeFramesPerSecond,
-                        bitrateMbps: activeBitrateMbps
+                        framesPerSecond: activeFramesPerSecond
                     )
                 )
             }
@@ -309,6 +318,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         } catch {
             queue.async { [weak self] in
                 self?.rasterReconfigurationInProgress = false
+                self?.pendingRasterScale = nil
             }
             throw error
         }
@@ -338,7 +348,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
                             width: snapshot.dimensions.width,
                             height: snapshot.dimensions.height,
                             framesPerSecond: snapshot.framesPerSecond,
-                            bitrateMbps: snapshot.bitrateMbps
+                            bitrateMbps: activeBitrateMbps
                         )
                         currentWidth = snapshot.dimensions.width
                         currentHeight = snapshot.dimensions.height
@@ -354,6 +364,23 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
             }
         } catch {
             throw error
+        }
+
+        let pendingScale: Double? = await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                let pending = pendingRasterScale
+                pendingRasterScale = nil
+                continuation.resume(returning: pending)
+            }
+        }
+
+        if let pendingScale,
+           let latest = try await applyRasterScale(pendingScale) {
+            return latest
         }
 
         return snapshot.dimensions
