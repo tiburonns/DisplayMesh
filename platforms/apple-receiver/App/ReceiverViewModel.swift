@@ -70,7 +70,7 @@ final class ReceiverViewModel: ObservableObject {
                 videoDecoder.reset()
                 videoSurface.clear()
 
-                guard receiverIdentity != nil else {
+                guard self.receiverIdentity != nil else {
                     lastProtocolError =
                         PairingValidationError
                             .receiverIdentityUnavailable
