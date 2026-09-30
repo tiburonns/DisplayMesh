@@ -48,3 +48,16 @@ El coordinador:
 - expone estadísticas separadas del coordinador, worker y pump.
 
 Esta es la capa determinista de orquestación. El siguiente paso en Windows es integrar las llamadas reales `IMFTransform::ProcessInput` / `ProcessOutput` y después conectar el productor vivo de superficies IddCx.
+
+
+## Ruta MFT asíncrona concreta
+
+El harness multimedia ya tiene las piezas concretas entre un frame GPU admitido y un payload de vídeo DMP:
+
+`EncodeWorkItem → InputSampleFactory/SharedSurfaceEncodeInput → IMFTransform::ProcessInput → eventos MFT asíncronos → IMFTransform::ProcessOutput → normalizador H264 → packetizer DMP → handler de paquetes`.
+
+`MftLiveEncodeAdapter` usa el adaptador real de superficies compartidas en producción, pero permite inyectar la fábrica de samples para probar de forma determinista fallos de Media Foundation y la salida H.264 sin requerir GPU física.
+
+`MftAsyncEventPump` consume los eventos asíncronos del transform y dirige `METransformNeedInput`, `METransformHaveOutput` y `METransformDrainComplete` a `LiveEncodeCoordinator`. Los errores del transform/eventos fallan de forma cerrada y detienen el pump.
+
+El gate multimedia Windows restante es conectar el productor IddCx vivo y la publicación BGRA→NV12 a esta ruta, seguido del binding de sesión/red DMP de Windows.

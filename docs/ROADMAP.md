@@ -73,7 +73,9 @@
 - [x] Shared D3D11 NT handle → timed Media Foundation DXGI input sample adapter with geometry/format validation
 - [x] Latest-frame work item carries slot/generation/timing through stale-safe shared-surface → MF sample admission
 - [x] Coordinate asynchronous MFT NeedInput/HaveOutput credits with the bounded latest-frame worker
-- [ ] Wire the live IddCx producer, GPU BGRA→NV12 conversion and concrete IMFTransform ProcessInput/ProcessOutput calls into the coordinator
+- [x] Concrete IMFTransform ProcessInput/ProcessOutput adapter with H.264 normalization → DMP payload delivery
+- [x] Asynchronous Media Foundation event pump routes NeedInput/HaveOutput/DrainComplete into the bounded coordinator
+- [ ] Wire the live IddCx producer and GPU BGRA→NV12 surface path into the live encoder
 - [x] Windows H.264 output normalizer (Annex-B + 4-byte AVC length prefixes)
 - [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)
