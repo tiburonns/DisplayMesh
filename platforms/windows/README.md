@@ -64,3 +64,10 @@ Use test signing only on a dedicated development PC/VM. Production distribution 
 7. Exercise 60/120 Hz swap-chain delivery.
 8. Close/remove the software device and confirm clean monitor departure.
 9. Run Driver Verifier/IDD diagnostics before calling the driver production-ready.
+
+
+## Bounded encode scheduling
+
+`media-harness/BoundedEncodeWorker` provides the low-latency queue policy for the Windows encoder path. At most one frame may wait while another is being processed; newer submissions replace an older pending frame, stale sequence numbers are rejected, shutdown discards pending work, and handler failures cannot kill the worker thread.
+
+This is intentionally a scheduling foundation, not a claim that the IddCx texture is already flowing into Media Foundation. The remaining integration must carry the shared D3D11 surface/handle into this worker without CPU readback and then packetize the encoded H.264 output into DMP.

@@ -55,3 +55,10 @@ El driver mantiene cada frame del escritorio como superficie D3D11 en GPU. La ru
 ## Firma de desarrollo
 
 Usa test signing sólo en una PC/VM dedicada de desarrollo. La distribución final requiere el flujo de firma de drivers de producción de Microsoft.
+
+
+## Scheduler bounded de encode
+
+`media-harness/BoundedEncodeWorker` define la política de baja latencia del futuro encoder Windows. Sólo puede existir un frame pendiente mientras otro se procesa; un frame nuevo reemplaza al pendiente anterior, se rechazan secuencias obsoletas, el shutdown descarta trabajo pendiente y una excepción del handler no mata el worker.
+
+Es una base de scheduling, no una afirmación de que la textura IddCx ya llegue a Media Foundation. Falta transportar la superficie/handle D3D11 compartida sin readback a CPU y packetizar la salida H.264 en DMP.

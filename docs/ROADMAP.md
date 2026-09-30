@@ -65,7 +65,8 @@
 - [x] Windows IddCx → D3D11 desktop-surface acquisition foundation
 - [x] Windows GPU BGRA → NV12 Media Foundation capability harness
 - [x] Hardware H.264 MFT discovery/configuration + DXGI sample wrapping harness
-- [ ] Windows bounded async Media Foundation encode worker
+- [x] Windows bounded latest-frame encode scheduler foundation
+- [ ] Wire shared D3D11 surfaces into the Media Foundation encode worker
 - [ ] Windows H.264 output → DMP Annex-B packetizer
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)
 - [ ] Windows Media Foundation H.264 hardware encoder
