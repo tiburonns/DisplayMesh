@@ -54,6 +54,8 @@ enum HostReconnectPolicy {
              .incompatibleReceiverCapabilities,
              .invalidPanelDescriptor,
              .invalidPairingResponse,
+             .receiverIdentityChanged,
+             .receiverTrustStoreUnavailable,
              .invalidSessionPhase,
              .invalidPairingRequest:
             return false

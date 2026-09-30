@@ -18,7 +18,7 @@ EncodeWorkItem Item(std::uint64_t sequence) {
     const auto slotIndex =
         static_cast<std::uint32_t>(
             sequence %
-            bridge::kFrameMailboxSlotCount);
+            displaymesh::bridge::kFrameMailboxSlotCount);
 
     return EncodeWorkItem{
         sequence,
@@ -84,7 +84,7 @@ void TestValidationAndStaleRejection() {
 
     auto invalidSlot = Item(1);
     invalidSlot.slotIndex =
-        bridge::kFrameMailboxSlotCount;
+        displaymesh::bridge::kFrameMailboxSlotCount;
     assert(!worker.Submit(invalidSlot));
 
     auto wrongMappedSlot = Item(1);
@@ -109,7 +109,7 @@ void TestValidationAndStaleRejection() {
 }
 
 void TestAnnouncementRoundTripPreservesGpuIdentity() {
-    bridge::FrameAnnouncement frame{};
+    displaymesh::bridge::FrameAnnouncement frame{};
     frame.sequence = 42;
     frame.timestampMicros = 123'000;
     frame.surfaceGeneration = 7;

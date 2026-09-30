@@ -557,12 +557,14 @@ final class H264VideoDecoder {
         }
 
         var value: CFTypeRef?
-        let status = VTSessionCopyProperty(
-            session,
-            key: kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
-            allocator: kCFAllocatorDefault,
-            valueOut: &value
-        )
+        let status = withUnsafeMutablePointer(to: &value) { valueOut in
+            VTSessionCopyProperty(
+                session,
+                key: kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
+                allocator: kCFAllocatorDefault,
+                valueOut: valueOut
+            )
+        }
 
         if status == noErr, let number = value as? NSNumber {
             metrics.hardwareAccelerated = number.boolValue

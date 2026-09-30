@@ -55,7 +55,7 @@ enum HostMediaError: Error, LocalizedError {
     }
 }
 
-final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
+final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     var shouldEncodeFrame: (() -> Bool)?
     var onPacket: ((DMPVideoPacket) -> Bool)?
     var onMetrics: ((HostEncoderMetrics) -> Void)?
@@ -324,7 +324,8 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
 
         do {
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
                 queue.async { [weak self] in
                     guard let self,
                           running,

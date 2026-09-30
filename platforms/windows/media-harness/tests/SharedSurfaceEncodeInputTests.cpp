@@ -11,7 +11,7 @@
 #include "SharedSurfaceEncodeInput.h"
 
 using Microsoft::WRL::ComPtr;
-using displaymesh::bridge::
+using displaymesh::displaymesh::bridge::
     SharedD3D11TexturePool;
 using displaymesh::media::
     EncodeWorkItem;
@@ -90,12 +90,12 @@ EncodeWorkItem WorkForSequence(
     const auto slotIndex =
         static_cast<std::uint32_t>(
             sequence %
-            bridge::kFrameMailboxSlotCount);
+            displaymesh::bridge::kFrameMailboxSlotCount);
 
     const auto* slot = pool.Slot(slotIndex);
     assert(slot != nullptr);
 
-    bridge::FrameAnnouncement frame{};
+    displaymesh::bridge::FrameAnnouncement frame{};
     frame.sequence = sequence;
     frame.timestampMicros =
         sequence * 1'000;
@@ -180,7 +180,7 @@ int main() {
     auto wrongSlot = resized;
     wrongSlot.slotIndex =
         (resized.slotIndex + 1) %
-        bridge::kFrameMailboxSlotCount;
+        displaymesh::bridge::kFrameMailboxSlotCount;
     sample.Reset();
     assert(FAILED(
         bridge.CreateSample(

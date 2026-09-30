@@ -128,8 +128,8 @@ final class ReceiverDiscovery: @unchecked Sendable {
                       attempt.claim()
                 else { return }
 
-                browser?.cancel()
-                browser = nil
+                self.browser?.cancel()
+                self.browser = nil
 
                 switch ReceiverDiscoveryPolicy
                     .classify(

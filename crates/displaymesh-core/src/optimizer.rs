@@ -283,7 +283,7 @@ mod tests {
             vec![DisplayPreset::PRESETS[0]],
         );
 
-        assert_eq!(
+        assert!(matches!(
             SessionOptimizer::recommend(
                 &SessionConfig::default(),
                 &local,
@@ -291,6 +291,6 @@ mod tests {
                 PerformanceProfile::Balanced,
             ),
             Err(OptimizationError::NoCommonConnection)
-        );
+        ));
     }
 }
