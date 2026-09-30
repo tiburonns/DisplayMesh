@@ -108,8 +108,7 @@ final class ReceiverConnection {
     }
 
     func close() {
-        queue.async { [weak self] in
-            guard let self else { return }
+        queue.async { [self] in
             connection?.cancel()
             connection = nil
             setConnectionReady(false)
@@ -626,6 +625,7 @@ final class ReceiverConnection {
         failedConnection.cancel()
         failWaiters(error)
         clearVideoGate()
+        resetProtocolState()
     }
 
     private func failWaiters(_ error: Error) {

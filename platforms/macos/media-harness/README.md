@@ -16,6 +16,7 @@ It is intentionally separate from the production host backend while the media pa
 - Receiver keyframe requests force the next host frame to be an IDR.
 - The host identity persists in Keychain and every pairing request is challenge-bound and signed.
 - Capture input is dropped before encoding while the TCP video send is busy instead of building an unbounded media queue.
+- Transient transport failures are detected during streaming and retried with bounded exponential backoff; every reconnect starts a fresh DMP challenge/session instead of reusing stale protocol state.
 - Binary DMP touch samples map one finger to pointer/click/drag and two fingers to scrolling.
 - The gesture state machine releases an active mouse button before entering two-finger scroll and never turns the remaining finger into an accidental click.
 
@@ -44,7 +45,8 @@ swift run --package-path platforms/macos/media-harness \
   displaymesh-mac-media-harness \
   --host 192.168.1.25 \
   --fps 60 \
-  --bitrate 24
+  --bitrate 24 \
+  --reconnect-attempts 3
 ```
 
 macOS must grant Screen Recording permission to the harness/Terminal process.

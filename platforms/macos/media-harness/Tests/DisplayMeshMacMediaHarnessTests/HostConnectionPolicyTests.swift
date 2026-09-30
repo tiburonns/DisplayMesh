@@ -43,6 +43,97 @@ final class HostConnectionPolicyTests: XCTestCase {
         }
     }
 
+    func testReconnectBackoffIsBoundedAndExponential() {
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 0),
+            0
+        )
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 1),
+            0.5
+        )
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 2),
+            1
+        )
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 3),
+            2
+        )
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 4),
+            4
+        )
+        XCTAssertEqual(
+            HostReconnectPolicy.delaySeconds(forRetryNumber: 8),
+            4
+        )
+    }
+
+    func testReconnectOnlyRetriesTransientProtocolFailures() {
+        XCTAssertTrue(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.connectionClosed
+            )
+        )
+        XCTAssertTrue(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.timeout("transport")
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.pairingRejected
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.incompatibleReceiverCapabilities
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.isRetryable(
+                DMPProtocolError.unexpectedSequence(
+                    expected: 4,
+                    received: 9
+                )
+            )
+        )
+    }
+
+    func testReconnectRespectsRetryBudget() {
+        let error = DMPProtocolError.connectionClosed
+
+        XCTAssertTrue(
+            HostReconnectPolicy.shouldRetry(
+                error,
+                completedRetries: 0,
+                maximumRetries: 3
+            )
+        )
+        XCTAssertTrue(
+            HostReconnectPolicy.shouldRetry(
+                error,
+                completedRetries: 2,
+                maximumRetries: 3
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.shouldRetry(
+                error,
+                completedRetries: 3,
+                maximumRetries: 3
+            )
+        )
+        XCTAssertFalse(
+            HostReconnectPolicy.shouldRetry(
+                error,
+                completedRetries: 0,
+                maximumRetries: 0
+            )
+        )
+    }
+
     func testHumanPairingWindowIsLongerThanMachinePhases() {
         XCTAssertGreaterThan(
             HostConnectionPolicy.pairingTimeoutSeconds,
