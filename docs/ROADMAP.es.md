@@ -36,7 +36,8 @@
 - [x] Contrato de generación/geometría para slots GPU compartidos y rechazo de anuncios obsoletos.
 - [x] Pool real de tres texturas D3D11 compartidas con NT handles, keyed mutex y validación de lifecycle mediante WARP.
 - [x] Adaptador NT handle D3D11 compartido → sample DXGI temporizado de Media Foundation con validación de geometría/formato.
-- [ ] Conectar las superficies producidas por IddCx y los eventos MFT reales con el worker Media Foundation; backend productivo completo y validación de hardware.
+- [x] Work item latest-frame conserva slot/generación/timing y rechaza superficies obsoletas antes de crear el sample MF.
+- [ ] Conectar el productor IddCx real, conversión GPU BGRA→NV12 y eventos MFT asíncronos con el worker acotado; backend productivo completo y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
 ## M3 — USB + red

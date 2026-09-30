@@ -45,6 +45,7 @@ add_library(displaymesh_windows_media STATIC
     MftEncodedSampleProcessor.cpp
     MftEncoderPumpState.cpp
     MftDxgiInputSampleFactory.cpp
+    SharedSurfaceEncodeInput.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
@@ -208,5 +209,20 @@ if(BUILD_TESTING)
     add_test(
         NAME mft-dxgi-input-sample
         COMMAND mft-dxgi-input-sample-tests
+    )
+
+    add_executable(
+        shared-surface-encode-input-tests
+        tests/SharedSurfaceEncodeInputTests.cpp
+    )
+
+    target_link_libraries(
+        shared-surface-encode-input-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME shared-surface-encode-input
+        COMMAND shared-surface-encode-input-tests
     )
 endif()

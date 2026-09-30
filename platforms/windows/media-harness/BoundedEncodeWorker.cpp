@@ -74,9 +74,7 @@ bool BoundedEncodeWorker::Submit(
         return false;
     }
 
-    if (item.sequence == 0 ||
-        item.width == 0 ||
-        item.height == 0) {
+    if (!item.IsValid()) {
         ++stats_.rejectedInvalid;
         return false;
     }

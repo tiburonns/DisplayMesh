@@ -15,9 +15,17 @@ using namespace std::chrono_literals;
 namespace {
 
 EncodeWorkItem Item(std::uint64_t sequence) {
+    const auto slotIndex =
+        static_cast<std::uint32_t>(
+            sequence %
+            bridge::kFrameMailboxSlotCount);
+
     return EncodeWorkItem{
         sequence,
         sequence * 1'000,
+        16'667,
+        1,
+        slotIndex,
         1920,
         1080,
     };
@@ -59,9 +67,29 @@ void TestValidationAndStaleRejection() {
         EncodeWorkItem{
             0,
             0,
+            16'667,
+            1,
+            0,
             1920,
             1080,
         }));
+
+    auto invalidDuration = Item(1);
+    invalidDuration.durationMicros = 0;
+    assert(!worker.Submit(invalidDuration));
+
+    auto invalidGeneration = Item(1);
+    invalidGeneration.surfaceGeneration = 0;
+    assert(!worker.Submit(invalidGeneration));
+
+    auto invalidSlot = Item(1);
+    invalidSlot.slotIndex =
+        bridge::kFrameMailboxSlotCount;
+    assert(!worker.Submit(invalidSlot));
+
+    auto wrongMappedSlot = Item(1);
+    wrongMappedSlot.slotIndex = 0;
+    assert(!worker.Submit(wrongMappedSlot));
 
     assert(worker.Submit(Item(2)));
     assert(!worker.Submit(Item(1)));
@@ -75,9 +103,58 @@ void TestValidationAndStaleRejection() {
     const auto stats = worker.Stats();
     assert(stats.submitted == 1);
     assert(stats.encoded == 1);
-    assert(stats.rejectedInvalid == 1);
+    assert(stats.rejectedInvalid == 5);
     assert(stats.rejectedStale == 1);
     assert(!worker.IsRunning());
+}
+
+void TestAnnouncementRoundTripPreservesGpuIdentity() {
+    bridge::FrameAnnouncement frame{};
+    frame.sequence = 42;
+    frame.timestampMicros = 123'000;
+    frame.surfaceGeneration = 7;
+    frame.slotIndex = 0;
+    frame.width = 2560;
+    frame.height = 1440;
+
+    const auto item =
+        EncodeWorkItem::FromFrame(
+            frame,
+            16'667);
+
+    assert(item.sequence == frame.sequence);
+    assert(
+        item.timestampMicros ==
+        frame.timestampMicros);
+    assert(item.durationMicros == 16'667);
+    assert(
+        item.surfaceGeneration ==
+        frame.surfaceGeneration);
+    assert(
+        item.slotIndex ==
+        frame.slotIndex);
+    assert(item.width == frame.width);
+    assert(item.height == frame.height);
+    assert(item.IsValid());
+
+    auto wrongMapping = item;
+    wrongMapping.slotIndex = 1;
+    assert(!wrongMapping.IsValid());
+
+    const auto roundTrip =
+        item.Announcement();
+    assert(roundTrip.sequence == frame.sequence);
+    assert(
+        roundTrip.timestampMicros ==
+        frame.timestampMicros);
+    assert(
+        roundTrip.surfaceGeneration ==
+        frame.surfaceGeneration);
+    assert(
+        roundTrip.slotIndex ==
+        frame.slotIndex);
+    assert(roundTrip.width == frame.width);
+    assert(roundTrip.height == frame.height);
 }
 
 void TestLatestFrameWinsWhileEncoding() {
@@ -251,6 +328,7 @@ void TestHandlerFailureDoesNotKillWorker() {
 
 int main() {
     TestValidationAndStaleRejection();
+    TestAnnouncementRoundTripPreservesGpuIdentity();
     TestLatestFrameWinsWhileEncoding();
     TestStopDiscardsPendingWork();
     TestHandlerFailureDoesNotKillWorker();

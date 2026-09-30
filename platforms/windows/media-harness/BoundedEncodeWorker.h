@@ -7,13 +7,58 @@
 #include <optional>
 #include <thread>
 
+#include "LatestFrameMailbox.h"
+
 namespace displaymesh::media {
 
 struct EncodeWorkItem {
     std::uint64_t sequence{};
     std::uint64_t timestampMicros{};
+    std::uint32_t durationMicros{};
+    std::uint64_t surfaceGeneration{};
+    std::uint32_t slotIndex{};
     std::uint32_t width{};
     std::uint32_t height{};
+
+    static EncodeWorkItem FromFrame(
+        const bridge::FrameAnnouncement& frame,
+        std::uint32_t durationMicros) noexcept {
+        return EncodeWorkItem{
+            frame.sequence,
+            frame.timestampMicros,
+            durationMicros,
+            frame.surfaceGeneration,
+            frame.slotIndex,
+            frame.width,
+            frame.height,
+        };
+    }
+
+    bool IsValid() const noexcept {
+        return sequence != 0 &&
+            durationMicros != 0 &&
+            surfaceGeneration != 0 &&
+            slotIndex <
+                bridge::kFrameMailboxSlotCount &&
+            slotIndex ==
+                static_cast<std::uint32_t>(
+                    sequence %
+                    bridge::kFrameMailboxSlotCount) &&
+            width != 0 &&
+            height != 0;
+    }
+
+    bridge::FrameAnnouncement
+    Announcement() const noexcept {
+        return bridge::FrameAnnouncement{
+            sequence,
+            timestampMicros,
+            surfaceGeneration,
+            slotIndex,
+            width,
+            height,
+        };
+    }
 };
 
 struct EncodeWorkerStats {
