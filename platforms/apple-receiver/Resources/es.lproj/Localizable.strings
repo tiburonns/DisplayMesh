@@ -68,3 +68,8 @@
 "permission.localNetwork.securityNote" = "El transporte de desarrollo actual usa TCP sin cifrar. Úsalo sólo en una red de confianza hasta implementar el cifrado de producción.";
 "permission.localNetwork.continue" = "Continuar e iniciar receptor";
 "permission.localNetwork.notNow" = "Ahora no";
+
+
+"action.tryAgain" = "Reintentar";
+"action.openSettings" = "Abrir Ajustes";
+"receiver.failureRecoveryHint" = "Si antes negaste el acceso a Red local, habilita DisplayMesh en Ajustes. De lo contrario, reintenta el listener y revisa el error mostrado arriba.";

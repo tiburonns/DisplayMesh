@@ -245,6 +245,10 @@ for required_token in [
     "showingLocalNetworkEducation",
     "requestReceiverStart",
     "permission.localNetwork.securityNote",
+    "listenerFailureRecovery",
+    "UIApplication.openSettingsURLString",
+    "action.tryAgain",
+    "action.openSettings",
 ]:
     if required_token not in root_view_source:
         errors.append(

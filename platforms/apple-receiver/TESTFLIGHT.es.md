@@ -21,6 +21,7 @@ El receiver de iPhone/iPad puede probarse mediante TestFlight antes de que todo 
 - Verificar que la explicación de primer uso aparezca antes del prompt de Red local.
 - Aceptar Red local y verificar Bonjour.
 - Relanzar y confirmar que la explicación no se repita después de aceptarla.
+- Negar Red local una vez, comprobar que el fallo del listener sea recuperable, usar **Abrir Ajustes**, habilitar acceso, volver a DisplayMesh y verificar que **Reintentar** inicia el listener.
 - Emparejar con el media harness de macOS.
 - Verificar decode, keyframe recovery, rotación, diagnósticos y touch/Pencil.
 - Mantener 1080p60 al menos 15 minutos sin crecimiento persistente de cola.
