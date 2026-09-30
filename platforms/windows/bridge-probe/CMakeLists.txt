@@ -56,4 +56,24 @@ if(BUILD_TESTING)
         NAME displaymesh-frame-mailbox
         COMMAND displaymesh-frame-mailbox-tests
     )
+
+    add_executable(displaymesh-gpu-slot-contract-tests
+        tests/SharedGpuSlotContractTests.cpp
+    )
+
+    target_include_directories(
+        displaymesh-gpu-slot-contract-tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../bridge
+    )
+
+    target_compile_features(
+        displaymesh-gpu-slot-contract-tests
+        PRIVATE cxx_std_20
+    )
+
+    add_test(
+        NAME displaymesh-gpu-slot-contract
+        COMMAND displaymesh-gpu-slot-contract-tests
+    )
 endif()
