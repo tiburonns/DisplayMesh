@@ -10,6 +10,7 @@ add_library(displaymesh_windows_media STATIC
     BoundedEncodeWorker.cpp
     H264AnnexBPacketizer.cpp
     H264AccessUnitNormalizer.cpp
+    MftEncodedSampleProcessor.cpp
     MftEncoderPumpState.cpp
 )
 
@@ -127,6 +128,21 @@ if(BUILD_TESTING)
     add_test(
         NAME h264-normalizer-packetizer-integration
         COMMAND h264-normalizer-packetizer-integration-tests
+    )
+
+    add_executable(
+        mft-encoded-sample-processor-tests
+        tests/MftEncodedSampleProcessorTests.cpp
+    )
+
+    target_link_libraries(
+        mft-encoded-sample-processor-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME mft-encoded-sample-processor
+        COMMAND mft-encoded-sample-processor-tests
     )
 
     add_executable(
