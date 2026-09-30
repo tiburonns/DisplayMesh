@@ -54,7 +54,13 @@ if not (ROOT / "platforms/windows/bootstrap/CMakeLists.txt").exists():
     raise SystemExit("native contract failed: Windows bootstrap is missing")
 
 framing = (ROOT / "crates/displaymesh-core/src/framing.rs").read_text(encoding="utf-8")
-for token in ["maximum_payload_len", "PayloadTooLargeForType", "InvalidPayloadLength"]:
+for token in [
+    "maximum_payload_len",
+    "PayloadTooLargeForType",
+    "InvalidPayloadLength",
+    "Ping = 0x32",
+    "Pong = 0x33",
+]:
     if token not in framing:
         raise SystemExit(f"protocol hardening contract failed: framing missing {token}")
 
@@ -99,7 +105,12 @@ adaptive_tests = ROOT / "platforms/macos/media-harness/Tests/DisplayMeshMacMedia
 if not adaptive_controller.exists() or not adaptive_tests.exists():
     raise SystemExit("adaptive contract failed: macOS receiver adaptation source/tests are missing")
 
-media_main = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/main.swift").read_text(encoding="utf-8")
+media_main_path = ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/DisplayMeshMacMediaHarnessMain.swift"
+if not media_main_path.exists():
+    raise SystemExit("macOS media contract failed: @main entry point source is missing")
+media_main = media_main_path.read_text(encoding="utf-8")
+if "@main" not in media_main:
+    raise SystemExit("macOS media contract failed: entry point must use @main")
 for token in [
     "ReceiverAdaptiveController(",
     "encoder?.setBitrate",
@@ -115,7 +126,13 @@ for token in ["ReceiverHello", "P256.Signing.PublicKey", "isAuthentic"]:
         raise SystemExit(f"security contract failed: signed receiver pairing missing {token}")
 
 connection_source = (ROOT / "platforms/macos/media-harness/Sources/DisplayMeshMacMediaHarness/ReceiverConnection.swift").read_text(encoding="utf-8")
-for token in ["HostProtocolGate.permits", "invalidReceiverTelemetry", "invalidPairingResponse"]:
+for token in [
+    "HostProtocolGate.permits",
+    "invalidReceiverTelemetry",
+    "invalidPairingResponse",
+    "roundTripTracker",
+    "DMPMessageType.pong",
+]:
     if token not in connection_source:
         raise SystemExit(f"host protocol gate contract failed: missing {token}")
 
