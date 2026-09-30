@@ -93,7 +93,7 @@
 - [x] Adaptive bitrate/raster decision engine with 100/85/75/67% hysteresis
 - [x] Wire receiver decode/drop telemetry into the macOS development adaptive controller
 - [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder
-- [ ] Apply adaptive stream raster to capture/encode
+- [x] Apply adaptive stream raster to ScreenCaptureKit + VideoToolbox on the macOS development path
 - [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
 
 ## M4 — Touch and input
