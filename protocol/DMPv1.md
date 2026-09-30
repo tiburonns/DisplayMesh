@@ -102,6 +102,8 @@ Hosts and receivers reject an invalid payload length from the **16-byte DMP head
 | input | exactly 40 bytes |
 | telemetry | 16 KiB |
 | keyframe request | exactly 0 bytes |
+| ping | exactly 8 bytes |
+| pong | exactly 8 bytes |
 | error | 8 KiB |
 
 These are safety ceilings, not normal target sizes. Frames outside the current authorization/session phase are protocol violations rather than silently ignored.
@@ -185,9 +187,9 @@ DisplayMesh's adaptive controller treats bitrate as the first quality lever. The
 
 The current Apple/macOS development binding starts with a receiver-generated 32-byte random challenge. The host keeps a stable UUID and P-256 signing key in Keychain and signs a canonical pairing payload containing the protocol version, peer ID/name, six-digit verification code, challenge and public key. The receiver verifies the signature and challenge before showing the approval UI. A known peer ID arriving with a different public key is rejected until trust is explicitly cleared.
 
-The receiver pairing response echoes the active receiver challenge, and the host rejects stale or out-of-phase responses. This authenticates the development **host identity only** and binds the transaction against stale replay; it does not replace TLS 1.3 or authenticate the receiver to the host.
+The active Apple↔macOS binding authenticates **both** peers. The receiver pairing response covers the receiver identity, both fresh challenges and its ephemeral key-agreement public key; the host persists the accepted receiver public key and rejects identity changes. After accepted pairing, the binding derives directional session keys and rejects plaintext post-pairing frames.
 
-The shared development capability scaffold intentionally advertises only the implemented end-to-end path: **H.264 over plaintext TCP on Wi-Fi/LAN**. It reports encryption as unsupported. Production-oriented `SessionConfig::default()` still requires encryption, so it must fail against the development scaffold instead of falsely reporting a secure negotiated session.
+The development capability scaffold advertises the implemented end-to-end path as **H.264 over encrypted DMP/TCP on Wi-Fi/LAN**. This does not claim TLS 1.3: the current binding uses DMP's authenticated ECDH/HKDF/ChaChaPoly session layer and remains subject to independent security review before production release.
 
 ## Security
 
@@ -239,10 +241,10 @@ The current development TCP binding authenticates both peers before capabilities
 
 Both challenges are covered by the signatures, so a recorded pairing response cannot be replayed against a new host challenge.
 
-This authenticates development peer identities only. It does **not** encrypt DMP media, input, telemetry or control traffic. TLS 1.3 or an equivalently reviewed authenticated encrypted binding remains mandatory for production.
+This authenticates both development peer identities. The accepted pairing also binds signed ephemeral ECDH material; all subsequent capabilities, panel, video, input, telemetry and control frames are protected by the derived authenticated-encryption session. Independent review of this binding, TLS 1.3, or another equivalently reviewed authenticated encrypted transport remains mandatory before production release.
 
 
-## Secure payload construction (implementation staging)
+## Secure payload construction
 
 The Apple/macOS implementation now has a mirrored AEAD primitive intended for the encrypted DMP binding:
 
@@ -255,10 +257,19 @@ The Apple/macOS implementation now has a mirrored AEAD primitive intended for th
 The pairing exchange now carries signed ephemeral P-256 key-agreement material. The macOS host and Apple receiver derive directional keys from both challenges and the ECDH shared secret, then seal/open every post-pairing frame before capabilities, media, input or telemetry are admitted. The receiver advertises `encryptedTransport = true` only on this secured path.
 
 
-## Protected frame codec staging
+## Protected frame codec
 
 The implementation now defines the post-pairing frame-protection contract in executable code. Before a secure session is installed, only `hello` and `pairing` may be emitted/accepted by the protected codec. After installation, every other DMP message is ChaCha20-Poly1305 protected and plaintext equivalents are rejected.
 
 Encrypted payload wire validation accounts for the 28-byte ChaChaPoly combined overhead. This is required for exact-size messages such as input samples and keyframe requests.
 
 The active development TCP path now exchanges ephemeral P-256 key-agreement public keys inside the signed pairing transcript and installs this codec before capabilities/media begin.
+
+
+## Encrypted RTT probes
+
+During an authorized streaming session, the host may send a `ping` frame containing an opaque 8-byte token. The receiver echoes the exact token in a `pong` frame. Both messages are post-pairing traffic and therefore must be authenticated/encrypted by the active secure-session codec.
+
+Only one probe needs to be outstanding per connection. The host measures elapsed monotonic time between sending the token and receiving the matching pong. An unexpected token, malformed payload length, plaintext probe, or probe outside the streaming phase is a protocol violation.
+
+RTT is diagnostic telemetry. It does not by itself prove display/input latency because capture, encode, decode, render and OS input injection add separate latency components.
