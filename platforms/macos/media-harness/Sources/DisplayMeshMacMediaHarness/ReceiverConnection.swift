@@ -41,7 +41,10 @@ final class ReceiverConnection {
     private var panelContinuation: CheckedContinuation<ReceiverPanelDescriptor, Error>?
     private var panelWaitToken: UUID?
 
-    func connect(host: String) async throws {
+    func connect(
+        host: String,
+        timeoutSeconds: TimeInterval = HostConnectionPolicy.connectTimeoutSeconds
+    ) async throws {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
 
@@ -57,7 +60,7 @@ final class ReceiverConnection {
         setConnectionReady(false)
 
         try await withCheckedThrowingContinuation { continuation in
-            var resolved = false
+            let attempt = ConnectionAttemptGate()
 
             newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
                 guard let self, let newConnection else { return }
@@ -66,23 +69,20 @@ final class ReceiverConnection {
                 switch state {
                 case .ready:
                     setConnectionReady(true)
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume()
                     }
                     receiveNext(on: newConnection)
 
                 case .failed(let error):
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume(throwing: error)
                     }
                     handleTransportFailure(error, connection: newConnection)
 
                 case .cancelled:
                     let error = DMPProtocolError.connectionClosed
-                    if !resolved {
-                        resolved = true
+                    if attempt.claim() {
                         continuation.resume(throwing: error)
                     }
                     handleTransportFailure(error, connection: newConnection)
@@ -93,6 +93,17 @@ final class ReceiverConnection {
             }
 
             newConnection.start(queue: queue)
+
+            queue.asyncAfter(
+                deadline: .now() + max(timeoutSeconds, 0)
+            ) { [weak self, weak newConnection] in
+                guard let self, let newConnection else { return }
+                guard connection === newConnection, attempt.claim() else { return }
+
+                let error = DMPProtocolError.timeout("transport connection")
+                continuation.resume(throwing: error)
+                handleTransportFailure(error, connection: newConnection)
+            }
         }
     }
 
@@ -109,7 +120,7 @@ final class ReceiverConnection {
     }
 
     func waitForReceiverHello(
-        timeoutSeconds: TimeInterval = 10
+        timeoutSeconds: TimeInterval = HostConnectionPolicy.helloTimeoutSeconds
     ) async throws -> ReceiverHello {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
@@ -176,7 +187,7 @@ final class ReceiverConnection {
     }
 
     func waitForPairingResponse(
-        timeoutSeconds: TimeInterval = 30
+        timeoutSeconds: TimeInterval = HostConnectionPolicy.pairingTimeoutSeconds
     ) async throws -> PairingResponse {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
@@ -219,7 +230,7 @@ final class ReceiverConnection {
     }
 
     func waitForReceiverCapabilities(
-        timeoutSeconds: TimeInterval = 10
+        timeoutSeconds: TimeInterval = HostConnectionPolicy.capabilitiesTimeoutSeconds
     ) async throws -> ReceiverCapabilities {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
@@ -270,7 +281,7 @@ final class ReceiverConnection {
     }
 
     func waitForPanelDescriptor(
-        timeoutSeconds: TimeInterval = 15
+        timeoutSeconds: TimeInterval = HostConnectionPolicy.panelTimeoutSeconds
     ) async throws -> ReceiverPanelDescriptor {
         try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
@@ -488,6 +499,7 @@ final class ReceiverConnection {
                 helloWaitToken = nil
                 helloContinuation?.resume(throwing: error)
                 helloContinuation = nil
+                throw error
             }
 
         case .pairing:
@@ -518,6 +530,7 @@ final class ReceiverConnection {
                 pairingWaitToken = nil
                 pairingContinuation?.resume(throwing: error)
                 pairingContinuation = nil
+                throw error
             }
 
         case .capabilities:
@@ -565,6 +578,7 @@ final class ReceiverConnection {
                 panelWaitToken = nil
                 panelContinuation?.resume(throwing: error)
                 panelContinuation = nil
+                throw error
             }
 
         case .keyframeRequest:
@@ -590,6 +604,7 @@ final class ReceiverConnection {
                 onReceiverTelemetry?(telemetry)
             } catch {
                 onErrorMessage?(Data(error.localizedDescription.utf8))
+                throw error
             }
 
         case .error:

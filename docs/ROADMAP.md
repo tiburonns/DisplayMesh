@@ -127,6 +127,7 @@
 - [x] Receiver decode telemetry returned to the macOS development host
 - [x] Per-connection DMP sequence/replay guard
 - [x] Pairing and panel negotiation timeouts in the macOS development path
+- [x] Bounded macOS transport connect deadline + fail-closed malformed control frames
 - [x] Per-message DMP payload budgets and exact-size interactive frames
 - [x] Receiver authorization-phase admission gate
 - [x] Bounded malformed pairing attempts + challenge-bound response
