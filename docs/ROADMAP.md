@@ -104,7 +104,8 @@
 - [x] Two-finger scroll on macOS development path
 - [x] Windows native multi-contact touch injection bridge
 - [x] Windows host DMP phase/admission gate for authenticated-session routing
-- [ ] Wire validated Windows pairing/session transport into touch injection
+- [x] Windows session-gated DMP input decode/router contract
+- [ ] Wire validated Windows pairing/network transport into the live touch injector
 - [ ] Windows pointer fallback
 - [ ] Apple Pencil pen mapping
 - [ ] Pencil hover

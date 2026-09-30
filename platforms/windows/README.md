@@ -85,3 +85,10 @@ This component is deterministic and hardware-independent. The remaining Windows 
 `protocol/DmpHostSessionGate` mirrors the host-side DMP phase rules used by the macOS development path. Input routing and video transmission stay closed until the host has accepted receiver hello, sent pairing, accepted the pairing response, validated receiver capabilities and accepted a panel descriptor. Unexpected message types fail closed for the current phase; reset immediately closes the input/video gates.
 
 This is an admission/state-machine boundary, **not** the Windows pairing/crypto implementation itself. The Windows network service must validate identity/pairing before advancing this gate and only then forward validated input payloads to the native injector.
+
+
+## Session-gated input routing
+
+`input-bridge/DmpInputRouter` joins the protocol admission gate and the 40-byte input decoder. Even a structurally valid touch sample is rejected unless the host session is already in `streaming`; non-input frames and reserved outer/input flags are rejected before injection.
+
+The remaining integration is the actual Windows network/pairing service: it must advance `DmpHostSessionGate` only after identity/pairing/capability validation, decode frames through the native DMP library, then pass authorized input frames through this router into `TouchInjector`.

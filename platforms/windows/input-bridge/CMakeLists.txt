@@ -5,8 +5,14 @@ if(NOT WIN32)
     message(FATAL_ERROR "DisplayMesh input bridge targets Windows")
 endif()
 
+add_subdirectory(
+    ../protocol
+    ${CMAKE_CURRENT_BINARY_DIR}/displaymesh-protocol
+)
+
 add_library(displaymesh_input STATIC
     DmpInput.cpp
+    DmpInputRouter.cpp
     TouchInjector.cpp
 )
 
@@ -21,7 +27,12 @@ target_compile_definitions(displaymesh_input PUBLIC
     WINVER=0x0A00
     _WIN32_WINNT=0x0A00
 )
-target_link_libraries(displaymesh_input PUBLIC User32)
+target_link_libraries(
+    displaymesh_input
+    PUBLIC
+        User32
+        displaymesh_protocol
+)
 
 add_executable(displaymesh-input-bridge
     main.cpp
@@ -40,5 +51,20 @@ if(BUILD_TESTING)
     add_test(
         NAME displaymesh-input-contract
         COMMAND displaymesh-input-contract-tests
+    )
+
+    add_executable(
+        displaymesh-session-input-router-tests
+        tests/DmpInputRouterTests.cpp
+    )
+
+    target_link_libraries(
+        displaymesh-session-input-router-tests
+        PRIVATE displaymesh_input
+    )
+
+    add_test(
+        NAME displaymesh-session-input-router
+        COMMAND displaymesh-session-input-router-tests
     )
 endif()

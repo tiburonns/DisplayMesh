@@ -171,6 +171,22 @@ windows_input = (ROOT / "platforms/windows/input-bridge/DmpInput.cpp").read_text
 if 'payload[3] != 0' not in windows_input:
     raise SystemExit("windows input contract failed: reserved DMP flags are not rejected")
 
+windows_input_router = ROOT / "platforms/windows/input-bridge/DmpInputRouter.cpp"
+windows_input_router_tests = ROOT / "platforms/windows/input-bridge/tests/DmpInputRouterTests.cpp"
+for path in [windows_input_router, windows_input_router_tests]:
+    if not path.exists():
+        raise SystemExit(f"windows input routing contract failed: missing {path.relative_to(ROOT)}")
+
+input_router_source = windows_input_router.read_text(encoding="utf-8")
+for token in [
+    "CanRouteInput",
+    "DmpMessageType::Input",
+    "frame.flags != 0",
+    "DecodeInputSample",
+]:
+    if token not in input_router_source:
+        raise SystemExit(f"windows input routing contract failed: missing {token}")
+
 windows_worker = ROOT / "platforms/windows/media-harness/BoundedEncodeWorker.cpp"
 windows_worker_header = ROOT / "platforms/windows/media-harness/BoundedEncodeWorker.h"
 windows_worker_tests = ROOT / "platforms/windows/media-harness/tests/BoundedEncodeWorkerTests.cpp"
