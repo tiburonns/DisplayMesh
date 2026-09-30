@@ -146,6 +146,27 @@ for token in ["ValidatePayloadSize", "DmpSequenceTracker::Accept", "kDmpMaximumP
     if token not in windows_frame:
         raise SystemExit(f"windows protocol contract failed: missing {token}")
 
+windows_gate = windows_protocol / "DmpHostSessionGate.cpp"
+windows_gate_header = windows_protocol / "DmpHostSessionGate.h"
+windows_gate_tests = windows_protocol / "tests/DmpHostSessionGateTests.cpp"
+for path in [windows_gate, windows_gate_header, windows_gate_tests]:
+    if not path.exists():
+        raise SystemExit(f"windows session gate contract failed: missing {path.relative_to(ROOT)}")
+
+gate_source = windows_gate.read_text(encoding="utf-8")
+gate_header = windows_gate_header.read_text(encoding="utf-8")
+for token in [
+    "AwaitingHello",
+    "AwaitingPairingResponse",
+    "AwaitingCapabilities",
+    "AwaitingPanel",
+    "Streaming",
+    "CanRouteInput",
+    "CanSendVideo",
+]:
+    if token not in gate_source and token not in gate_header:
+        raise SystemExit(f"windows session gate contract failed: missing {token}")
+
 windows_input = (ROOT / "platforms/windows/input-bridge/DmpInput.cpp").read_text(encoding="utf-8")
 if 'payload[3] != 0' not in windows_input:
     raise SystemExit("windows input contract failed: reserved DMP flags are not rejected")

@@ -42,7 +42,8 @@
 ## M4 — Input
 
 - [x] Modelo multitouch y captura iOS.
-- [ ] Mapping productivo macOS, touch Windows final, Pencil, teclado y clipboard.
+- [x] Gate Windows de fases/admisión DMP antes de permitir input/video.
+- [ ] Conectar transporte/pairing Windows validado con el inyector touch; Pencil, teclado y clipboard pendientes.
 
 ## M5 — Calidad de producto
 
