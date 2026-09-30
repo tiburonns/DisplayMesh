@@ -79,6 +79,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var currentHeight = 0
     private var activeFramesPerSecond = 60
     private var activeBitrateMbps = 24
+    private var encoderGeneration: UInt64 = 0
 
     private var metrics = HostEncoderMetrics()
     private var metricsWindowStart = ProcessInfo.processInfo.systemUptime
@@ -402,6 +403,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
 
         var infoFlags = VTEncodeInfoFlags()
         let duration = frameDuration
+        let generation = encoderGeneration
         let status = VTCompressionSessionEncodeFrame(
             encoder,
             imageBuffer: imageBuffer,
@@ -413,6 +415,10 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
             guard let self else { return }
 
             queue.async {
+                guard generation == self.encoderGeneration else {
+                    return
+                }
+
                 self.encodeInFlight = false
 
                 guard status == noErr,
@@ -554,6 +560,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
             throw HostMediaError.encoderPreparation(prepareStatus)
         }
 
+        encoderGeneration &+= 1
         forceNextKeyframe = true
         encodeInFlight = false
     }
@@ -749,6 +756,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     private func invalidateEncoder() {
+        encoderGeneration &+= 1
         if let encoder {
             VTCompressionSessionInvalidate(encoder)
         }
