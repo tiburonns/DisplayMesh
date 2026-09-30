@@ -377,6 +377,7 @@ struct PairingRequest: Codable, Equatable {
     let challenge: Data
     let hostChallenge: Data
     let identityPublicKey: Data
+    let keyAgreementPublicKey: Data
     let signature: Data
 
     var normalizedVerificationCode: String {
@@ -414,6 +415,7 @@ struct PairingRequest: Codable, Equatable {
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
             && identityPublicKey.count == 65
+            && keyAgreementPublicKey.count == 65
             && signature.count == 64
     }
 
@@ -456,7 +458,8 @@ struct PairingRequest: Codable, Equatable {
         verificationCode: String,
         challenge: Data,
         hostChallenge: Data,
-        privateKey: P256.Signing.PrivateKey
+        identityPrivateKey: P256.Signing.PrivateKey,
+        keyAgreementPublicKey: Data
     ) throws -> PairingRequest {
         let unsigned = PairingRequest(
             peerName: peerName,
@@ -465,11 +468,13 @@ struct PairingRequest: Codable, Equatable {
             protocolVersion: Int(DMPFrame.version),
             challenge: challenge,
             hostChallenge: hostChallenge,
-            identityPublicKey: privateKey.publicKey.rawRepresentation,
+            identityPublicKey:
+                identityPrivateKey.publicKey.rawRepresentation,
+            keyAgreementPublicKey: keyAgreementPublicKey,
             signature: Data()
         )
 
-        let signature = try privateKey.signature(
+        let signature = try identityPrivateKey.signature(
             for: unsigned.signingPayload
         )
 
@@ -481,6 +486,7 @@ struct PairingRequest: Codable, Equatable {
             challenge: unsigned.challenge,
             hostChallenge: unsigned.hostChallenge,
             identityPublicKey: unsigned.identityPublicKey,
+            keyAgreementPublicKey: unsigned.keyAgreementPublicKey,
             signature: signature.rawRepresentation
         )
     }
@@ -495,6 +501,7 @@ struct PairingRequest: Codable, Equatable {
             challenge.base64EncodedString(),
             hostChallenge.base64EncodedString(),
             identityPublicKey.base64EncodedString(),
+            keyAgreementPublicKey.base64EncodedString(),
         ]
         return Data(fields.joined(separator: "\u{1F}").utf8)
     }
@@ -508,6 +515,7 @@ struct PairingResponse: Codable, Equatable {
     let challenge: Data
     let hostChallenge: Data
     let identityPublicKey: Data
+    let keyAgreementPublicKey: Data
     let signature: Data
 
     var identityFingerprint: String {
@@ -533,6 +541,7 @@ struct PairingResponse: Codable, Equatable {
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
             && identityPublicKey.count == 65
+            && keyAgreementPublicKey.count == 65
             && signature.count == 64
     }
 
@@ -568,7 +577,8 @@ struct PairingResponse: Codable, Equatable {
         receiverID: String,
         challenge: Data,
         hostChallenge: Data,
-        privateKey: P256.Signing.PrivateKey
+        identityPrivateKey: P256.Signing.PrivateKey,
+        keyAgreementPublicKey: Data
     ) throws -> PairingResponse {
         let unsigned = PairingResponse(
             accepted: accepted,
@@ -577,11 +587,13 @@ struct PairingResponse: Codable, Equatable {
             protocolVersion: Int(DMPFrame.version),
             challenge: challenge,
             hostChallenge: hostChallenge,
-            identityPublicKey: privateKey.publicKey.rawRepresentation,
+            identityPublicKey:
+                identityPrivateKey.publicKey.rawRepresentation,
+            keyAgreementPublicKey: keyAgreementPublicKey,
             signature: Data()
         )
 
-        let signature = try privateKey.signature(
+        let signature = try identityPrivateKey.signature(
             for: unsigned.signingPayload
         )
 
@@ -593,6 +605,7 @@ struct PairingResponse: Codable, Equatable {
             challenge: unsigned.challenge,
             hostChallenge: unsigned.hostChallenge,
             identityPublicKey: unsigned.identityPublicKey,
+            keyAgreementPublicKey: unsigned.keyAgreementPublicKey,
             signature: signature.rawRepresentation
         )
     }
@@ -607,6 +620,7 @@ struct PairingResponse: Codable, Equatable {
             challenge.base64EncodedString(),
             hostChallenge.base64EncodedString(),
             identityPublicKey.base64EncodedString(),
+            keyAgreementPublicKey.base64EncodedString(),
         ]
         return Data(fields.joined(separator: "\u{1F}").utf8)
     }
