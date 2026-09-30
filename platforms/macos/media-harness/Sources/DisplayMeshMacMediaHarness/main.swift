@@ -289,6 +289,29 @@ struct DisplayMeshMacMediaHarness {
                 if decision.requestKeyframe {
                     encoder?.requestKeyframe()
                 }
+
+                if let encoder {
+                    Task { [weak encoder] in
+                        guard let encoder else { return }
+                        do {
+                            if let dimensions = try await encoder.applyRasterScale(
+                                decision.rasterScale
+                            ) {
+                                print(
+                                    "adaptive raster -> " +
+                                    "\(dimensions.width)x\(dimensions.height) " +
+                                    "(\(Int((decision.rasterScale * 100).rounded()))%)"
+                                )
+                            }
+                        } catch {
+                            fputs(
+                                "adaptive raster: \(error.localizedDescription)\n",
+                                stderr
+                            )
+                        }
+                    }
+                }
+
                 print(
                     "adaptive bitrate -> \(decision.bitrateMbps) Mbps" +
                     (decision.requestKeyframe ? " + keyframe" : "")

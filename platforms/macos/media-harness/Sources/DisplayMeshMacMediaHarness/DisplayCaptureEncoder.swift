@@ -72,6 +72,13 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var encodeInFlight = false
     private var forceNextKeyframe = true
     private var running = false
+    private var rasterReconfigurationInProgress = false
+    private var rasterBaseWidth = 0
+    private var rasterBaseHeight = 0
+    private var currentWidth = 0
+    private var currentHeight = 0
+    private var activeFramesPerSecond = 60
+    private var activeBitrateMbps = 24
 
     private var metrics = HostEncoderMetrics()
     private var metricsWindowStart = ProcessInfo.processInfo.systemUptime
@@ -125,6 +132,14 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         guard width > 0, height > 0, framesPerSecond > 0, bitrateMbps > 0 else {
             throw HostMediaError.invalidDimensions
         }
+
+        rasterBaseWidth = width
+        rasterBaseHeight = height
+        currentWidth = width
+        currentHeight = height
+        activeFramesPerSecond = framesPerSecond
+        activeBitrateMbps = bitrateMbps
+        rasterReconfigurationInProgress = false
 
         try createEncoder(
             width: width,
@@ -186,6 +201,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
 
         running = false
+        rasterReconfigurationInProgress = false
 
         if let stream {
             try? await stream.stopCapture()
@@ -223,8 +239,123 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
                 publishError(
                     "Could not update encoder bitrate: \(status)"
                 )
+            } else {
+                activeBitrateMbps = mbps
             }
         }
+    }
+
+    func applyRasterScale(
+        _ scale: Double
+    ) async throws -> AdaptiveRasterDimensions? {
+        struct Snapshot {
+            let stream: SCStream
+            let dimensions: AdaptiveRasterDimensions
+            let framesPerSecond: Int
+            let bitrateMbps: Int
+        }
+
+        let snapshot: Snapshot? = await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self,
+                      running,
+                      !rasterReconfigurationInProgress,
+                      let stream,
+                      let dimensions = AdaptiveRasterGeometry.dimensions(
+                          baseWidth: rasterBaseWidth,
+                          baseHeight: rasterBaseHeight,
+                          scale: scale
+                      ) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                guard dimensions.width != currentWidth
+                        || dimensions.height != currentHeight else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                rasterReconfigurationInProgress = true
+                continuation.resume(
+                    returning: Snapshot(
+                        stream: stream,
+                        dimensions: dimensions,
+                        framesPerSecond: activeFramesPerSecond,
+                        bitrateMbps: activeBitrateMbps
+                    )
+                )
+            }
+        }
+
+        guard let snapshot else { return nil }
+
+        let configuration = SCStreamConfiguration()
+        configuration.width = snapshot.dimensions.width
+        configuration.height = snapshot.dimensions.height
+        configuration.minimumFrameInterval = CMTime(
+            value: 1,
+            timescale: CMTimeScale(snapshot.framesPerSecond)
+        )
+        configuration.queueDepth = 3
+        configuration.pixelFormat =
+            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+        configuration.capturesAudio = false
+        configuration.showsCursor = true
+
+        do {
+            try await snapshot.stream.updateConfiguration(configuration)
+        } catch {
+            queue.async { [weak self] in
+                self?.rasterReconfigurationInProgress = false
+            }
+            throw error
+        }
+
+        do {
+            try await withCheckedThrowingContinuation { continuation in
+                queue.async { [weak self] in
+                    guard let self,
+                          running,
+                          stream === snapshot.stream else {
+                        self?.rasterReconfigurationInProgress = false
+                        continuation.resume(
+                            throwing: HostMediaError.invalidDimensions
+                        )
+                        return
+                    }
+
+                    if let encoder {
+                        VTCompressionSessionCompleteFrames(
+                            encoder,
+                            untilPresentationTimeStamp: .invalid
+                        )
+                    }
+
+                    do {
+                        try createEncoder(
+                            width: snapshot.dimensions.width,
+                            height: snapshot.dimensions.height,
+                            framesPerSecond: snapshot.framesPerSecond,
+                            bitrateMbps: snapshot.bitrateMbps
+                        )
+                        currentWidth = snapshot.dimensions.width
+                        currentHeight = snapshot.dimensions.height
+                        frameDuration = configuration.minimumFrameInterval
+                        forceNextKeyframe = true
+                        rasterReconfigurationInProgress = false
+                        continuation.resume()
+                    } catch {
+                        rasterReconfigurationInProgress = false
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+        } catch {
+            throw error
+        }
+
+        return snapshot.dimensions
     }
 
     func stream(
@@ -234,6 +365,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
     ) {
         guard outputType == .screen,
               running,
+              !rasterReconfigurationInProgress,
               CMSampleBufferIsValid(sampleBuffer),
               CMSampleBufferDataIsReady(sampleBuffer),
               let imageBuffer = sampleBuffer.imageBuffer

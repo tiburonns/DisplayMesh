@@ -12,3 +12,8 @@ swift test --package-path platforms/macos/media-harness
 ```
 
 La identidad firmada endurece el pairing, pero TCP sigue sin cifrado. Su propósito es validar la ruta real de media antes de integrarla como backend host productivo. No debe confundirse con una release terminada.
+
+
+## Raster adaptativo
+
+La telemetría del receiver puede mover el pipeline de desarrollo entre 100%, 85%, 75% y 67% del raster codificado. La reconfiguración actualiza primero ScreenCaptureKit, recrea el encoder VideoToolbox con el nuevo raster, descarta frames durante la transición y fuerza recuperación con un keyframe nuevo. La geometría lógica del panel del receiver no cambia.

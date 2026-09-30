@@ -59,3 +59,8 @@ Touch control additionally requires Accessibility permission. The harness reques
 - Apple Pencil currently follows the same pointer path; higher-fidelity stylus mapping remains a later milestone.
 - USB/usbmux is not connected to this harness yet.
 - Hardware performance claims require physical-device testing.
+
+
+## Adaptive raster
+
+Receiver telemetry can now move the development pipeline through 100%, 85%, 75%, and 67% encoded raster steps. Reconfiguration updates ScreenCaptureKit first, recreates the VideoToolbox encoder at the negotiated raster, drops frames during the transition, and forces recovery with a fresh keyframe. The receiver panel geometry remains unchanged.
