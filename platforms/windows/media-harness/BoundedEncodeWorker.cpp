@@ -75,6 +75,10 @@ bool BoundedEncodeWorker::Submit(
     }
 
     if (item.sequence == 0 ||
+        item.durationMicros == 0 ||
+        item.surfaceGeneration == 0 ||
+        item.slotIndex >=
+            bridge::kFrameMailboxSlotCount ||
         item.width == 0 ||
         item.height == 0) {
         ++stats_.rejectedInvalid;
