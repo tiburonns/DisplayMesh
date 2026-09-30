@@ -27,7 +27,7 @@ The iPhone/iPad receiver must:
 - advertise native panel pixels, scale, orientation and maximum refresh rate,
 - require explicit approval for a new peer,
 - reject useful session traffic before authorization,
-- keep the screen awake only while actively receiving,
+- keep the screen awake only while an authorized receiver session is connected,
 - expose connection and protocol failures,
 - never claim encrypted transport while running plaintext TCP,
 - preserve touch and Pencil samples independently from video rendering.
