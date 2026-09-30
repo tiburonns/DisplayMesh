@@ -66,6 +66,7 @@
 - [x] Windows GPU BGRA → NV12 Media Foundation capability harness
 - [x] Hardware H.264 MFT discovery/configuration + DXGI sample wrapping harness
 - [x] Windows bounded latest-frame encode scheduler foundation
+- [x] Windows asynchronous Media Foundation pump state contract (NeedInput / HaveOutput / drain)
 - [ ] Wire shared D3D11 surfaces into the Media Foundation encode worker
 - [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)

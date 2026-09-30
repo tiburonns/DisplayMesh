@@ -9,6 +9,7 @@ add_library(displaymesh_windows_media STATIC
     WindowsMediaProbe.cpp
     BoundedEncodeWorker.cpp
     H264AnnexBPacketizer.cpp
+    MftEncoderPumpState.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
@@ -95,5 +96,20 @@ if(BUILD_TESTING)
     add_test(
         NAME h264-dmp-frame-integration
         COMMAND h264-dmp-frame-integration-tests
+    )
+
+    add_executable(
+        mft-encoder-pump-state-tests
+        tests/MftEncoderPumpStateTests.cpp
+    )
+
+    target_link_libraries(
+        mft-encoder-pump-state-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME mft-encoder-pump-state
+        COMMAND mft-encoder-pump-state-tests
     )
 endif()
