@@ -43,7 +43,8 @@
 
 - [x] Modelo multitouch y captura iOS.
 - [x] Gate Windows de fases/admisión DMP antes de permitir input/video.
-- [ ] Conectar transporte/pairing Windows validado con el inyector touch; Pencil, teclado y clipboard pendientes.
+- [x] Router/decoder Windows exige sesión streaming antes de aceptar touch/Pencil.
+- [ ] Conectar transporte/pairing Windows validado con el inyector touch en vivo; Pencil, teclado y clipboard pendientes.
 
 ## M5 — Calidad de producto
 
