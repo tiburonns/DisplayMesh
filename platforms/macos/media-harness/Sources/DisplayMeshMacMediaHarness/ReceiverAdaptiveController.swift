@@ -78,21 +78,27 @@ struct ReceiverAdaptiveController {
         let frameBudgetMilliseconds = 1_000 / targetFramesPerSecond
         let fpsRatio = telemetry.framesPerSecond / targetFramesPerSecond
 
+        let decodeQueueDepth =
+            telemetry.decodeQueueDepth ?? 0
+
         let severeStress =
             dropRatio >= 0.10
+            || decodeQueueDepth >= 3
             || telemetry.averageDecodeMilliseconds
                 >= frameBudgetMilliseconds * 1.25
             || fpsRatio < 0.70
 
         let stressed =
             severeStress
+            || decodeQueueDepth >= 2
             || dropRatio >= 0.03
             || telemetry.averageDecodeMilliseconds
                 >= frameBudgetMilliseconds * 0.85
             || fpsRatio < 0.88
 
         let healthy =
-            dropRatio < 0.005
+            decodeQueueDepth <= 1
+            && dropRatio < 0.005
             && telemetry.averageDecodeMilliseconds
                 < frameBudgetMilliseconds * 0.55
             && fpsRatio >= 0.97

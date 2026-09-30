@@ -166,7 +166,9 @@ final class DMPProtocolTests: XCTestCase {
             megabitsPerSecond: 21.4,
             averageDecodeMilliseconds: 2.8,
             hardwareAccelerated: true,
-            lastVideoSequence: 500
+            lastVideoSequence: 500,
+            decodeQueueDepth: 2,
+            presentationQueueDepth: 1
         )
 
         let encoded = try JSONEncoder().encode(source)
@@ -174,6 +176,49 @@ final class DMPProtocolTests: XCTestCase {
             try JSONDecoder().decode(ReceiverTelemetry.self, from: encoded),
             source
         )
+    }
+
+    func testReceiverTelemetryDecodesLegacyPayloadWithoutQueueDepth() throws {
+        let legacy = """
+        {
+          "protocolVersion": 1,
+          "receivedFrames": 12,
+          "decodedFrames": 11,
+          "droppedFrames": 1,
+          "framesPerSecond": 59.5,
+          "megabitsPerSecond": 18.0,
+          "averageDecodeMilliseconds": 3.0,
+          "hardwareAccelerated": true,
+          "lastVideoSequence": 42
+        }
+        """
+
+        let decoded = try JSONDecoder().decode(
+            ReceiverTelemetry.self,
+            from: Data(legacy.utf8)
+        )
+
+        XCTAssertNil(decoded.decodeQueueDepth)
+        XCTAssertNil(decoded.presentationQueueDepth)
+        XCTAssertTrue(decoded.isValid)
+    }
+
+    func testReceiverTelemetryRejectsUnreasonableQueueDepth() {
+        let invalid = ReceiverTelemetry(
+            protocolVersion: ReceiverTelemetry.version,
+            receivedFrames: 10,
+            decodedFrames: 10,
+            droppedFrames: 0,
+            framesPerSecond: 60,
+            megabitsPerSecond: 10,
+            averageDecodeMilliseconds: 2,
+            hardwareAccelerated: true,
+            lastVideoSequence: 10,
+            decodeQueueDepth: 65,
+            presentationQueueDepth: 0
+        )
+
+        XCTAssertFalse(invalid.isValid)
     }
 
     func testSignedPairingAuthenticatesForReceiverChallenge() throws {

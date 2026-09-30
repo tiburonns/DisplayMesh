@@ -12,6 +12,8 @@ struct ReceiverVideoMetrics: Equatable {
     var averageDecodeMilliseconds: Double = 0
     var hardwareAccelerated: Bool?
     var lastSequence: UInt32?
+    var decodeQueueDepth: Int = 0
+    var presentationQueueDepth: Int = 0
 }
 
 final class H264VideoDecoder {
@@ -580,6 +582,10 @@ final class H264VideoDecoder {
     }
 
     private func publishMetricsLocked(force: Bool = false) {
+        metrics.decodeQueueDepth = inFlightFrames
+        metrics.presentationQueueDepth =
+            presentationGate.hasPendingFrame ? 1 : 0
+
         let now = ProcessInfo.processInfo.systemUptime
         guard force || now - lastMetricsPublish >= 0.25 else { return }
         lastMetricsPublish = now
