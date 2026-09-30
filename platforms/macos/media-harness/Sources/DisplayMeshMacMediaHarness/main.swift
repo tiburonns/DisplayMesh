@@ -1,4 +1,5 @@
 import CoreGraphics
+import CryptoKit
 import Foundation
 import Network
 import ScreenCaptureKit
@@ -556,9 +557,10 @@ struct DisplayMeshMacMediaHarness {
             The receiver must already be listening in the DisplayMesh
             iPhone/iPad app. Without --host, the harness discovers exactly
             one _displaymesh._tcp Bonjour service and fails if none or
-            multiple receivers are visible. This development harness uses
-            plaintext TCP;
-            production TLS is still a release blocker.
+            multiple receivers are visible. The current development binding
+            encrypts every post-pairing DMP frame with an authenticated
+            ephemeral P-256/ChaChaPoly session. A separately reviewed
+            production transport remains a release gate.
             """
         )
     }

@@ -163,6 +163,7 @@ final class ReceiverListener {
         decoder = DMPFrameDecoder()
         incomingSequence.reset()
         nextSequence = 1
+        protectedCodec.clear()
 
         newConnection.stateUpdateHandler = { [weak self, weak newConnection] state in
             guard let self, let newConnection else { return }
@@ -179,10 +180,18 @@ final class ReceiverListener {
                 newConnection.cancel()
                 if connection === newConnection {
                     connection = nil
+                    decoder = DMPFrameDecoder()
+                    incomingSequence.reset()
+                    nextSequence = 1
+                    protectedCodec.clear()
                 }
             case .cancelled:
                 if connection === newConnection {
                     connection = nil
+                    decoder = DMPFrameDecoder()
+                    incomingSequence.reset()
+                    nextSequence = 1
+                    protectedCodec.clear()
                     publish(.ready(port: Self.port.rawValue))
                 }
             default:
