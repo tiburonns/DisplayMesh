@@ -45,6 +45,7 @@ add_library(displaymesh_windows_media STATIC
     MftEncodedSampleProcessor.cpp
     MftEncoderPumpState.cpp
     LiveEncodeCoordinator.cpp
+    MftLiveEncodeAdapter.cpp
     MftDxgiInputSampleFactory.cpp
     SharedSurfaceEncodeInput.cpp
 )
@@ -210,6 +211,21 @@ if(BUILD_TESTING)
     add_test(
         NAME live-encode-coordinator
         COMMAND live-encode-coordinator-tests
+    )
+
+    add_executable(
+        mft-live-encode-adapter-tests
+        tests/MftLiveEncodeAdapterTests.cpp
+    )
+
+    target_link_libraries(
+        mft-live-encode-adapter-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME mft-live-encode-adapter
+        COMMAND mft-live-encode-adapter-tests
     )
 
     add_executable(
