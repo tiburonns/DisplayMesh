@@ -33,7 +33,8 @@
 - [x] Contrato de estados del pump asíncrono Media Foundation en Windows (NeedInput / HaveOutput / drain).
 - [x] Normalización H.264 de salida Windows (Annex-B + AVC con longitudes de 4 bytes) antes del packetizer DMP.
 - [x] Pipeline IMFSample codificado → normalización H.264 → payload DMP con timing validado.
-- [ ] Backend productivo completo de encode Windows y validación de hardware.
+- [x] Contrato de generación/geometría para slots GPU compartidos y rechazo de anuncios obsoletos.
+- [ ] Backend productivo completo de encode Windows, shared handles reales y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
 ## M3 — USB + red

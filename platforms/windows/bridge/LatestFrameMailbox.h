@@ -12,6 +12,7 @@ inline constexpr std::uint32_t kFrameMailboxSlotCount = 3;
 struct FrameAnnouncement {
     std::uint64_t sequence{};
     std::uint64_t timestampMicros{};
+    std::uint64_t surfaceGeneration{};
     std::uint32_t slotIndex{};
     std::uint32_t width{};
     std::uint32_t height{};
@@ -27,9 +28,11 @@ public:
     bool Publish(
         std::uint64_t sequence,
         std::uint64_t timestampMicros,
+        std::uint64_t surfaceGeneration,
         std::uint32_t width,
         std::uint32_t height) noexcept {
         if (sequence == 0 ||
+            surfaceGeneration == 0 ||
             width == 0 ||
             height == 0) {
             return false;
@@ -53,6 +56,9 @@ public:
             std::memory_order_relaxed);
         slot.timestampMicros.store(
             timestampMicros,
+            std::memory_order_relaxed);
+        slot.surfaceGeneration.store(
+            surfaceGeneration,
             std::memory_order_relaxed);
         slot.width.store(
             width,
@@ -120,6 +126,9 @@ public:
             frame.timestampMicros =
                 slot.timestampMicros.load(
                     std::memory_order_relaxed);
+            frame.surfaceGeneration =
+                slot.surfaceGeneration.load(
+                    std::memory_order_relaxed);
             frame.slotIndex = slotIndex;
             frame.width =
                 slot.width.load(
@@ -169,6 +178,8 @@ private:
             sequence{0};
         std::atomic<std::uint64_t>
             timestampMicros{0};
+        std::atomic<std::uint64_t>
+            surfaceGeneration{0};
         std::atomic<std::uint32_t>
             width{0};
         std::atomic<std::uint32_t>

@@ -18,13 +18,15 @@ The requested receiver mode is added to the monitor/target mode list on the next
 
 - exactly three reusable frame slots,
 - sequence-numbered publication,
+- explicit nonzero GPU surface generation on every frame announcement,
+- generation/geometry matching so a stale announcement cannot target a recreated slot after resize,
 - single-producer/single-consumer operation,
 - no FIFO backlog,
 - consumer always takes the newest complete frame,
 - sequence gaps report how many stale frames were intentionally skipped,
 - metadata publication uses lock-free atomics on the supported x64/ARM64 Windows targets.
 
-This mailbox does not carry pixels. The production frame bridge will keep pixels in shared D3D11 textures and use the mailbox only to announce which GPU slot is freshest.
+This mailbox does not carry pixels. The production frame bridge will keep pixels in shared D3D11 textures and use the mailbox only to announce which GPU slot is freshest. `SharedGpuSlotContract.h` binds slot index + monotonically increasing generation + geometry, so texture recreation can invalidate old announcements before a consumer touches a shared handle.
 
 This gives DisplayMesh deterministic **latest-frame-wins** behavior: congestion can reduce visual frame count, but it cannot turn into seconds of accumulated interaction latency.
 
