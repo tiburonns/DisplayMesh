@@ -260,7 +260,10 @@ mod tests {
 
     #[test]
     fn production_default_rejects_plaintext_development_scaffold() {
-        let config = SessionConfig::default();
+        let config = SessionConfig {
+            wire_protocol: WireProtocol::Tcp,
+            ..SessionConfig::default()
+        };
         let local = PeerCapabilities::development_scaffold();
         let remote = PeerCapabilities::development_scaffold();
 
@@ -354,8 +357,13 @@ mod tests {
 
     #[test]
     fn usb_requires_tcp_in_the_initial_binding() {
-        let local = PeerCapabilities::development_scaffold();
-        let remote = PeerCapabilities::development_scaffold();
+        let mut local = PeerCapabilities::development_scaffold();
+        let mut remote = PeerCapabilities::development_scaffold();
+        local.connection_media.push(ConnectionMedium::Usb);
+        remote.connection_media.push(ConnectionMedium::Usb);
+        local.wire_protocols.push(WireProtocol::Quic);
+        remote.wire_protocols.push(WireProtocol::Quic);
+
         let config = SessionConfig {
             connection_medium: ConnectionMedium::Usb,
             wire_protocol: WireProtocol::Quic,
@@ -373,7 +381,10 @@ mod tests {
 
     #[test]
     fn encryption_requirement_is_enforced() {
-        let config = SessionConfig::default();
+        let config = SessionConfig {
+            wire_protocol: WireProtocol::Tcp,
+            ..SessionConfig::default()
+        };
         let local = PeerCapabilities::development_scaffold();
         let mut remote = PeerCapabilities::development_scaffold();
         remote.encryption_supported = false;

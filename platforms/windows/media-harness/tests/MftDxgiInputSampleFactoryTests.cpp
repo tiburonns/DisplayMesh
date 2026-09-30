@@ -7,8 +7,9 @@
 #include <objbase.h>
 #include <wrl/client.h>
 
-#include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <iostream>
 #include <limits>
 
 #include "MftDxgiInputSampleFactory.h"
@@ -21,6 +22,13 @@ using displaymesh::media::
     MftDxgiInputSampleFactory;
 
 namespace {
+
+void Require(bool condition) {
+    if (!condition) {
+        std::cerr << "DisplayMesh DXGI input sample requirement failed\n";
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 class ComGuard {
 public:
@@ -81,8 +89,8 @@ ComPtr<ID3D11Device> CreateWarpDevice() {
             nullptr,
             &context);
 
-    assert(SUCCEEDED(result));
-    assert(device != nullptr);
+    Require(SUCCEEDED(result));
+    Require(device != nullptr);
     return device;
 }
 
@@ -90,34 +98,34 @@ void ValidateDxgiBuffer(
     IMFSample* sample,
     std::uint32_t width,
     std::uint32_t height) {
-    assert(sample != nullptr);
+    Require(sample != nullptr);
 
     DWORD count = 0;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->GetBufferCount(&count)));
-    assert(count == 1);
+    Require(count == 1);
 
     ComPtr<IMFMediaBuffer> buffer;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->GetBufferByIndex(
             0,
             &buffer)));
 
     ComPtr<IMFDXGIBuffer> dxgiBuffer;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         buffer.As(&dxgiBuffer)));
 
     ComPtr<ID3D11Texture2D> texture;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         dxgiBuffer->GetResource(
             IID_PPV_ARGS(&texture))));
-    assert(texture != nullptr);
+    Require(texture != nullptr);
 
     D3D11_TEXTURE2D_DESC desc{};
     texture->GetDesc(&desc);
-    assert(desc.Width == width);
-    assert(desc.Height == height);
-    assert(
+    Require(desc.Width == width);
+    Require(desc.Height == height);
+    Require(
         desc.Format ==
         DXGI_FORMAT_B8G8R8A8_UNORM);
 }
@@ -126,47 +134,47 @@ void ValidateDxgiBuffer(
 
 int main() {
     ComGuard com;
-    assert(SUCCEEDED(com.Result()));
+    Require(SUCCEEDED(com.Result()));
 
     MfGuard mf;
-    assert(SUCCEEDED(mf.Result()));
+    Require(SUCCEEDED(mf.Result()));
 
     auto device = CreateWarpDevice();
 
     SharedD3D11TexturePool pool(device);
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         pool.Recreate(1280, 720)));
 
     const auto* slot = pool.Slot(0);
-    assert(slot != nullptr);
+    Require(slot != nullptr);
 
     MftDxgiInputSampleFactory missingDevice(
         nullptr);
-    assert(!missingDevice.IsReady());
+    Require(!missingDevice.IsReady());
 
     MftDxgiInputSampleFactory factory(
         device.Get());
-    assert(factory.IsReady());
+    Require(factory.IsReady());
 
     ComPtr<IMFSample> sample;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         factory.CreateFromSharedHandle(
             slot->SharedHandle(),
             slot->Descriptor(),
             123'456,
             16'667,
             sample)));
-    assert(sample != nullptr);
+    Require(sample != nullptr);
 
     LONGLONG time = 0;
     LONGLONG duration = 0;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->GetSampleTime(&time)));
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->GetSampleDuration(
             &duration)));
-    assert(time == 1'234'560);
-    assert(duration == 166'670);
+    Require(time == 1'234'560);
+    Require(duration == 166'670);
 
     ValidateDxgiBuffer(
         sample.Get(),
@@ -178,16 +186,16 @@ int main() {
     mismatched.width = 1920;
 
     ComPtr<IMFSample> invalid;
-    assert(FAILED(
+    Require(FAILED(
         factory.CreateFromSharedHandle(
             slot->SharedHandle(),
             mismatched,
             0,
             16'667,
             invalid)));
-    assert(invalid == nullptr);
+    Require(invalid == nullptr);
 
-    assert(FAILED(
+    Require(FAILED(
         factory.CreateFromSharedHandle(
             nullptr,
             slot->Descriptor(),
@@ -195,7 +203,7 @@ int main() {
             16'667,
             invalid)));
 
-    assert(FAILED(
+    Require(FAILED(
         factory.CreateFromSharedHandle(
             slot->SharedHandle(),
             slot->Descriptor(),
@@ -203,7 +211,7 @@ int main() {
             0,
             invalid)));
 
-    assert(FAILED(
+    Require(FAILED(
         missingDevice.CreateFromSharedHandle(
             slot->SharedHandle(),
             slot->Descriptor(),
@@ -215,7 +223,7 @@ int main() {
         static_cast<std::uint64_t>(
             std::numeric_limits<LONGLONG>::max()) /
             10 + 1;
-    assert(FAILED(
+    Require(FAILED(
         factory.CreateFromSharedHandle(
             slot->SharedHandle(),
             slot->Descriptor(),
@@ -225,14 +233,14 @@ int main() {
 
     SharedD3D11TexturePool
         recreated(device);
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         recreated.Recreate(1920, 1080)));
 
     const auto* newSlot =
         recreated.Slot(0);
-    assert(newSlot != nullptr);
+    Require(newSlot != nullptr);
 
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         factory.CreateFromSharedHandle(
             newSlot->SharedHandle(),
             newSlot->Descriptor(),
