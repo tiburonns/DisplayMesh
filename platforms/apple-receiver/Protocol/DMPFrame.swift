@@ -33,23 +33,34 @@ enum DMPMessageType: UInt8, Codable, CaseIterable {
         }
     }
 
-    func validatePayloadSize(_ size: Int) throws {
+    func validatePayloadSize(
+        _ size: Int,
+        flags: UInt16 = 0
+    ) throws {
+        let encrypted =
+            flags & DMPFrame.encryptedPayloadFlag != 0
+        let overhead = encrypted
+            ? DMPFrame.authenticatedEncryptionOverhead
+            : 0
+
         if let exactPayloadSize {
-            guard size == exactPayloadSize else {
+            let expected = exactPayloadSize + overhead
+            guard size == expected else {
                 throw DMPFrameError.invalidPayloadLength(
                     type: rawValue,
                     size: size,
-                    expected: exactPayloadSize
+                    expected: expected
                 )
             }
             return
         }
 
-        guard size <= maximumPayloadSize else {
+        let maximum = maximumPayloadSize + overhead
+        guard size <= maximum else {
             throw DMPFrameError.payloadTooLargeForMessage(
                 type: rawValue,
                 size: size,
-                maximum: maximumPayloadSize
+                maximum: maximum
             )
         }
     }
@@ -99,6 +110,10 @@ struct DMPFrame: Equatable {
     static let version: UInt8 = 1
     static let headerSize = 16
     static let maximumPayloadSize = 16 * 1024 * 1024
+    static let authenticatedEncryptionOverhead = 28
+    static let encryptedPayloadFlag: UInt16 = 0x0001
+    static let maximumWirePayloadSize =
+        maximumPayloadSize + authenticatedEncryptionOverhead
 
     let type: DMPMessageType
     let flags: UInt16
@@ -106,10 +121,13 @@ struct DMPFrame: Equatable {
     let payload: Data
 
     func encoded() throws -> Data {
-        guard payload.count <= Self.maximumPayloadSize else {
+        guard payload.count <= Self.maximumWirePayloadSize else {
             throw DMPFrameError.payloadTooLarge(payload.count)
         }
-        try type.validatePayloadSize(payload.count)
+        try type.validatePayloadSize(
+            payload.count,
+            flags: flags
+        )
 
         var data = Data(capacity: Self.headerSize + payload.count)
         data.append(contentsOf: Self.magic)
@@ -208,10 +226,13 @@ struct DMPFrameDecoder {
             UInt32(header[15])
 
         let payloadSize = Int(payloadLength)
-        guard payloadSize <= DMPFrame.maximumPayloadSize else {
+        guard payloadSize <= DMPFrame.maximumWirePayloadSize else {
             throw DMPFrameError.payloadTooLarge(payloadSize)
         }
-        try type.validatePayloadSize(payloadSize)
+        try type.validatePayloadSize(
+            payloadSize,
+            flags: flags
+        )
 
         let totalSize = DMPFrame.headerSize + payloadSize
         guard buffer.count >= totalSize else { return nil }
