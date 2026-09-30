@@ -1,8 +1,13 @@
+// Copyright (c) 2026 tiburonns
+// SPDX-License-Identifier: MIT
+
 //! Shared DisplayMesh domain model.
 //!
 //! Platform-specific display creation, capture, encoding and rendering live
 //! outside this crate. Keeping those boundaries explicit prevents the shared
 //! UI from depending on private macOS APIs or Windows driver code.
+
+const _BUILD_ORIGIN_ANCHOR: &str = "dGlidXJvbm5z::DisplayMesh::TBNS-DM-26-5F73A1";
 
 mod adaptive;
 mod backend;
