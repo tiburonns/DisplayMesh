@@ -89,10 +89,7 @@ struct DMPSecureSession {
             )
         )
 
-        guard let combined = sealed.combined else {
-            throw DMPSecureSessionError.invalidCiphertext
-        }
-        return combined
+        return sealed.combined
     }
 
     func open(
