@@ -14,7 +14,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertTrue(request.hasValidShape)
@@ -41,7 +44,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123 456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
         XCTAssertFalse(formattedCode.hasValidShape)
 
@@ -51,7 +57,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
         XCTAssertFalse(oversizedName.hasValidShape)
     }
@@ -66,7 +75,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         let tampered = PairingRequest(
@@ -77,6 +89,8 @@ final class PairingIdentityTests: XCTestCase {
             challenge: valid.challenge,
             hostChallenge: valid.hostChallenge,
             identityPublicKey: valid.identityPublicKey,
+            keyAgreementPublicKey:
+                valid.keyAgreementPublicKey,
             signature: valid.signature
         )
 
@@ -100,7 +114,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertTrue(store.isOperational)
@@ -114,7 +131,10 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertEqual(store.status(for: changed), .identityChanged)
@@ -132,7 +152,10 @@ extension PairingIdentityTests {
             receiverID: UUID().uuidString,
             challenge: challenge,
             hostChallenge: hostChallenge,
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertTrue(
@@ -174,7 +197,10 @@ extension PairingIdentityTests {
             verificationCode: "123456",
             challenge: challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
         XCTAssertFalse(controlName.hasValidShape)
 
@@ -184,7 +210,10 @@ extension PairingIdentityTests {
             verificationCode: "١٢٣٤٥٦",
             challenge: challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
-            privateKey: privateKey
+            identityPrivateKey: privateKey,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
         XCTAssertFalse(unicodeCode.hasValidShape)
     }

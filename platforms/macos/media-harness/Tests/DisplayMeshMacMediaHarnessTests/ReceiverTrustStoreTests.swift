@@ -15,7 +15,10 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: UUID().uuidString,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertTrue(
@@ -54,7 +57,10 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: receiverID,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertEqual(store.status(for: first), .new)
@@ -67,7 +73,10 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: receiverID,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         XCTAssertEqual(store.status(for: changed), .identityChanged)
@@ -84,7 +93,10 @@ final class ReceiverTrustStoreTests: XCTestCase {
             receiverID: UUID().uuidString,
             challenge: receiverChallenge,
             hostChallenge: hostChallenge,
-            privateKey: P256.Signing.PrivateKey()
+            identityPrivateKey: P256.Signing.PrivateKey(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey()
+                    .publicKey.rawRepresentation
         )
 
         let tampered = PairingResponse(
@@ -95,6 +107,8 @@ final class ReceiverTrustStoreTests: XCTestCase {
             challenge: valid.challenge,
             hostChallenge: valid.hostChallenge,
             identityPublicKey: valid.identityPublicKey,
+            keyAgreementPublicKey:
+                valid.keyAgreementPublicKey,
             signature: valid.signature
         )
 

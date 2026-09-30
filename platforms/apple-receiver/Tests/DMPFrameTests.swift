@@ -5,7 +5,7 @@ final class DMPFrameTests: XCTestCase {
     func testFrameRoundTrip() throws {
         let frame = DMPFrame(
             type: .telemetry,
-            flags: 0x0102,
+            flags: 0,
             sequence: 42,
             payload: Data("hello".utf8)
         )
@@ -15,7 +15,7 @@ final class DMPFrameTests: XCTestCase {
             encoded,
             Data([
                 0x44, 0x4D, 0x50, 0x31,
-                0x01, 0x30, 0x01, 0x02,
+                0x01, 0x30, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x2A,
                 0x00, 0x00, 0x00, 0x05,
                 0x68, 0x65, 0x6C, 0x6C, 0x6F,
@@ -101,6 +101,60 @@ final class DMPFrameTests: XCTestCase {
                 payload: Data([1])
             ).encoded()
         )
+    }
+
+    func testEncryptedExactPayloadBudgetsIncludeAEADOverhead() throws {
+        XCTAssertNoThrow(
+            try DMPFrame(
+                type: .input,
+                flags: DMPFrame.encryptedPayloadFlag,
+                sequence: 1,
+                payload: Data(
+                    repeating: 0,
+                    count: 40 + DMPFrame.securePayloadOverhead
+                )
+            ).encoded()
+        )
+
+        XCTAssertNoThrow(
+            try DMPFrame(
+                type: .keyframeRequest,
+                flags: DMPFrame.encryptedPayloadFlag,
+                sequence: 2,
+                payload: Data(
+                    repeating: 0,
+                    count: DMPFrame.securePayloadOverhead
+                )
+            ).encoded()
+        )
+
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .input,
+                flags: DMPFrame.encryptedPayloadFlag,
+                sequence: 3,
+                payload: Data(
+                    repeating: 0,
+                    count: 39 + DMPFrame.securePayloadOverhead
+                )
+            ).encoded()
+        )
+    }
+
+    func testUnknownFrameFlagsAreRejected() {
+        XCTAssertThrowsError(
+            try DMPFrame(
+                type: .telemetry,
+                flags: 0x8000,
+                sequence: 1,
+                payload: Data()
+            ).encoded()
+        ) { error in
+            XCTAssertEqual(
+                error as? DMPFrameError,
+                .invalidFlags(0x8000)
+            )
+        }
     }
 
     func testTelemetryRoundTrip() throws {
