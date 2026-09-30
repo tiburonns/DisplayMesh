@@ -8,6 +8,7 @@ final class ReceiverConnection {
     var onKeyframeRequest: (() -> Void)?
     var onInput: ((Data) -> Void)?
     var onReceiverTelemetry: ((ReceiverTelemetry) -> Void)?
+    var onRoundTripTime: ((Double) -> Void)?
     var onErrorMessage: ((Data) -> Void)?
 
     private let queue = DispatchQueue(
@@ -27,6 +28,8 @@ final class ReceiverConnection {
     private var connectionReady = false
     private var lastDisconnectErrorStorage: Error?
     private var protocolPhaseStorage: HostReceiverPhase = .awaitingHello
+    private var pendingPing: (token: UInt64, sentAt: TimeInterval)?
+    private var nextPingToken: UInt64 = 1
 
     private var receiverHello: ReceiverHello?
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
@@ -375,6 +378,28 @@ final class ReceiverConnection {
         return connectionReady && !videoSendInFlight
     }
 
+    func sendPing() {
+        queue.async { [weak self] in
+            guard let self,
+                  connectionReady,
+                  currentProtocolPhase() == .streaming,
+                  pendingPing == nil else {
+                return
+            }
+
+            let token = nextPingToken
+            nextPingToken &+= 1
+            pendingPing = (
+                token: token,
+                sentAt: ProcessInfo.processInfo.systemUptime
+            )
+
+            var bigEndian = token.bigEndian
+            let payload = Swift.withUnsafeBytes(of: &bigEndian) { Data($0) }
+            send(type: .ping, payload: payload)
+        }
+    }
+
     @discardableResult
     func sendVideoPacket(_ packet: DMPVideoPacket) -> Bool {
         let payload: Data
@@ -650,6 +675,35 @@ final class ReceiverConnection {
         case .input:
             onInput?(frame.payload)
 
+        case .pong:
+            guard frame.payload.count == 8 else {
+                throw DMPProtocolError.invalidPayloadLength(
+                    type: DMPMessageType.pong.rawValue,
+                    size: frame.payload.count,
+                    expected: 8
+                )
+            }
+            let token = frame.payload.reduce(UInt64(0)) {
+                ($0 << 8) | UInt64($1)
+            }
+            guard let pendingPing,
+                  pendingPing.token == token else {
+                throw DMPProtocolError.invalidSessionPhase(
+                    "unexpected pong token"
+                )
+            }
+            self.pendingPing = nil
+            let rttMilliseconds =
+                (ProcessInfo.processInfo.systemUptime - pendingPing.sentAt)
+                * 1_000
+            guard rttMilliseconds.isFinite,
+                  rttMilliseconds >= 0 else {
+                throw DMPProtocolError.invalidSessionPhase(
+                    "invalid RTT clock state"
+                )
+            }
+            onRoundTripTime?(rttMilliseconds)
+
         case .telemetry:
             do {
                 let telemetry = try JSONDecoder().decode(
@@ -673,7 +727,7 @@ final class ReceiverConnection {
         case .error:
             onErrorMessage?(frame.payload)
 
-        case .video:
+        case .video, .ping:
             break
         }
     }
@@ -716,6 +770,8 @@ final class ReceiverConnection {
         incomingSequence.reset()
         nextSequence = 1
         protectedCodec.clear()
+        pendingPing = nil
+        nextPingToken = 1
         pairingKeyAgreementPrivateKey = nil
         receiverHello = nil
         setProtocolPhase(.awaitingHello)

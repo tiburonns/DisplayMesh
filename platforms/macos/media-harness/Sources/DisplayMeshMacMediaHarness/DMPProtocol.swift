@@ -10,6 +10,8 @@ enum DMPMessageType: UInt8 {
     case input = 0x20
     case telemetry = 0x30
     case keyframeRequest = 0x31
+    case ping = 0x32
+    case pong = 0x33
     case error = 0x7f
 
     var maximumPayloadSize: Int {
@@ -22,6 +24,7 @@ enum DMPMessageType: UInt8 {
         case .input: 40
         case .telemetry: 16 * 1024
         case .keyframeRequest: 0
+        case .ping, .pong: 8
         case .error: 8 * 1024
         }
     }
@@ -30,6 +33,7 @@ enum DMPMessageType: UInt8 {
         switch self {
         case .input: 40
         case .keyframeRequest: 0
+        case .ping, .pong: 8
         default: nil
         }
     }

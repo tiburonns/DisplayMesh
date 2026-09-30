@@ -401,6 +401,15 @@ struct DisplayMeshMacMediaHarness {
             targetFramesPerSecond: targetFPS
         )
 
+        receiver.onRoundTripTime = { milliseconds in
+            print(
+                String(
+                    format: "transport RTT %.1f ms",
+                    milliseconds
+                )
+            )
+        }
+
         receiver.onReceiverTelemetry = { [weak encoder, weak receiver] telemetry in
             print(
                 String(
@@ -512,6 +521,7 @@ struct DisplayMeshMacMediaHarness {
         durationSeconds: Int?
     ) async throws {
         let startedAt = ProcessInfo.processInfo.systemUptime
+        var lastPingAt = startedAt - 1
 
         while true {
             try Task.checkCancellation()
@@ -521,9 +531,14 @@ struct DisplayMeshMacMediaHarness {
                     ?? DMPProtocolError.connectionClosed
             }
 
+            let now = ProcessInfo.processInfo.systemUptime
+            if now - lastPingAt >= 1 {
+                receiver.sendPing()
+                lastPingAt = now
+            }
+
             if let durationSeconds,
-               ProcessInfo.processInfo.systemUptime - startedAt
-                    >= Double(durationSeconds) {
+               now - startedAt >= Double(durationSeconds) {
                 return
             }
 

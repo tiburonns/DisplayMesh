@@ -66,6 +66,7 @@ final class HostProtocolGateTests: XCTestCase {
             .keyframeRequest,
             .input,
             .telemetry,
+            .pong,
             .error,
         ] {
             XCTAssertTrue(
@@ -78,6 +79,7 @@ final class HostProtocolGateTests: XCTestCase {
             DMPMessageType.hello,
             .pairing,
             .video,
+            .ping,
         ] {
             XCTAssertFalse(
                 HostProtocolGate.permits(type, phase: .streaming),
