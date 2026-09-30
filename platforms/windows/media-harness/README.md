@@ -45,7 +45,7 @@ A successful result proves capability/configuration on that machine. It does **n
 
 ## Next integration
 
-The bounded worker and MFT event-pump state contract are now present. The next runtime step is to bind real Media Foundation events and DXGI samples to that contract:
+The bounded worker, MFT event-pump state contract, and encoded-output processor are now present. Media Foundation output samples are read as contiguous encoded buffers, their timing is converted into DMP units, H.264 is normalized, and the result is packetized for DMP. The next runtime step is to bind real MFT events and live DXGI input samples to that contract:
 
 ```text
 IddCx BGRA texture
