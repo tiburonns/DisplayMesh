@@ -7,6 +7,7 @@ endif()
 
 add_library(displaymesh_windows_media STATIC
     WindowsMediaProbe.cpp
+    BoundedEncodeWorker.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
@@ -39,3 +40,23 @@ target_link_libraries(
     displaymesh-media-probe
     PRIVATE displaymesh_windows_media
 )
+
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_executable(
+        bounded-encode-worker-tests
+        tests/BoundedEncodeWorkerTests.cpp
+    )
+
+    target_link_libraries(
+        bounded-encode-worker-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME bounded-encode-worker
+        COMMAND bounded-encode-worker-tests
+    )
+endif()

@@ -150,8 +150,24 @@ windows_input = (ROOT / "platforms/windows/input-bridge/DmpInput.cpp").read_text
 if 'payload[3] != 0' not in windows_input:
     raise SystemExit("windows input contract failed: reserved DMP flags are not rejected")
 
+windows_worker = ROOT / "platforms/windows/media-harness/BoundedEncodeWorker.cpp"
+windows_worker_header = ROOT / "platforms/windows/media-harness/BoundedEncodeWorker.h"
+windows_worker_tests = ROOT / "platforms/windows/media-harness/tests/BoundedEncodeWorkerTests.cpp"
+for path in [windows_worker, windows_worker_header, windows_worker_tests]:
+    if not path.exists():
+        raise SystemExit(f"windows encode scheduling contract failed: missing {path.relative_to(ROOT)}")
+
+worker_source = windows_worker.read_text(encoding="utf-8")
+for token in ["pending_", "droppedPending", "discardedOnStop", "handlerFailures"]:
+    if token not in worker_source and token not in windows_worker_header.read_text(encoding="utf-8"):
+        raise SystemExit(f"windows encode scheduling contract failed: missing {token}")
+
 workflow_source = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-for token in ["windows-protocol:", "Test DMP framing contract"]:
+for token in [
+    "windows-protocol:",
+    "Test DMP framing contract",
+    "Test bounded encode worker",
+]:
     if token not in workflow_source:
         raise SystemExit(f"windows CI contract failed: missing {token}")
 
