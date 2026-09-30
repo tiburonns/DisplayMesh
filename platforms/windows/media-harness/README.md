@@ -79,3 +79,16 @@ The coordinator:
 - exposes coordinator, worker and pump statistics independently.
 
 This is the deterministic orchestration layer. The next Windows step is concrete `IMFTransform::ProcessInput` / `ProcessOutput` integration and then wiring the live IddCx surface producer into it.
+
+
+## Concrete asynchronous MFT path
+
+The media harness now has the concrete pieces between an admitted GPU frame and a DMP video payload:
+
+`EncodeWorkItem → InputSampleFactory/SharedSurfaceEncodeInput → IMFTransform::ProcessInput → async MFT events → IMFTransform::ProcessOutput → H264 normalizer → DMP packetizer → packet handler`.
+
+`MftLiveEncodeAdapter` accepts the real shared-surface input adapter in production, but its input-sample factory is injectable so deterministic tests can validate Media Foundation failure and H.264 output paths without GPU hardware.
+
+`MftAsyncEventPump` consumes asynchronous Media Foundation transform events and routes `METransformNeedInput`, `METransformHaveOutput`, and `METransformDrainComplete` into `LiveEncodeCoordinator`. Transform/event errors fail closed and stop the pump.
+
+The remaining end-to-end Windows media gate is the live IddCx producer and BGRA→NV12 surface publication feeding this path, followed by the Windows DMP network/session binding.
