@@ -161,11 +161,4 @@ final class ReceiverDiscovery {
             }
         }
     }
-
-    func cancel() {
-        queue.async { [weak self] in
-            self?.browser?.cancel()
-            self?.browser = nil
-        }
-    }
 }

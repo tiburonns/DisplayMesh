@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import Network
 import ScreenCaptureKit
 
 private struct Options {
@@ -94,7 +95,6 @@ private enum CLIError: Error, LocalizedError {
     case missingValue(String)
     case invalidValue(String, String)
     case unknownArgument(String)
-    case receiverRequired
 
     var errorDescription: String? {
         switch self {
@@ -106,8 +106,6 @@ private enum CLIError: Error, LocalizedError {
             return "Invalid value for \(flag): \(value)"
         case .unknownArgument(let argument):
             return "Unknown argument: \(argument)"
-        case .receiverRequired:
-            return "--host <iPhone-or-iPad-IP> is required unless --list is used"
         }
     }
 }
