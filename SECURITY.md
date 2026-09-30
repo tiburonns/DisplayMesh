@@ -54,7 +54,9 @@ DisplayMesh is intended for devices and networks the user controls or is authori
 
 ## Current development identity boundary
 
-DisplayMesh 0.2.3 authenticates the **macOS development host identity** during pairing with P-256 signatures and a fresh receiver challenge. This prevents silent host-key substitution after trust has been recorded, but it does **not** make the current plaintext TCP media session production-secure: the receiver does not yet present a cryptographically authenticated identity to the host and media/control transport is not yet encrypted.
+DisplayMesh 0.2.3 authenticates **both development peers** during pairing. The macOS host signs the receiver challenge with its persistent P-256 identity. The Apple receiver signs the pairing result with its own persistent P-256 identity while binding both the receiver challenge and an independent fresh host challenge.
+
+Both sides persist accepted peer public keys using device-only Keychain storage and fail closed when a known peer ID presents a different key. This closes the asymmetric identity gap in the development handshake, but it does **not** make the current plaintext TCP media session production-secure: media/control transport is still unencrypted.
 
 
 ## Development protocol guardrails
@@ -71,4 +73,4 @@ The plaintext TCP development binding remains intentionally labeled **not produc
 - Bonjour uses a generic DisplayMesh service name rather than exposing the configured device name;
 - host identity and accepted trust records use device-only Keychain accessibility.
 
-These controls reduce attack surface during development. They do **not** replace mutual peer authentication plus TLS 1.3 (or an equivalently reviewed encrypted transport) for production.
+These controls reduce attack surface during development. Mutual persistent P-256 peer authentication is now present, but it does **not** replace TLS 1.3 (or an equivalently reviewed encrypted transport) for production confidentiality and transport integrity.

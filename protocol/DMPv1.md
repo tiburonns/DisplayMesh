@@ -225,3 +225,18 @@ Future:
 ## Interoperability
 
 An optional compatibility layer may be implemented for publicly documented third-party display protocols. Compatibility code must remain separated from DMPv1 and from third-party source code.
+
+
+## Development mutual identity handshake
+
+The current development TCP binding authenticates both peers before capabilities or media are admitted:
+
+1. the receiver creates a fresh 32-byte receiver challenge;
+2. the host creates an independent fresh 32-byte host challenge;
+3. the host signs its peer ID, name, verification code, both challenges and host public key;
+4. after explicit user approval, the receiver signs the acceptance result, receiver ID/name, both challenges and receiver public key;
+5. each side persists the accepted peer public key and rejects a changed key for the same peer ID.
+
+Both challenges are covered by the signatures, so a recorded pairing response cannot be replayed against a new host challenge.
+
+This authenticates development peer identities only. It does **not** encrypt DMP media, input, telemetry or control traffic. TLS 1.3 or an equivalently reviewed authenticated encrypted binding remains mandatory for production.
