@@ -30,7 +30,8 @@
 ## M2 — Video end-to-end
 
 - [x] Receiver H.264/Metal y harness de media macOS.
-- [ ] Backends productivos completos de captura/encode macOS/Windows.
+- [x] Contrato de estados del pump asíncrono Media Foundation en Windows (NeedInput / HaveOutput / drain).
+- [ ] Backend productivo completo de encode Windows y validación de hardware.
 - [ ] Loopback end-to-end y aceptación 1080p60/1440p60.
 
 ## M3 — USB + red
