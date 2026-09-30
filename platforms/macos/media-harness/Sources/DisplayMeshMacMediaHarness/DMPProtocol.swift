@@ -536,6 +536,7 @@ struct PairingResponse: Codable, Equatable {
     let challenge: Data
     let hostChallenge: Data
     let identityPublicKey: Data
+    let keyAgreementPublicKey: Data
     let signature: Data
 
     var identityFingerprint: String {

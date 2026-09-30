@@ -14,6 +14,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
 
@@ -41,6 +43,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123 456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(formattedCode.hasValidShape)
@@ -51,6 +55,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(oversizedName.hasValidShape)
@@ -66,6 +72,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
 
@@ -77,6 +85,7 @@ final class PairingIdentityTests: XCTestCase {
             challenge: valid.challenge,
             hostChallenge: valid.hostChallenge,
             identityPublicKey: valid.identityPublicKey,
+            keyAgreementPublicKey: valid.keyAgreementPublicKey,
             signature: valid.signature
         )
 
@@ -100,6 +109,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -114,6 +125,8 @@ final class PairingIdentityTests: XCTestCase {
             verificationCode: "123456",
             challenge: hello.challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -132,6 +145,8 @@ extension PairingIdentityTests {
             receiverID: UUID().uuidString,
             challenge: challenge,
             hostChallenge: hostChallenge,
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: P256.Signing.PrivateKey()
         )
 
@@ -174,6 +189,8 @@ extension PairingIdentityTests {
             verificationCode: "123456",
             challenge: challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(controlName.hasValidShape)
@@ -184,8 +201,48 @@ extension PairingIdentityTests {
             verificationCode: "١٢٣٤٥٦",
             challenge: challenge,
             hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
             privateKey: privateKey
         )
         XCTAssertFalse(unicodeCode.hasValidShape)
+    }
+}
+
+
+extension PairingIdentityTests {
+    func testTamperedEphemeralKeyInvalidatesHostSignature() throws {
+        let signingKey = P256.Signing.PrivateKey()
+        let request = try PairingRequest.signed(
+            peerName: "Mac",
+            peerID: UUID().uuidString,
+            verificationCode: "123456",
+            challenge: try ReceiverHello.make().challenge,
+            hostChallenge: PairingRequest.makeHostChallenge(),
+            keyAgreementPublicKey:
+                P256.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
+            privateKey: signingKey
+        )
+
+        var changedKey = request.keyAgreementPublicKey
+        changedKey[changedKey.startIndex] ^= 0x01
+
+        let tampered = PairingRequest(
+            peerName: request.peerName,
+            peerID: request.peerID,
+            verificationCode: request.verificationCode,
+            protocolVersion: request.protocolVersion,
+            challenge: request.challenge,
+            hostChallenge: request.hostChallenge,
+            identityPublicKey: request.identityPublicKey,
+            keyAgreementPublicKey: changedKey,
+            signature: request.signature
+        )
+
+        XCTAssertFalse(
+            tampered.isAuthentic(
+                expectedChallenge: request.challenge
+            )
+        )
     }
 }
