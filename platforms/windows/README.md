@@ -78,3 +78,10 @@ This is intentionally a scheduling foundation, not a claim that the IddCx textur
 `media-harness/H264AnnexBPacketizer` validates Annex-B access units and produces the same 16-byte DMP video payload header consumed by the Apple receiver. It caches SPS/PPS, repairs an IDR that omits them when valid cached parameter sets exist, normalizes NAL start codes, preserves the DMP payload budget, and fails instead of emitting a non-recoverable keyframe when parameter sets are unavailable.
 
 This component is deterministic and hardware-independent. The remaining Windows M2 work is to feed real Media Foundation encoder output into it and then wrap the resulting video payload in the authenticated DMP transport.
+
+
+## Host session admission
+
+`protocol/DmpHostSessionGate` mirrors the host-side DMP phase rules used by the macOS development path. Input routing and video transmission stay closed until the host has accepted receiver hello, sent pairing, accepted the pairing response, validated receiver capabilities and accepted a panel descriptor. Unexpected message types fail closed for the current phase; reset immediately closes the input/video gates.
+
+This is an admission/state-machine boundary, **not** the Windows pairing/crypto implementation itself. The Windows network service must validate identity/pairing before advancing this gate and only then forward validated input payloads to the native injector.

@@ -69,3 +69,10 @@ Es una base de scheduling, no una afirmación de que la textura IddCx ya llegue 
 `media-harness/H264AnnexBPacketizer` valida access units Annex-B y genera el mismo header DMP de video de 16 bytes que consume el receiver Apple. Mantiene cache SPS/PPS, repara un IDR que no los incluya cuando existe estado válido, normaliza start codes, respeta el presupuesto DMP y falla antes de emitir un keyframe no recuperable si faltan parameter sets.
 
 Es una pieza determinista e independiente del hardware. Falta alimentar este packetizer con la salida real del encoder Media Foundation y envolver el payload resultante en la sesión DMP autenticada.
+
+
+## Admisión de sesión host
+
+`protocol/DmpHostSessionGate` replica las reglas de fase DMP del host usadas por la ruta de desarrollo macOS. Input y video permanecen cerrados hasta aceptar hello, enviar pairing, aceptar su respuesta, validar capabilities y aceptar el descriptor de panel. Los tipos inesperados fallan en cerrado y un reset vuelve a bloquear input/video inmediatamente.
+
+Es una frontera de admisión/estado, **no** la implementación criptográfica de pairing Windows. El futuro servicio de red Windows debe validar identidad/pairing antes de avanzar este gate y sólo entonces entregar payloads de input validados al inyector nativo.
