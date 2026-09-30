@@ -1,4 +1,5 @@
 import CoreGraphics
+import CryptoKit
 import Foundation
 import Network
 import ScreenCaptureKit
@@ -260,6 +261,8 @@ struct DisplayMeshMacMediaHarness {
         }
 
         let identity = try HostIdentityStore.loadOrCreate()
+        let keyAgreementPrivateKey =
+            P256.KeyAgreement.PrivateKey()
         let verificationCode = String(
             format: "%06d",
             Int.random(in: 0...999_999)
@@ -267,10 +270,17 @@ struct DisplayMeshMacMediaHarness {
         let request = try identity.makePairingRequest(
             peerName: Host.current().localizedName ?? "Mac",
             verificationCode: verificationCode,
-            challenge: hello.challenge
+            challenge: hello.challenge,
+            keyAgreementPublicKey:
+                keyAgreementPrivateKey
+                    .publicKey.rawRepresentation
         )
 
-        try receiver.sendPairingRequest(request)
+        try receiver.sendPairingRequest(
+            request,
+            keyAgreementPrivateKey:
+                keyAgreementPrivateKey
+        )
 
         print("")
         print("PAIRING CODE: \(verificationCode)")
@@ -326,8 +336,8 @@ struct DisplayMeshMacMediaHarness {
             " input=" +
             capabilities.inputKinds.joined(separator: ",") +
             (capabilities.encryptedTransport
-                ? " | encrypted"
-                : " | plaintext development transport")
+                ? " | authenticated encrypted DMP"
+                : " | insecure transport rejected")
         )
 
         let panel = try await receiver.waitForPanelDescriptor()
@@ -548,9 +558,9 @@ struct DisplayMeshMacMediaHarness {
             The receiver must already be listening in the DisplayMesh
             iPhone/iPad app. Without --host, the harness discovers exactly
             one _displaymesh._tcp Bonjour service and fails if none or
-            multiple receivers are visible. This development harness uses
-            plaintext TCP;
-            production TLS is still a release blocker.
+            multiple receivers are visible. Pairing is identity-authenticated
+            and all post-pairing DMP payloads are protected with directional
+            ChaCha20-Poly1305 keys derived through ephemeral P-256 ECDH.
             """
         )
     }

@@ -267,6 +267,7 @@ struct ReceiverCapabilities: Codable, Equatable {
         isValid
             && codecs.contains(Self.h264)
             && connectionBindings.contains(Self.tcp)
+            && encryptedTransport
     }
 }
 

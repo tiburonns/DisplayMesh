@@ -34,6 +34,7 @@ struct ReceiverCapabilities: Codable, Equatable {
         isValid
             && codecs.contains(Self.h264)
             && connectionBindings.contains(Self.tcp)
+            && encryptedTransport
     }
 
     static func development(
@@ -52,7 +53,7 @@ struct ReceiverCapabilities: Codable, Equatable {
             inputKinds: inputKinds,
             telemetrySupported: true,
             maximumVideoPayloadBytes: DMPFrame.maximumPayloadSize,
-            encryptedTransport: false
+            encryptedTransport: true
         )
     }
 }
