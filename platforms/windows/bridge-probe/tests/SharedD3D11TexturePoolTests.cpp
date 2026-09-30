@@ -3,8 +3,9 @@
 #include <d3d11_1.h>
 #include <wrl/client.h>
 
-#include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <iostream>
 
 #include "../bridge/SharedD3D11TexturePool.h"
 
@@ -12,6 +13,13 @@ using Microsoft::WRL::ComPtr;
 using namespace displaymesh::bridge;
 
 namespace {
+
+void Require(bool condition) {
+    if (!condition) {
+        std::cerr << "DisplayMesh shared D3D11 pool requirement failed\n";
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 ComPtr<ID3D11Device> CreateWarpDevice() {
     ComPtr<ID3D11Device> device;
@@ -30,8 +38,8 @@ ComPtr<ID3D11Device> CreateWarpDevice() {
             nullptr,
             &context);
 
-    assert(SUCCEEDED(result));
-    assert(device != nullptr);
+    Require(SUCCEEDED(result));
+    Require(device != nullptr);
     return device;
 }
 
@@ -43,21 +51,21 @@ void ValidateSlot(
     std::uint32_t width,
     std::uint32_t height) {
     const auto* slot = pool.Slot(index);
-    assert(slot != nullptr);
-    assert(slot->IsValid());
-    assert(
+    Require(slot != nullptr);
+    Require(slot->IsValid());
+    Require(
         slot->Descriptor().slotIndex ==
         index);
-    assert(
+    Require(
         slot->Descriptor().generation ==
         generation);
-    assert(
+    Require(
         slot->Descriptor().width ==
         width);
-    assert(
+    Require(
         slot->Descriptor().height ==
         height);
-    assert(
+    Require(
         slot->Descriptor().dxgiFormat ==
         static_cast<std::uint32_t>(
             DXGI_FORMAT_B8G8R8A8_UNORM));
@@ -67,27 +75,27 @@ void ValidateSlot(
         device->OpenSharedResource1(
             slot->SharedHandle(),
             IID_PPV_ARGS(&reopened));
-    assert(SUCCEEDED(result));
-    assert(reopened != nullptr);
+    Require(SUCCEEDED(result));
+    Require(reopened != nullptr);
 
     D3D11_TEXTURE2D_DESC description{};
     reopened->GetDesc(&description);
-    assert(description.Width == width);
-    assert(description.Height == height);
-    assert(
+    Require(description.Width == width);
+    Require(description.Height == height);
+    Require(
         description.Format ==
         DXGI_FORMAT_B8G8R8A8_UNORM);
-    assert(
+    Require(
         (description.MiscFlags &
          D3D11_RESOURCE_MISC_SHARED_NTHANDLE)
         != 0);
-    assert(
+    Require(
         (description.MiscFlags &
          D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX)
         != 0);
 
     ComPtr<IDXGIKeyedMutex> keyedMutex;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         reopened.As(&keyedMutex)));
 }
 
@@ -97,16 +105,16 @@ int main() {
     auto device = CreateWarpDevice();
 
     ComPtr<ID3D11Device1> device1;
-    assert(SUCCEEDED(device.As(&device1)));
-    assert(device1 != nullptr);
+    Require(SUCCEEDED(device.As(&device1)));
+    Require(device1 != nullptr);
 
     SharedD3D11TexturePool pool(device);
-    assert(pool.Generation() == 0);
-    assert(pool.Slot(0) == nullptr);
+    Require(pool.Generation() == 0);
+    Require(pool.Slot(0) == nullptr);
 
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         pool.Recreate(1920, 1080)));
-    assert(pool.Generation() == 1);
+    Require(pool.Generation() == 1);
 
     std::array<HANDLE, kFrameMailboxSlotCount>
         firstHandles{};
@@ -123,7 +131,7 @@ int main() {
             1080);
 
         const auto* slot = pool.Slot(index);
-        assert(slot != nullptr);
+        Require(slot != nullptr);
         firstHandles[index] =
             slot->SharedHandle();
     }
@@ -134,13 +142,13 @@ int main() {
         for (std::uint32_t rhs = lhs + 1;
              rhs < kFrameMailboxSlotCount;
              ++rhs) {
-            assert(
+            Require(
                 firstHandles[lhs] !=
                 firstHandles[rhs]);
         }
     }
 
-    assert(
+    Require(
         pool.Slot(
             kFrameMailboxSlotCount) ==
         nullptr);
@@ -152,13 +160,13 @@ int main() {
     first.slotIndex = 1;
     first.width = 1920;
     first.height = 1080;
-    assert(pool.Matches(first));
+    Require(pool.Matches(first));
 
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         pool.Recreate(2560, 1440)));
-    assert(pool.Generation() == 2);
+    Require(pool.Generation() == 2);
 
-    assert(!pool.Matches(first));
+    Require(!pool.Matches(first));
 
     for (std::uint32_t index = 0;
          index < kFrameMailboxSlotCount;
@@ -176,7 +184,7 @@ int main() {
     resized.surfaceGeneration = 2;
     resized.width = 2560;
     resized.height = 1440;
-    assert(pool.Matches(resized));
+    Require(pool.Matches(resized));
 
     std::array<HANDLE, kFrameMailboxSlotCount>
         secondHandles{};
@@ -184,22 +192,22 @@ int main() {
          index < kFrameMailboxSlotCount;
          ++index) {
         const auto* slot = pool.Slot(index);
-        assert(slot != nullptr);
+        Require(slot != nullptr);
         secondHandles[index] =
             slot->SharedHandle();
     }
 
-    assert(FAILED(
+    Require(FAILED(
         pool.Recreate(0, 1440)));
-    assert(pool.Generation() == 2);
-    assert(pool.Matches(resized));
+    Require(pool.Generation() == 2);
+    Require(pool.Matches(resized));
 
     for (std::uint32_t index = 0;
          index < kFrameMailboxSlotCount;
          ++index) {
         const auto* slot = pool.Slot(index);
-        assert(slot != nullptr);
-        assert(
+        Require(slot != nullptr);
+        Require(
             slot->SharedHandle() ==
             secondHandles[index]);
 
@@ -213,9 +221,9 @@ int main() {
     }
 
     pool.Reset();
-    assert(pool.Generation() == 0);
-    assert(pool.Slot(0) == nullptr);
-    assert(!pool.Matches(resized));
+    Require(pool.Generation() == 0);
+    Require(pool.Slot(0) == nullptr);
+    Require(!pool.Matches(resized));
 
     return 0;
 }

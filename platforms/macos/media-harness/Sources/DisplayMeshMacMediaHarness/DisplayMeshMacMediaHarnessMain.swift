@@ -327,16 +327,20 @@ struct DisplayMeshMacMediaHarness {
             throw DMPProtocolError.incompatibleReceiverCapabilities
         }
 
+        let codecSummary =
+            capabilities.codecs.joined(separator: ",")
+        let bindingSummary =
+            capabilities.connectionBindings.joined(separator: ",")
+        let inputSummary =
+            capabilities.inputKinds.joined(separator: ",")
+        let transportSummary =
+            capabilities.encryptedTransport
+            ? "encrypted"
+            : "plaintext development transport"
         print(
-            "Receiver capabilities: codecs=" +
-            capabilities.codecs.joined(separator: ",") +
-            " bindings=" +
-            capabilities.connectionBindings.joined(separator: ",") +
-            " input=" +
-            capabilities.inputKinds.joined(separator: ",") +
-            (capabilities.encryptedTransport
-                ? " | encrypted"
-                : " | plaintext development transport")
+            "Receiver capabilities: codecs=\(codecSummary) " +
+            "bindings=\(bindingSummary) " +
+            "input=\(inputSummary) | \(transportSummary)"
         )
 
         let panel = try await receiver.waitForPanelDescriptor()

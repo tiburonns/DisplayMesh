@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import Network
 
-final class ReceiverConnection {
+final class ReceiverConnection: @unchecked Sendable {
     static let port = NWEndpoint.Port(rawValue: 49_655)!
 
     var onKeyframeRequest: (() -> Void)?
@@ -430,8 +430,8 @@ final class ReceiverConnection {
                         clearVideoGate()
 
                         guard let error, let activeConnection else { return }
-                        queue.async {
-                            handleTransportFailure(
+                        self.queue.async {
+                            self.handleTransportFailure(
                                 error,
                                 connection: activeConnection
                             )
@@ -460,8 +460,8 @@ final class ReceiverConnection {
                     content: data,
                     completion: .contentProcessed { [weak self, weak activeConnection] error in
                         guard let self, let error, let activeConnection else { return }
-                        queue.async {
-                            handleTransportFailure(
+                        self.queue.async {
+                            self.handleTransportFailure(
                                 error,
                                 connection: activeConnection
                             )
