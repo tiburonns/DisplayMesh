@@ -140,6 +140,7 @@ final class H264VideoDecoder {
 
         if inFlightFrames >= maximumInFlightFrames {
             metrics.droppedFrames &+= 1
+            publishMetricsLocked(force: true)
             invalidateSessionLocked()
             waitingForKeyframe = true
             requestKeyframeLocked()

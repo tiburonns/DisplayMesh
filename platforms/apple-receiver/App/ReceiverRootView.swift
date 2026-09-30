@@ -463,14 +463,14 @@ struct ReceiverRootView: View {
             Text(
                 String(
                     format: NSLocalizedString("diagnostics.decodeQueue", comment: ""),
-                    metrics.decodeQueueDepth
+                    Int64(metrics.decodeQueueDepth)
                 )
             )
 
             Text(
                 String(
                     format: NSLocalizedString("diagnostics.presentationQueue", comment: ""),
-                    metrics.presentationQueueDepth
+                    Int64(metrics.presentationQueueDepth)
                 )
             )
 
