@@ -1,7 +1,7 @@
 import CoreMedia
 import CoreVideo
 import Foundation
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 import VideoToolbox
 
 struct HostEncoderMetrics {
@@ -55,7 +55,7 @@ enum HostMediaError: Error, LocalizedError {
     }
 }
 
-final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
+final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     var shouldEncodeFrame: (() -> Bool)?
     var onPacket: ((DMPVideoPacket) -> Bool)?
     var onMetrics: ((HostEncoderMetrics) -> Void)?
@@ -313,6 +313,9 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         configuration.capturesAudio = false
         configuration.showsCursor = true
 
+        let updatedFrameDuration =
+            configuration.minimumFrameInterval
+
         do {
             try await snapshot.stream.updateConfiguration(configuration)
         } catch {
@@ -324,7 +327,8 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
 
         do {
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
                 queue.async { [weak self] in
                     guard let self,
                           running,
@@ -352,7 +356,7 @@ final class DisplayCaptureEncoder: NSObject, SCStreamOutput, SCStreamDelegate {
                         )
                         currentWidth = snapshot.dimensions.width
                         currentHeight = snapshot.dimensions.height
-                        frameDuration = configuration.minimumFrameInterval
+                        frameDuration = updatedFrameDuration
                         forceNextKeyframe = true
                         rasterReconfigurationInProgress = false
                         continuation.resume()

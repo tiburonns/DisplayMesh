@@ -40,7 +40,7 @@ enum HostProtocolGate {
         case .streaming:
             switch type {
             case .panelDescriptor, .capabilities, .keyframeRequest,
-                 .input, .telemetry:
+                 .input, .telemetry, .pong:
                 return true
             default:
                 return false

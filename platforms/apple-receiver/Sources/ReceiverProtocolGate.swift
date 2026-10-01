@@ -7,10 +7,10 @@ enum ReceiverProtocolGate {
     ) -> Bool {
         if authorized {
             switch type {
-            case .video, .error:
+            case .video, .ping, .error:
                 return true
             case .hello, .capabilities, .panelDescriptor, .pairing,
-                 .input, .telemetry, .keyframeRequest:
+                 .input, .telemetry, .keyframeRequest, .pong:
                 return false
             }
         }

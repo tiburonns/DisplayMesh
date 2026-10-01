@@ -85,6 +85,25 @@ final class DMPProtocolTests: XCTestCase {
                 payload: Data([1])
             ).encoded()
         )
+
+        for type in [DMPMessageType.ping, .pong] {
+            XCTAssertNoThrow(
+                try DMPFrame(
+                    type: type,
+                    flags: 0,
+                    sequence: 1,
+                    payload: Data(repeating: 0, count: 8)
+                ).encoded()
+            )
+            XCTAssertThrowsError(
+                try DMPFrame(
+                    type: type,
+                    flags: 0,
+                    sequence: 1,
+                    payload: Data(repeating: 0, count: 9)
+                ).encoded()
+            )
+        }
     }
 
     func testInputDecoderRejectsReservedFlags() {

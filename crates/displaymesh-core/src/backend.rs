@@ -61,7 +61,6 @@ impl NativeBackendStatus {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendLifecycleState {
     Idle,
@@ -186,7 +185,9 @@ impl std::fmt::Display for BackendError {
                 f.write_str("DisplayMesh does not support this operating system")
             }
             Self::NativeFailure => f.write_str("native display backend reported a failure"),
-            Self::InvalidState => f.write_str("backend lifecycle operation is invalid in the current state"),
+            Self::InvalidState => {
+                f.write_str("backend lifecycle operation is invalid in the current state")
+            }
         }
     }
 }
@@ -196,7 +197,6 @@ impl std::error::Error for BackendError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[derive(Default)]
     struct FakeBackend {

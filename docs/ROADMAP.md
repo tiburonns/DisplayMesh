@@ -79,7 +79,8 @@
 - [x] Windows H.264 output normalizer (Annex-B + 4-byte AVC length prefixes)
 - [x] Windows H.264 Annex-B → DMP video packetizer with SPS/PPS recovery cache
 - [x] macOS VideoToolbox H.264 real-time encoder (development media harness)
-- [ ] Windows Media Foundation H.264 hardware encoder
+- [x] Windows Media Foundation H.264 hardware encoder adapter/event-pump path
+- [ ] Validate the Media Foundation H.264 path on target Windows GPUs
 - [x] iPhone/iPad VideoToolbox H.264 receive implementation
 - [x] iPhone/iPad Metal NV12 renderer implementation
 - [x] Receiver bounded-latency policy
@@ -96,7 +97,8 @@
 - [ ] Product-wide Bonjour discovery over Wi-Fi/LAN (Windows host still pending)
 - [ ] QUIC + TLS 1.3 for Wi-Fi/LAN
 - [x] Post-pairing frame protection policy/codec
-- [ ] TCP + TLS binding
+- [x] Authenticated encrypted DMP-over-TCP binding for Apple↔macOS (ECDH/HKDF/ChaChaPoly)
+- [ ] TCP + TLS binding (optional/alternative reviewed binding)
 - [ ] macOS usbmux host transport
 - [ ] Windows usbmux-compatible host transport
 - [ ] USB device discovery
@@ -150,8 +152,8 @@
 - [ ] Production transport security review / TLS 1.3 or equivalent binding
 - [x] Fail-closed encrypted DMP frame codec and encrypted-wire payload validation
 - [x] Signed ephemeral P-256 key exchange wired into macOS ↔ Apple sessions
-- [ ] Mutual production peer identity persistence (host identity side implemented in development path)
-- [ ] End-to-end RTT / queue-depth telemetry
+- [x] Mutual persistent peer identity for the Apple↔macOS binding
+- [x] End-to-end encrypted RTT probes + receiver decode/presentation queue-depth telemetry
 - [ ] Automatic updates
 - [ ] macOS signing/notarization
 - [ ] Windows app signing

@@ -53,6 +53,37 @@ struct ReceiverHello: Codable, Equatable {
     }
 }
 
+private enum P256WireValidation {
+    static func accepts(
+        identityPublicKey: Data,
+        keyAgreementPublicKey: Data,
+        signature: Data
+    ) -> Bool {
+        // Pairing JSON is already bounded by the DMP pairing-frame budget.
+        // Keep an additional local bound before asking CryptoKit to parse.
+        guard (1...256).contains(identityPublicKey.count),
+              (1...256).contains(keyAgreementPublicKey.count),
+              (1...256).contains(signature.count) else {
+            return false
+        }
+
+        do {
+            _ = try P256.Signing.PublicKey(
+                rawRepresentation: identityPublicKey
+            )
+            _ = try P256.KeyAgreement.PublicKey(
+                rawRepresentation: keyAgreementPublicKey
+            )
+            _ = try P256.Signing.ECDSASignature(
+                rawRepresentation: signature
+            )
+            return true
+        } catch {
+            return false
+        }
+    }
+}
+
 struct PairingRequest: Codable, Equatable {
     let peerName: String
     let peerID: String
@@ -98,9 +129,11 @@ struct PairingRequest: Codable, Equatable {
             && UUID(uuidString: peerID) != nil
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
-            && identityPublicKey.count == 65
-            && keyAgreementPublicKey.count == 65
-            && signature.count == 64
+            && P256WireValidation.accepts(
+                identityPublicKey: identityPublicKey,
+                keyAgreementPublicKey: keyAgreementPublicKey,
+                signature: signature
+            )
     }
 
     func isAuthentic(expectedChallenge: Data) -> Bool {
@@ -223,9 +256,11 @@ struct PairingResponse: Codable, Equatable {
             && UUID(uuidString: receiverID) != nil
             && challenge.count == ReceiverHello.challengeSize
             && hostChallenge.count == ReceiverHello.challengeSize
-            && identityPublicKey.count == 65
-            && keyAgreementPublicKey.count == 65
-            && signature.count == 64
+            && P256WireValidation.accepts(
+                identityPublicKey: identityPublicKey,
+                keyAgreementPublicKey: keyAgreementPublicKey,
+                signature: signature
+            )
     }
 
     func isAuthentic(

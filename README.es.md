@@ -4,7 +4,7 @@ DisplayMesh es un proyecto de pantalla virtual multiplataforma para **hosts macO
 
 El objetivo es permitir que una computadora cree una pantalla extendida real y la transmita a otra computadora o dispositivo Apple mediante **USB o Wi-Fi**, manteniendo baja latencia, alta resolución e interacción táctil.
 
-> **`main` actual: 0.2.3.** El receptor Apple incluye la ruta real H.264 de baja latencia (paquete DMP → Annex-B → VideoToolbox → NV12 → Metal), decode acotado, recuperación por keyframe, diagnósticos e interfaz Sistema/English/Español. La ruta de desarrollo ahora exige secuencias por conexión, presupuestos de payload por tipo antes de recibir el cuerpo, admisión por fase de autorización, intentos/timeouts de pairing acotados, validación de capabilities/panel, Bonjour genérico, identidad P-256 firmada del host, telemetría del receiver y bitrate adaptativo. Windows incluye la base IddCx/D3D11, política latest-frame-wins y una biblioteca nativa de framing DMP. La validación WDK en hardware, transporte cifrado de producción, completar el pipeline Media Foundation y la aceptación end-to-end siguen siendo bloqueadores.
+> **`main` actual: 0.2.3.** El receptor Apple incluye la ruta real H.264 de baja latencia (paquete DMP → Annex-B → VideoToolbox → NV12 → Metal), decode acotado, recuperación por keyframe, diagnósticos e interfaz Sistema/English/Español. La ruta Apple↔macOS ya usa identidades P-256 persistentes mutuas, ECDH P-256 efímero firmado, HKDF-SHA256 y ChaCha20-Poly1305 para proteger todos los frames DMP posteriores al pairing; el tráfico plaintext posterior al pairing falla cerrado. La telemetría de colas/decode, bitrate/raster adaptativos y las sondas RTT cifradas están conectadas al harness macOS. Windows ya incluye la base IddCx/D3D11 y un adaptador/coordinador asíncrono concreto de Media Foundation. Siguen pendientes validación WDK real, cablear IddCx→NV12→MFT en vivo, USB, revisión independiente de seguridad y aceptación end-to-end en hardware.
 
 ## Requisitos del producto
 
@@ -116,4 +116,4 @@ Ahora existe un script de orquestación que une el harness de pantalla virtual c
 scripts/run-macos-virtual-session.sh --host <ip-del-iphone-o-ipad>
 ```
 
-Crea una pantalla virtual temporal de DisplayMesh, captura exactamente esa pantalla, codifica H.264 de baja latencia, la transmite al receptor Apple y elimina la pantalla virtual al salir. Sigue siendo una ruta de desarrollo: el transporte todavía usa TCP sin cifrar y la integración de host/TLS de producción siguen siendo bloqueadores de release.
+Crea una pantalla virtual temporal de DisplayMesh, captura exactamente esa pantalla, codifica H.264 de baja latencia, la transmite al receptor Apple y elimina la pantalla virtual al salir. El binding TCP queda protegido después del pairing mediante la sesión segura autenticada de DMP. Sigue siendo una ruta de desarrollo hasta completar revisión independiente de seguridad, integración de host/USB y aceptación en hardware.

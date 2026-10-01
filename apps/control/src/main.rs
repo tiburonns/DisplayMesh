@@ -259,10 +259,7 @@ impl DisplayMeshApp {
 
 impl eframe::App for DisplayMeshApp {
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        storage.set_string(
-            AppLanguage::STORAGE_KEY,
-            self.language.as_key().to_owned(),
-        );
+        storage.set_string(AppLanguage::STORAGE_KEY, self.language.as_key().to_owned());
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -290,19 +287,13 @@ impl eframe::App for DisplayMeshApp {
             .default_width(210.0)
             .show(ctx, |ui| {
                 let session_label = self.tr("Session", "Sesión");
-                let share_label =
-                    self.tr("Share this computer", "Compartir esta computadora");
-                let receive_label =
-                    self.tr("Use as remote display", "Usar como pantalla remota");
+                let share_label = self.tr("Share this computer", "Compartir esta computadora");
+                let receive_label = self.tr("Use as remote display", "Usar como pantalla remota");
 
                 ui.heading(session_label);
                 ui.add_space(8.0);
                 ui.selectable_value(&mut self.config.role, Role::Host, share_label);
-                ui.selectable_value(
-                    &mut self.config.role,
-                    Role::Receiver,
-                    receive_label,
-                );
+                ui.selectable_value(&mut self.config.role, Role::Receiver, receive_label);
 
                 ui.add_space(22.0);
                 ui.heading(self.tr("Planned", "Planeado"));
@@ -500,25 +491,18 @@ impl eframe::App for DisplayMeshApp {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn explicit_english_language_is_deterministic() {
-        assert_eq!(
-            AppLanguage::English.effective(),
-            EffectiveLanguage::English
-        );
+        assert_eq!(AppLanguage::English.effective(), EffectiveLanguage::English);
     }
 
     #[test]
     fn explicit_spanish_language_is_deterministic() {
-        assert_eq!(
-            AppLanguage::Spanish.effective(),
-            EffectiveLanguage::Spanish
-        );
+        assert_eq!(AppLanguage::Spanish.effective(), EffectiveLanguage::Spanish);
     }
 
     #[test]
@@ -528,10 +512,7 @@ mod tests {
             AppLanguage::English,
             AppLanguage::Spanish,
         ] {
-            assert_eq!(
-                AppLanguage::from_key(language.as_key()),
-                Some(language)
-            );
+            assert_eq!(AppLanguage::from_key(language.as_key()), Some(language));
         }
         assert_eq!(AppLanguage::from_key("unknown"), None);
     }

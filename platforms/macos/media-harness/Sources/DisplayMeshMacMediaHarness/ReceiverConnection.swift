@@ -2,12 +2,13 @@ import CryptoKit
 import Foundation
 import Network
 
-final class ReceiverConnection {
+final class ReceiverConnection: @unchecked Sendable {
     static let port = NWEndpoint.Port(rawValue: 49_655)!
 
     var onKeyframeRequest: (() -> Void)?
     var onInput: ((Data) -> Void)?
     var onReceiverTelemetry: ((ReceiverTelemetry) -> Void)?
+    var onRoundTripTime: ((Double) -> Void)?
     var onErrorMessage: ((Data) -> Void)?
 
     private let queue = DispatchQueue(
@@ -27,6 +28,7 @@ final class ReceiverConnection {
     private var connectionReady = false
     private var lastDisconnectErrorStorage: Error?
     private var protocolPhaseStorage: HostReceiverPhase = .awaitingHello
+    private var roundTripTracker = RoundTripProbeTracker()
 
     private var receiverHello: ReceiverHello?
     private var helloContinuation: CheckedContinuation<ReceiverHello, Error>?
@@ -375,6 +377,23 @@ final class ReceiverConnection {
         return connectionReady && !videoSendInFlight
     }
 
+    func sendPing() {
+        queue.async { [weak self] in
+            guard let self,
+                  connectionReady,
+                  currentProtocolPhase() == .streaming,
+                  let token = roundTripTracker.begin(
+                    now: ProcessInfo.processInfo.systemUptime
+                  ) else {
+                return
+            }
+
+            var bigEndian = token.bigEndian
+            let payload = Swift.withUnsafeBytes(of: &bigEndian) { Data($0) }
+            send(type: .ping, payload: payload)
+        }
+    }
+
     @discardableResult
     func sendVideoPacket(_ packet: DMPVideoPacket) -> Bool {
         let payload: Data
@@ -411,8 +430,8 @@ final class ReceiverConnection {
                         clearVideoGate()
 
                         guard let error, let activeConnection else { return }
-                        queue.async {
-                            handleTransportFailure(
+                        self.queue.async {
+                            self.handleTransportFailure(
                                 error,
                                 connection: activeConnection
                             )
@@ -441,8 +460,8 @@ final class ReceiverConnection {
                     content: data,
                     completion: .contentProcessed { [weak self, weak activeConnection] error in
                         guard let self, let error, let activeConnection else { return }
-                        queue.async {
-                            handleTransportFailure(
+                        self.queue.async {
+                            self.handleTransportFailure(
                                 error,
                                 connection: activeConnection
                             )
@@ -650,6 +669,28 @@ final class ReceiverConnection {
         case .input:
             onInput?(frame.payload)
 
+        case .pong:
+            guard frame.payload.count == 8 else {
+                throw DMPProtocolError.invalidPayloadLength(
+                    type: DMPMessageType.pong.rawValue,
+                    size: frame.payload.count,
+                    expected: 8
+                )
+            }
+            let token = frame.payload.reduce(UInt64(0)) {
+                ($0 << 8) | UInt64($1)
+            }
+            guard let rttMilliseconds =
+                    roundTripTracker.complete(
+                        token: token,
+                        now: ProcessInfo.processInfo.systemUptime
+                    ) else {
+                throw DMPProtocolError.invalidSessionPhase(
+                    "unexpected pong token or invalid RTT clock state"
+                )
+            }
+            onRoundTripTime?(rttMilliseconds)
+
         case .telemetry:
             do {
                 let telemetry = try JSONDecoder().decode(
@@ -673,7 +714,7 @@ final class ReceiverConnection {
         case .error:
             onErrorMessage?(frame.payload)
 
-        case .video:
+        case .video, .ping:
             break
         }
     }
@@ -716,6 +757,7 @@ final class ReceiverConnection {
         incomingSequence.reset()
         nextSequence = 1
         protectedCodec.clear()
+        roundTripTracker.reset()
         pairingKeyAgreementPrivateKey = nil
         receiverHello = nil
         setProtocolPhase(.awaitingHello)

@@ -85,11 +85,11 @@ final class TouchCaptureView: UIView {
 
         let phase: ReceiverInputEvent.Phase
         switch touch.phase {
-        case .began:
+        case .began, .regionEntered:
             phase = .began
-        case .moved, .stationary:
+        case .moved, .stationary, .regionMoved:
             phase = .moved
-        case .ended:
+        case .ended, .regionExited:
             phase = .ended
         case .cancelled:
             phase = .cancelled

@@ -47,7 +47,7 @@ EncodeWorkItem Item(
         1,
         static_cast<std::uint32_t>(
             sequence %
-            bridge::kFrameMailboxSlotCount),
+            displaymesh::bridge::kFrameMailboxSlotCount),
         1920,
         1080,
     };

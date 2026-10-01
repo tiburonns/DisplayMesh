@@ -170,8 +170,8 @@ final class ReceiverViewModel: ObservableObject {
 
     func acceptPairing() {
         guard let request = pendingPairing,
-              let receiverChallenge,
-              request.isAuthentic(expectedChallenge: receiverChallenge) else {
+              let activeReceiverChallenge = receiverChallenge,
+              request.isAuthentic(expectedChallenge: activeReceiverChallenge) else {
             lastProtocolError = PairingValidationError.invalidRequest.localizedDescription
             pendingPairing = nil
             pendingPeerPreviouslyTrusted = false
@@ -328,12 +328,15 @@ final class ReceiverViewModel: ObservableObject {
         case .capabilities:
             break
 
+        case .ping:
+            listener.send(type: .pong, payload: frame.payload)
+
         case .error:
             lastProtocolError =
                 String(data: frame.payload, encoding: .utf8)
                 ?? "DisplayMesh host reported a binary protocol error"
 
-        case .panelDescriptor, .input, .telemetry, .keyframeRequest:
+        case .panelDescriptor, .input, .telemetry, .keyframeRequest, .pong:
             break
         }
     }

@@ -46,12 +46,13 @@ enum ReceiverDiscoveryError:
     }
 }
 
-final class ReceiverDiscovery {
+final class ReceiverDiscovery: @unchecked Sendable {
     private let queue = DispatchQueue(
         label: "com.tiburonns.DisplayMesh.macHarness.discovery",
         qos: .userInitiated
     )
     private var browser: NWBrowser?
+    private var latestEndpoints: [NWEndpoint] = []
 
     func discoverOne(
         timeoutSeconds: TimeInterval =
@@ -62,8 +63,7 @@ final class ReceiverDiscovery {
             continuation in
 
             let attempt = ConnectionAttemptGate()
-            var latestEndpoints:
-                [NWEndpoint] = []
+            latestEndpoints = []
 
             let browser = NWBrowser(
                 for: .bonjour(
@@ -78,8 +78,8 @@ final class ReceiverDiscovery {
             self.browser = browser
 
             browser.browseResultsChangedHandler = {
-                results, _ in
-                latestEndpoints =
+                [weak self] results, _ in
+                self?.latestEndpoints =
                     results
                         .map(\.endpoint)
                         .sorted {
@@ -124,11 +124,12 @@ final class ReceiverDiscovery {
                     .now() +
                     max(timeoutSeconds, 0)
             ) { [weak self] in
-                guard attempt.claim()
+                guard let self,
+                      attempt.claim()
                 else { return }
 
-                self?.browser?.cancel()
-                self?.browser = nil
+                self.browser?.cancel()
+                self.browser = nil
 
                 switch ReceiverDiscoveryPolicy
                     .classify(

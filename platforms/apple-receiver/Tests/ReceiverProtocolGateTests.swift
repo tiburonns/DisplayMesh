@@ -19,6 +19,9 @@ final class ReceiverProtocolGateTests: XCTestCase {
         XCTAssertTrue(
             ReceiverProtocolGate.permits(.error, authorized: true)
         )
+        XCTAssertTrue(
+            ReceiverProtocolGate.permits(.ping, authorized: true)
+        )
 
         for type in [
             DMPMessageType.hello,
@@ -28,6 +31,7 @@ final class ReceiverProtocolGateTests: XCTestCase {
             .input,
             .telemetry,
             .keyframeRequest,
+            .pong,
         ] {
             XCTAssertFalse(
                 ReceiverProtocolGate.permits(type, authorized: true),

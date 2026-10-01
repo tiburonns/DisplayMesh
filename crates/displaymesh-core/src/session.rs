@@ -251,14 +251,19 @@ mod tests {
 
     #[test]
     fn zero_bitrate_is_rejected() {
-        let mut config = SessionConfig::default();
-        config.bitrate_mbps = 0;
+        let config = SessionConfig {
+            bitrate_mbps: 0,
+            ..SessionConfig::default()
+        };
         assert_eq!(config.validate(), Err(SessionValidationError::ZeroBitrate));
     }
 
     #[test]
     fn production_default_rejects_plaintext_development_scaffold() {
-        let config = SessionConfig::default();
+        let config = SessionConfig {
+            wire_protocol: WireProtocol::Tcp,
+            ..SessionConfig::default()
+        };
         let local = PeerCapabilities::development_scaffold();
         let remote = PeerCapabilities::development_scaffold();
 
@@ -318,8 +323,10 @@ mod tests {
 
     #[test]
     fn unsupported_codec_is_rejected_instead_of_silently_falling_back() {
-        let mut config = SessionConfig::default();
-        config.codec = Codec::Hevc;
+        let config = SessionConfig {
+            codec: Codec::Hevc,
+            ..SessionConfig::default()
+        };
 
         let local = PeerCapabilities::development_scaffold();
         let remote = PeerCapabilities::development_scaffold();
@@ -350,11 +357,18 @@ mod tests {
 
     #[test]
     fn usb_requires_tcp_in_the_initial_binding() {
-        let local = PeerCapabilities::development_scaffold();
-        let remote = PeerCapabilities::development_scaffold();
-        let mut config = SessionConfig::default();
-        config.connection_medium = ConnectionMedium::Usb;
-        config.wire_protocol = WireProtocol::Quic;
+        let mut local = PeerCapabilities::development_scaffold();
+        let mut remote = PeerCapabilities::development_scaffold();
+        local.connection_media.push(ConnectionMedium::Usb);
+        remote.connection_media.push(ConnectionMedium::Usb);
+        local.wire_protocols.push(WireProtocol::Quic);
+        remote.wire_protocols.push(WireProtocol::Quic);
+
+        let config = SessionConfig {
+            connection_medium: ConnectionMedium::Usb,
+            wire_protocol: WireProtocol::Quic,
+            ..SessionConfig::default()
+        };
 
         assert_eq!(
             config.negotiate(&local, &remote),
@@ -367,7 +381,10 @@ mod tests {
 
     #[test]
     fn encryption_requirement_is_enforced() {
-        let config = SessionConfig::default();
+        let config = SessionConfig {
+            wire_protocol: WireProtocol::Tcp,
+            ..SessionConfig::default()
+        };
         let local = PeerCapabilities::development_scaffold();
         let mut remote = PeerCapabilities::development_scaffold();
         remote.encryption_supported = false;

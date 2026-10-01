@@ -92,8 +92,14 @@ impl DmpVideoPacket {
         }
         let flags = DmpVideoFlags::new(payload[1]);
         let pts_micros = u64::from_be_bytes([
-            payload[4], payload[5], payload[6], payload[7],
-            payload[8], payload[9], payload[10], payload[11],
+            payload[4],
+            payload[5],
+            payload[6],
+            payload[7],
+            payload[8],
+            payload[9],
+            payload[10],
+            payload[11],
         ]);
         let duration_micros =
             u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);

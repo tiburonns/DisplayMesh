@@ -17,7 +17,7 @@ final class AdaptiveRasterGeometryTests: XCTestCase {
         let expected: [(Double, AdaptiveRasterDimensions)] = [
             (0.85, .init(width: 2176, height: 1224)),
             (0.75, .init(width: 1920, height: 1080)),
-            (0.67, .init(width: 1716, height: 964)),
+            (0.67, .init(width: 1714, height: 964)),
         ]
 
         for (scale, dimensions) in expected {

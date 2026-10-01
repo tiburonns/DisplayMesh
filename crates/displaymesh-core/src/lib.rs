@@ -18,16 +18,14 @@ mod optimizer;
 mod session;
 mod video;
 
-pub use adaptive::{
-    AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile,
-};
+pub use adaptive::{AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile};
 pub use backend::{
     BackendError, BackendLifecycleState, DisplayBackend, ManagedDisplayBackend,
     NativeBackendStatus, NativeProofLevel,
 };
 pub use framing::{
     DMP_HEADER_LEN, DMP_MAGIC, DMP_MAX_PAYLOAD_LEN, DMP_VERSION, DmpFrame, DmpFrameError,
-    DmpMessageType,
+    DmpMessageType, DmpSequenceTracker,
 };
 pub use input::{
     DMP_INPUT_SAMPLE_LEN, DMP_INPUT_VERSION, DmpInputError, DmpInputKind, DmpInputPhase,

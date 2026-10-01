@@ -45,8 +45,7 @@ impl SessionOptimizer {
         recommendation.wire_protocol = wire_protocol;
         recommendation.codec = codec;
         recommendation.preset = preset;
-        recommendation.bitrate_mbps =
-            recommended_bitrate(profile, connection_medium, preset);
+        recommendation.bitrate_mbps = recommended_bitrate(profile, connection_medium, preset);
 
         Ok(recommendation)
     }
@@ -129,9 +128,7 @@ fn preset_score(preset: DisplayPreset, profile: PerformanceProfile) -> u64 {
             20_000_000_000_u64.saturating_sub(distance) + refresh * 1_000_000
         }
         PerformanceProfile::Quality => {
-            pixels * 1_000
-                + refresh
-                + if preset.hidpi { 100_000 } else { 0 }
+            pixels * 1_000 + refresh + if preset.hidpi { 100_000 } else { 0 }
         }
     }
 }
@@ -257,18 +254,16 @@ mod tests {
             vec![Codec::H264],
             vec![DisplayPreset::PRESETS[0]],
         );
-        let mut base = SessionConfig::default();
-        base.role = Role::Receiver;
-        base.mode = DisplayMode::Mirror;
-        base.encryption_required = false;
+        let base = SessionConfig {
+            role: Role::Receiver,
+            mode: DisplayMode::Mirror,
+            encryption_required: false,
+            ..SessionConfig::default()
+        };
 
-        let recommendation = SessionOptimizer::recommend(
-            &base,
-            &peers,
-            &peers,
-            PerformanceProfile::Balanced,
-        )
-        .unwrap();
+        let recommendation =
+            SessionOptimizer::recommend(&base, &peers, &peers, PerformanceProfile::Balanced)
+                .unwrap();
 
         assert_eq!(recommendation.role, Role::Receiver);
         assert_eq!(recommendation.mode, DisplayMode::Mirror);
@@ -290,7 +285,7 @@ mod tests {
             vec![DisplayPreset::PRESETS[0]],
         );
 
-        assert_eq!(
+        assert!(matches!(
             SessionOptimizer::recommend(
                 &SessionConfig::default(),
                 &local,
@@ -298,6 +293,6 @@ mod tests {
                 PerformanceProfile::Balanced,
             ),
             Err(OptimizationError::NoCommonConnection)
-        );
+        ));
     }
 }

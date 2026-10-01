@@ -153,7 +153,7 @@ final class VideoSurfaceView: MTKView {
             scaleY = 1
         }
 
-        var vertices: [Float] = [
+        let vertices: [Float] = [
             -scaleX,  scaleY, 0, 0,
             -scaleX, -scaleY, 0, 1,
              scaleX, -scaleY, 1, 1,
@@ -178,12 +178,10 @@ final class VideoSurfaceView: MTKView {
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
         encoder.endEncoding()
 
-        commandBuffer.addCompletedHandler { _ in
-            _ = pixelBuffer
-            _ = lumaReference
-            _ = chromaReference
-        }
-
+        // Metal command buffers retain referenced textures until GPU completion.
+        // Avoid capturing CoreVideo objects in the @Sendable completion handler;
+        // the MTLTexture references encoded above keep their IOSurface-backed
+        // storage alive for this command buffer.
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
@@ -233,9 +231,9 @@ final class VideoSurfaceView: MTKView {
             constant float4 *vertices [[buffer(0)]]
         ) {
             RasterData out;
-            float4 vertex = vertices[vertexID];
-            out.position = float4(vertex.xy, 0.0, 1.0);
-            out.texCoord = vertex.zw;
+            float4 sample = vertices[vertexID];
+            out.position = float4(sample.xy, 0.0, 1.0);
+            out.texCoord = sample.zw;
             return out;
         }
 

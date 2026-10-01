@@ -5,8 +5,9 @@
 #include <mfidl.h>
 #include <wrl.h>
 
-#include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <iostream>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -15,6 +16,13 @@ using Microsoft::WRL::ComPtr;
 using namespace displaymesh::media;
 
 namespace {
+
+void Require(bool condition) {
+    if (!condition) {
+        std::cerr << "DisplayMesh MFT sample processor requirement failed\n";
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 class MfGuard {
 public:
@@ -38,7 +46,7 @@ ComPtr<IMFSample> MakeSample(
     LONGLONG timeHundredNanoseconds,
     LONGLONG durationHundredNanoseconds) {
     ComPtr<IMFMediaBuffer> buffer;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         MFCreateMemoryBuffer(
             static_cast<DWORD>(bytes.size()),
             &buffer)));
@@ -46,32 +54,32 @@ ComPtr<IMFSample> MakeSample(
     BYTE* destination = nullptr;
     DWORD maximumLength = 0;
     DWORD currentLength = 0;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         buffer->Lock(
             &destination,
             &maximumLength,
             &currentLength)));
 
-    assert(maximumLength >= bytes.size());
+    Require(maximumLength >= bytes.size());
     std::memcpy(
         destination,
         bytes.data(),
         bytes.size());
 
     buffer->Unlock();
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         buffer->SetCurrentLength(
             static_cast<DWORD>(bytes.size()))));
 
     ComPtr<IMFSample> sample;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         MFCreateSample(&sample)));
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->AddBuffer(buffer.Get())));
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->SetSampleTime(
             timeHundredNanoseconds)));
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->SetSampleDuration(
             durationHundredNanoseconds)));
     return sample;
@@ -96,14 +104,14 @@ void TestLengthPrefixedMftSamplesReachDmpPacketizer() {
         10'000,
         166'670);
 
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         processor.Process(
             config.Get(),
             payload,
             normalizeReport,
             packetizeReport,
             error)));
-    assert(normalizeReport.inputFormat ==
+    Require(normalizeReport.inputFormat ==
         H264AccessUnitFormat::AvccLengthPrefixed);
 
     const std::vector<std::uint8_t> idr{
@@ -116,7 +124,7 @@ void TestLengthPrefixedMftSamplesReachDmpPacketizer() {
         20'000,
         166'670);
 
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         processor.Process(
             frame.Get(),
             payload,
@@ -124,24 +132,24 @@ void TestLengthPrefixedMftSamplesReachDmpPacketizer() {
             packetizeReport,
             error)));
 
-    assert(packetizeReport.keyframe);
-    assert(packetizeReport.insertedSps);
-    assert(packetizeReport.insertedPps);
-    assert(payload.size() > 16);
+    Require(packetizeReport.keyframe);
+    Require(packetizeReport.insertedSps);
+    Require(packetizeReport.insertedPps);
+    Require(payload.size() > 16);
 
     // DMP video header: codec H.264 + keyframe.
-    assert(payload[0] == 0x01);
-    assert(payload[1] == 0x01);
+    Require(payload[0] == 0x01);
+    Require(payload[1] == 0x01);
 
     // 20,000 x 100ns = 2,000 microseconds.
-    assert(payload[4] == 0);
-    assert(payload[5] == 0);
-    assert(payload[6] == 0);
-    assert(payload[7] == 0);
-    assert(payload[8] == 0);
-    assert(payload[9] == 0);
-    assert(payload[10] == 0x07);
-    assert(payload[11] == 0xD0);
+    Require(payload[4] == 0);
+    Require(payload[5] == 0);
+    Require(payload[6] == 0);
+    Require(payload[7] == 0);
+    Require(payload[8] == 0);
+    Require(payload[9] == 0);
+    Require(payload[10] == 0x07);
+    Require(payload[11] == 0xD0);
 }
 
 void TestMissingTimingFailsClosed() {
@@ -157,7 +165,7 @@ void TestMissingTimingFailsClosed() {
     };
 
     ComPtr<IMFMediaBuffer> buffer;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         MFCreateMemoryBuffer(
             static_cast<DWORD>(bytes.size()),
             &buffer)));
@@ -165,7 +173,7 @@ void TestMissingTimingFailsClosed() {
     BYTE* destination = nullptr;
     DWORD maxLength = 0;
     DWORD currentLength = 0;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         buffer->Lock(
             &destination,
             &maxLength,
@@ -175,25 +183,25 @@ void TestMissingTimingFailsClosed() {
         bytes.data(),
         bytes.size());
     buffer->Unlock();
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         buffer->SetCurrentLength(
             static_cast<DWORD>(bytes.size()))));
 
     ComPtr<IMFSample> sample;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         MFCreateSample(&sample)));
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         sample->AddBuffer(buffer.Get())));
 
-    assert(FAILED(
+    Require(FAILED(
         processor.Process(
             sample.Get(),
             payload,
             normalizeReport,
             packetizeReport,
             error)));
-    assert(payload.empty());
-    assert(!error.empty());
+    Require(payload.empty());
+    Require(!error.empty());
 }
 
 void TestEmptySampleFailsClosed() {
@@ -204,9 +212,9 @@ void TestEmptySampleFailsClosed() {
     std::string error;
 
     ComPtr<IMFSample> sample;
-    assert(SUCCEEDED(
+    Require(SUCCEEDED(
         MFCreateSample(&sample)));
-    assert(FAILED(
+    Require(FAILED(
         processor.Process(
             sample.Get(),
             payload,
@@ -219,7 +227,7 @@ void TestEmptySampleFailsClosed() {
 
 int main() {
     MfGuard mf;
-    assert(SUCCEEDED(mf.result));
+    Require(SUCCEEDED(mf.result));
 
     TestLengthPrefixedMftSamplesReachDmpPacketizer();
     TestMissingTimingFailsClosed();

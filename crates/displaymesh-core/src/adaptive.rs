@@ -77,10 +77,7 @@ impl AdaptiveController {
 
         Self {
             profile,
-            bitrate_mbps: initial_bitrate_mbps.clamp(
-                minimum_bitrate_mbps,
-                maximum_bitrate_mbps,
-            ),
+            bitrate_mbps: initial_bitrate_mbps.clamp(minimum_bitrate_mbps, maximum_bitrate_mbps),
             minimum_bitrate_mbps,
             maximum_bitrate_mbps,
             stream_scale_percent: 100,
@@ -99,11 +96,7 @@ impl AdaptiveController {
         self.stressed_samples = 0;
     }
 
-    pub fn update(
-        &mut self,
-        telemetry: LinkTelemetry,
-        target_fps: u16,
-    ) -> AdaptationDecision {
+    pub fn update(&mut self, telemetry: LinkTelemetry, target_fps: u16) -> AdaptationDecision {
         if !telemetry.is_valid() || target_fps == 0 {
             return self.current(false);
         }
@@ -133,10 +126,7 @@ impl AdaptiveController {
             self.stressed_samples = self.stressed_samples.saturating_add(1);
 
             let reduction = if severe_stress { 25 } else { 12 };
-            let reduced = self
-                .bitrate_mbps
-                .saturating_mul(100 - reduction)
-                / 100;
+            let reduced = self.bitrate_mbps.saturating_mul(100 - reduction) / 100;
             self.bitrate_mbps = reduced.max(self.minimum_bitrate_mbps);
 
             let mut request_keyframe = false;
@@ -212,8 +202,7 @@ mod tests {
 
     #[test]
     fn stressed_link_reduces_bitrate_before_quality_scale() {
-        let mut controller =
-            AdaptiveController::new(PerformanceProfile::Balanced, 30, 6, 60);
+        let mut controller = AdaptiveController::new(PerformanceProfile::Balanced, 30, 6, 60);
 
         let decision = controller.update(
             LinkTelemetry {
@@ -230,8 +219,7 @@ mod tests {
 
     #[test]
     fn persistent_stress_reduces_stream_scale_and_requests_keyframe() {
-        let mut controller =
-            AdaptiveController::new(PerformanceProfile::Balanced, 30, 6, 60);
+        let mut controller = AdaptiveController::new(PerformanceProfile::Balanced, 30, 6, 60);
 
         let stressed = LinkTelemetry {
             send_queue_ms: 40.0,
@@ -249,8 +237,7 @@ mod tests {
 
     #[test]
     fn stable_link_recovers_resolution_before_chasing_bitrate() {
-        let mut controller =
-            AdaptiveController::new(PerformanceProfile::Quality, 24, 6, 60);
+        let mut controller = AdaptiveController::new(PerformanceProfile::Quality, 24, 6, 60);
 
         let severe = LinkTelemetry {
             send_queue_ms: 100.0,
@@ -272,8 +259,7 @@ mod tests {
 
     #[test]
     fn invalid_telemetry_does_not_change_controller() {
-        let mut controller =
-            AdaptiveController::new(PerformanceProfile::Responsive, 20, 4, 40);
+        let mut controller = AdaptiveController::new(PerformanceProfile::Responsive, 20, 4, 40);
 
         let decision = controller.update(
             LinkTelemetry {

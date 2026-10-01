@@ -327,16 +327,20 @@ struct DisplayMeshMacMediaHarness {
             throw DMPProtocolError.incompatibleReceiverCapabilities
         }
 
+        let codecSummary =
+            capabilities.codecs.joined(separator: ",")
+        let bindingSummary =
+            capabilities.connectionBindings.joined(separator: ",")
+        let inputSummary =
+            capabilities.inputKinds.joined(separator: ",")
+        let transportSummary =
+            capabilities.encryptedTransport
+            ? "encrypted"
+            : "plaintext development transport"
         print(
-            "Receiver capabilities: codecs=" +
-            capabilities.codecs.joined(separator: ",") +
-            " bindings=" +
-            capabilities.connectionBindings.joined(separator: ",") +
-            " input=" +
-            capabilities.inputKinds.joined(separator: ",") +
-            (capabilities.encryptedTransport
-                ? " | encrypted"
-                : " | plaintext development transport")
+            "Receiver capabilities: codecs=\(codecSummary) " +
+            "bindings=\(bindingSummary) " +
+            "input=\(inputSummary) | \(transportSummary)"
         )
 
         let panel = try await receiver.waitForPanelDescriptor()
@@ -400,6 +404,15 @@ struct DisplayMeshMacMediaHarness {
             maximumBitrateMbps: max(options.bitrateMbps, 120),
             targetFramesPerSecond: targetFPS
         )
+
+        receiver.onRoundTripTime = { milliseconds in
+            print(
+                String(
+                    format: "transport RTT %.1f ms",
+                    milliseconds
+                )
+            )
+        }
 
         receiver.onReceiverTelemetry = { [weak encoder, weak receiver] telemetry in
             print(
@@ -512,6 +525,7 @@ struct DisplayMeshMacMediaHarness {
         durationSeconds: Int?
     ) async throws {
         let startedAt = ProcessInfo.processInfo.systemUptime
+        var lastPingAt = startedAt - 1
 
         while true {
             try Task.checkCancellation()
@@ -521,9 +535,14 @@ struct DisplayMeshMacMediaHarness {
                     ?? DMPProtocolError.connectionClosed
             }
 
+            let now = ProcessInfo.processInfo.systemUptime
+            if now - lastPingAt >= 1 {
+                receiver.sendPing()
+                lastPingAt = now
+            }
+
             if let durationSeconds,
-               ProcessInfo.processInfo.systemUptime - startedAt
-                    >= Double(durationSeconds) {
+               now - startedAt >= Double(durationSeconds) {
                 return
             }
 
