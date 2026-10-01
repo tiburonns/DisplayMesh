@@ -28,7 +28,7 @@
 - [ ] Enumerate modes
 - [ ] HiDPI validation
 - [ ] Extend/mirror selection
-- [ ] Dynamic receiver-native panel mode
+- [x] Dynamic receiver-native panel mode in the developer orchestration path
 - [x] Developer orchestration path from macOS virtual display into the media receiver
 
 ### Windows host

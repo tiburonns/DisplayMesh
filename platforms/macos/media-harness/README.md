@@ -56,14 +56,32 @@ swift run --package-path platforms/macos/media-harness \
   --host 192.168.1.25
 ```
 
+To create a temporary virtual display from the receiver's negotiated panel,
+build the isolated native helper and pass it to the media harness:
+
+```bash
+make -C platforms/macos/harness
+
+swift run --package-path platforms/macos/media-harness \
+  displaymesh-mac-media-harness \
+  --host 192.168.1.25 \
+  --virtual-display-helper platforms/macos/harness/displaymesh-virtual-display \
+  --hidpi 1
+```
+
+The helper starts only after pairing/capability/panel negotiation. The harness
+captures the exact returned display ID and removes that virtual display on
+disconnect or exit. `--width`/`--height` remain explicit overrides; when
+omitted, receiver-native pixel dimensions are used.
+
 macOS must grant Screen Recording permission to the harness/Terminal process.
 
 Touch control additionally requires Accessibility permission. The harness requests the system prompt when needed. Apple documents that this prompt is asynchronous, so grant the permission in System Settings if the first check still reports that access is unavailable.
 
 ## Current limitations
 
-- Captures an existing display; integration with the DisplayMesh virtual-display backend is still pending.
-- Development transport is plaintext TCP. Production TLS 1.3 remains mandatory before release.
+- Existing-display capture remains supported; the developer path can also manage an isolated DisplayMesh virtual display from negotiated receiver geometry. The private CGVirtualDisplay mechanism still requires per-macOS-version hardware validation.
+- Post-pairing DMP frames on the Apple↔macOS development binding are authenticated and encrypted. An independent production transport/security review remains mandatory before release.
 - macOS maps touch to pointer/drag/scroll because the first public integration path is synthetic mouse/scroll input rather than Windows-style injected multitouch.
 - Apple Pencil currently follows the same pointer path; higher-fidelity stylus mapping remains a later milestone.
 - USB/usbmux is not connected to this harness yet.

@@ -35,6 +35,7 @@ int main(int argc, const char *argv[])
         NSUInteger height = 1080;
         CGFloat refreshRate = 60.0;
         unsigned int hiDPI = 0;
+        const char *readyFilePath = NULL;
 
         if (argc >= 3) {
             width = (NSUInteger)strtoul(argv[1], NULL, 10);
@@ -46,9 +47,12 @@ int main(int argc, const char *argv[])
         if (argc >= 5) {
             hiDPI = (unsigned int)strtoul(argv[4], NULL, 10);
         }
+        if (argc >= 6) {
+            readyFilePath = argv[5];
+        }
 
         if (width < 640 || height < 480 || refreshRate <= 0.0) {
-            fprintf(stderr, "Invalid mode. Usage: %s [width height refreshHz hidpi]\n", argv[0]);
+            fprintf(stderr, "Invalid mode. Usage: %s [width height refreshHz hidpi [ready-file]]\n", argv[0]);
             return 2;
         }
 
@@ -195,7 +199,22 @@ int main(int argc, const char *argv[])
             (double)refreshRate,
             hiDPI);
 
+        fflush(stdout);
+
+        if (readyFilePath != NULL) {
+            FILE *readyFile = fopen(readyFilePath, "w");
+            if (readyFile == NULL) {
+                fprintf(stderr, "Could not write virtual-display readiness file.\n");
+                return 7;
+            }
+
+            fprintf(readyFile, "%u\n", displayID);
+            fflush(readyFile);
+            fclose(readyFile);
+        }
+
         printf("Press Ctrl+C to remove it.\n");
+        fflush(stdout);
 
         signal(SIGINT, HandleSignal);
         signal(SIGTERM, HandleSignal);
