@@ -4,6 +4,10 @@ pub const DMP_MAGIC: [u8; 4] = *b"DMP1";
 pub const DMP_VERSION: u8 = 1;
 pub const DMP_HEADER_LEN: usize = 16;
 pub const DMP_MAX_PAYLOAD_LEN: usize = 16 * 1024 * 1024;
+pub const DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD: usize = 28;
+pub const DMP_ENCRYPTED_PAYLOAD_FLAG: u16 = 0x0001;
+pub const DMP_MAX_WIRE_PAYLOAD_LEN: usize =
+    DMP_MAX_PAYLOAD_LEN + DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -46,8 +50,20 @@ impl DmpMessageType {
         }
     }
 
-    pub fn validate_payload_len(self, size: usize) -> Result<(), DmpFrameError> {
-        if let Some(expected) = self.exact_payload_len() {
+    pub fn validate_payload_len(
+        self,
+        size: usize,
+        flags: u16,
+    ) -> Result<(), DmpFrameError> {
+        let encrypted = flags & DMP_ENCRYPTED_PAYLOAD_FLAG != 0;
+        let overhead = if encrypted {
+            DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD
+        } else {
+            0
+        };
+
+        if let Some(exact) = self.exact_payload_len() {
+            let expected = exact + overhead;
             if size != expected {
                 return Err(DmpFrameError::InvalidPayloadLength {
                     message_type: self,
@@ -58,7 +74,7 @@ impl DmpMessageType {
             return Ok(());
         }
 
-        let maximum = self.maximum_payload_len();
+        let maximum = self.maximum_payload_len() + overhead;
         if size > maximum {
             return Err(DmpFrameError::PayloadTooLargeForType {
                 message_type: self,
@@ -102,10 +118,11 @@ pub struct DmpFrame {
 
 impl DmpFrame {
     pub fn encode(&self) -> Result<Vec<u8>, DmpFrameError> {
-        if self.payload.len() > DMP_MAX_PAYLOAD_LEN {
+        if self.payload.len() > DMP_MAX_WIRE_PAYLOAD_LEN {
             return Err(DmpFrameError::PayloadTooLarge(self.payload.len()));
         }
-        self.message_type.validate_payload_len(self.payload.len())?;
+        self.message_type
+            .validate_payload_len(self.payload.len(), self.flags)?;
 
         let mut encoded = Vec::with_capacity(DMP_HEADER_LEN + self.payload.len());
         encoded.extend_from_slice(&DMP_MAGIC);
@@ -138,10 +155,10 @@ impl DmpFrame {
         let payload_len =
             u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]) as usize;
 
-        if payload_len > DMP_MAX_PAYLOAD_LEN {
+        if payload_len > DMP_MAX_WIRE_PAYLOAD_LEN {
             return Err(DmpFrameError::PayloadTooLarge(payload_len));
         }
-        message_type.validate_payload_len(payload_len)?;
+        message_type.validate_payload_len(payload_len, flags)?;
 
         let total_len = DMP_HEADER_LEN + payload_len;
         if buffer.len() < total_len {
@@ -420,6 +437,48 @@ mod tests {
                 })
             );
         }
+    }
+
+    #[test]
+    fn encrypted_exact_payload_sizes_include_aead_overhead() {
+        let encrypted_input = DmpFrame {
+            message_type: DmpMessageType::Input,
+            flags: DMP_ENCRYPTED_PAYLOAD_FLAG,
+            sequence: 1,
+            payload: vec![0; 40 + DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD],
+        };
+        assert!(encrypted_input.encode().is_ok());
+
+        let encrypted_keyframe = DmpFrame {
+            message_type: DmpMessageType::KeyframeRequest,
+            flags: DMP_ENCRYPTED_PAYLOAD_FLAG,
+            sequence: 1,
+            payload: vec![0; DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD],
+        };
+        assert!(encrypted_keyframe.encode().is_ok());
+
+        let encrypted_ping = DmpFrame {
+            message_type: DmpMessageType::Ping,
+            flags: DMP_ENCRYPTED_PAYLOAD_FLAG,
+            sequence: 1,
+            payload: vec![0; 8 + DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD],
+        };
+        assert!(encrypted_ping.encode().is_ok());
+
+        let invalid = DmpFrame {
+            message_type: DmpMessageType::Input,
+            flags: DMP_ENCRYPTED_PAYLOAD_FLAG,
+            sequence: 1,
+            payload: vec![0; 40],
+        };
+        assert_eq!(
+            invalid.encode(),
+            Err(DmpFrameError::InvalidPayloadLength {
+                message_type: DmpMessageType::Input,
+                size: 40,
+                expected: 40 + DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD,
+            })
+        );
     }
 
     #[test]

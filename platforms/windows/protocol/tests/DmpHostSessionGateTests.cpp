@@ -67,6 +67,10 @@ void TestIncomingAdmissionByPhase() {
     assert(gate.PermitsIncoming(
         DmpMessageType::Telemetry));
     assert(gate.PermitsIncoming(
+        DmpMessageType::Pong));
+    assert(!gate.PermitsIncoming(
+        DmpMessageType::Ping));
+    assert(gate.PermitsIncoming(
         DmpMessageType::KeyframeRequest));
     assert(gate.PermitsIncoming(
         DmpMessageType::PanelDescriptor));

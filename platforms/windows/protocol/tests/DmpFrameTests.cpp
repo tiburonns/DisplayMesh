@@ -80,6 +80,75 @@ int main() {
     };
     assert(!EncodeDmpFrame(invalidKeyframe, encoded, error));
 
+    for (const auto type : {
+             DmpMessageType::Ping,
+             DmpMessageType::Pong}) {
+        DmpFrame validProbe{
+            type,
+            0,
+            1,
+            std::vector<std::uint8_t>(8, 0),
+        };
+        assert(EncodeDmpFrame(validProbe, encoded, error));
+
+        DmpFrame invalidProbe{
+            type,
+            0,
+            1,
+            std::vector<std::uint8_t>(7, 0),
+        };
+        assert(!EncodeDmpFrame(invalidProbe, encoded, error));
+    }
+
+    DmpFrame encryptedInput{
+        DmpMessageType::Input,
+        kDmpEncryptedPayloadFlag,
+        1,
+        std::vector<std::uint8_t>(
+            40U + kDmpAuthenticatedEncryptionOverhead,
+            0),
+    };
+    assert(EncodeDmpFrame(encryptedInput, encoded, error));
+    assert(
+        DecodeDmpFrame(
+            encoded,
+            decoded,
+            consumed,
+            error) == DmpDecodeStatus::Complete);
+    assert(decoded.flags == kDmpEncryptedPayloadFlag);
+    assert(decoded.payload.size() == 68U);
+
+    DmpFrame encryptedKeyframe{
+        DmpMessageType::KeyframeRequest,
+        kDmpEncryptedPayloadFlag,
+        1,
+        std::vector<std::uint8_t>(
+            kDmpAuthenticatedEncryptionOverhead,
+            0),
+    };
+    assert(EncodeDmpFrame(encryptedKeyframe, encoded, error));
+
+    DmpFrame encryptedPing{
+        DmpMessageType::Ping,
+        kDmpEncryptedPayloadFlag,
+        1,
+        std::vector<std::uint8_t>(
+            8U + kDmpAuthenticatedEncryptionOverhead,
+            0),
+    };
+    assert(EncodeDmpFrame(encryptedPing, encoded, error));
+
+    DmpFrame wronglySizedEncryptedInput{
+        DmpMessageType::Input,
+        kDmpEncryptedPayloadFlag,
+        1,
+        std::vector<std::uint8_t>(40, 0),
+    };
+    assert(!EncodeDmpFrame(
+        wronglySizedEncryptedInput,
+        encoded,
+        error));
+
     DmpSequenceTracker tracker;
     assert(tracker.Accept(1, error));
     assert(tracker.Accept(2, error));

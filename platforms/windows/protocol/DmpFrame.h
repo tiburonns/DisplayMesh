@@ -10,6 +10,10 @@ namespace displaymesh {
 
 constexpr std::size_t kDmpHeaderSize = 16;
 constexpr std::size_t kDmpMaximumPayloadSize = 16U * 1024U * 1024U;
+constexpr std::size_t kDmpAuthenticatedEncryptionOverhead = 28U;
+constexpr std::size_t kDmpMaximumWirePayloadSize =
+    kDmpMaximumPayloadSize + kDmpAuthenticatedEncryptionOverhead;
+constexpr std::uint16_t kDmpEncryptedPayloadFlag = 0x0001U;
 constexpr std::uint8_t kDmpVersion = 1;
 
 enum class DmpMessageType : std::uint8_t {
@@ -21,6 +25,8 @@ enum class DmpMessageType : std::uint8_t {
     Input = 0x20,
     Telemetry = 0x30,
     KeyframeRequest = 0x31,
+    Ping = 0x32,
+    Pong = 0x33,
     Error = 0x7F,
 };
 
@@ -41,6 +47,7 @@ std::size_t MaximumPayloadSize(DmpMessageType type);
 bool ValidatePayloadSize(
     DmpMessageType type,
     std::size_t size,
+    std::uint16_t flags,
     std::string& error);
 
 DmpDecodeStatus DecodeDmpFrame(
