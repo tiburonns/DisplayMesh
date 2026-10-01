@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Design/AppIcon-Source.png" width="180" alt="DisplayMesh app icon">
+</p>
+
 # DisplayMesh
 
 DisplayMesh is a cross-platform virtual-display project for **macOS and Windows hosts**, with **iPhone and iPad receivers**.
