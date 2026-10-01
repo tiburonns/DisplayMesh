@@ -14,6 +14,9 @@ private struct Options {
     var height: Int?
     var durationSeconds: Int?
     var reconnectAttempts = HostReconnectPolicy.defaultMaximumRetries
+    var virtualDisplayHelper: String?
+    var virtualDisplayHiDPI = true
+    var keepVirtualDisplay = false
 
     static func parse(_ arguments: [String]) throws -> Options {
         var options = Options()
@@ -78,6 +81,16 @@ private struct Options {
                     throw CLIError.invalidValue(argument, raw)
                 }
                 options.reconnectAttempts = value
+            case "--virtual-display-helper":
+                options.virtualDisplayHelper = try nextValue()
+            case "--hidpi":
+                let raw = try nextValue()
+                guard raw == "0" || raw == "1" else {
+                    throw CLIError.invalidValue(argument, raw)
+                }
+                options.virtualDisplayHiDPI = raw == "1"
+            case "--keep-virtual-display":
+                options.keepVirtualDisplay = true
             case "--help", "-h":
                 throw CLIError.help
             default:
@@ -85,6 +98,12 @@ private struct Options {
             }
 
             index += 1
+        }
+
+        if options.displayID != nil && options.virtualDisplayHelper != nil {
+            throw CLIError.conflictingOptions(
+                "--display cannot be combined with --virtual-display-helper"
+            )
         }
 
         return options
@@ -96,6 +115,7 @@ private enum CLIError: Error, LocalizedError {
     case missingValue(String)
     case invalidValue(String, String)
     case unknownArgument(String)
+    case conflictingOptions(String)
 
     var errorDescription: String? {
         switch self {
@@ -107,6 +127,8 @@ private enum CLIError: Error, LocalizedError {
             return "Invalid value for \(flag): \(value)"
         case .unknownArgument(let argument):
             return "Unknown argument: \(argument)"
+        case .conflictingOptions(let detail):
+            return detail
         }
     }
 }
@@ -356,6 +378,46 @@ struct DisplayMeshMacMediaHarness {
             "scale \(String(format: "%.2f", panel.nativeScale))"
         )
 
+        var managedVirtualDisplay: ManagedVirtualDisplayProcess?
+        defer {
+            if options.keepVirtualDisplay {
+                managedVirtualDisplay?.detach()
+            } else {
+                managedVirtualDisplay?.stop()
+            }
+        }
+
+        var captureDisplayID = options.displayID
+        var captureWidth = options.width
+        var captureHeight = options.height
+
+        if let helperPath = options.virtualDisplayHelper {
+            let specification = ManagedVirtualDisplaySpecification(
+                width: options.width ?? panel.pixelWidth,
+                height: options.height ?? panel.pixelHeight,
+                refreshRate: targetFPS,
+                hiDPI: options.virtualDisplayHiDPI
+            )
+
+            let virtualDisplay = ManagedVirtualDisplayProcess()
+            captureDisplayID = try await virtualDisplay.start(
+                helperPath: helperPath,
+                specification: specification
+            )
+            managedVirtualDisplay = virtualDisplay
+            captureWidth = nil
+            captureHeight = nil
+
+            let densityLabel = specification.hiDPI ? "HiDPI" : "1x"
+            let resolvedDisplayID = captureDisplayID ?? 0
+            print(
+                "Virtual display matched receiver: " +
+                "\(specification.width)x\(specification.height)@" +
+                "\(specification.refreshRate) \(densityLabel) | " +
+                "id=\(resolvedDisplayID)"
+            )
+        }
+
         let encoder = DisplayCaptureEncoder()
         encoder.shouldEncodeFrame = { [weak receiver] in
             receiver?.canAcceptVideo() ?? false
@@ -467,9 +529,9 @@ struct DisplayMeshMacMediaHarness {
         }
 
         let capture = try await encoder.start(
-            displayID: options.displayID,
-            width: options.width,
-            height: options.height,
+            displayID: captureDisplayID,
+            width: captureWidth,
+            height: captureHeight,
             framesPerSecond: targetFPS,
             bitrateMbps: options.bitrateMbps
         )
@@ -571,6 +633,11 @@ struct DisplayMeshMacMediaHarness {
               --seconds <n>      Stop automatically after n seconds
               --reconnect-attempts <0-10>
                                   Retry transient disconnects (default: 3)
+              --virtual-display-helper <path>
+                                  Create a virtual display after panel negotiation
+              --hidpi <0|1>      Virtual-display HiDPI mode (default: 1)
+              --keep-virtual-display
+                                  Leave the managed virtual display running on exit
               --help             Show this help
 
             The receiver must already be listening in the DisplayMesh
@@ -579,7 +646,11 @@ struct DisplayMeshMacMediaHarness {
             multiple receivers are visible. The current development binding
             encrypts every post-pairing DMP frame with an authenticated
             ephemeral P-256/ChaChaPoly session. A separately reviewed
-            production transport remains a release gate.
+            production transport remains a release gate. When
+            --virtual-display-helper is supplied, the virtual display is
+            created only after receiver panel negotiation; --width/--height
+            become explicit overrides, otherwise receiver-native pixels are
+            used.
             """
         )
     }

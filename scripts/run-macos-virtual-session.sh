@@ -7,33 +7,38 @@ MEDIA_DIR="$ROOT_DIR/platforms/macos/media-harness"
 VIRTUAL_DISPLAY_BIN="$HARNESS_DIR/displaymesh-virtual-display"
 
 HOST=""
-WIDTH=1920
-HEIGHT=1080
+WIDTH=""
+HEIGHT=""
 FPS=60
 BITRATE=24
 HIDPI=1
 SECONDS=""
+RECONNECT_ATTEMPTS=3
 KEEP_VIRTUAL_DISPLAY=0
 
 usage() {
   cat <<'EOF'
-DisplayMesh macOS virtual-display session
+DisplayMesh macOS receiver-native virtual-display session
 
 Usage:
   scripts/run-macos-virtual-session.sh --host <receiver-ip> [options]
 
 Options:
-  --width <pixels>      Virtual/encoded width (default: 1920)
-  --height <pixels>     Virtual/encoded height (default: 1080)
-  --fps <15-240>        Refresh/capture target (default: 60)
+  --width <pixels>      Override receiver-native virtual width
+  --height <pixels>     Override receiver-native virtual height
+  --fps <15-240>        Refresh/capture target (default: 60; capped by receiver)
   --bitrate <2-200>     H.264 bitrate in Mbps (default: 24)
   --hidpi <0|1>         Request HiDPI virtual mode (default: 1)
   --seconds <n>         Stop streaming automatically after n seconds
-  --keep-display        Leave virtual display running when media exits
+  --reconnect-attempts <0-10>
+                        Retry transient sessions (default: 3)
+  --keep-display        Leave the managed virtual display running on exit
   --help                Show this help
 
-This is a developer integration path. Transport remains plaintext TCP and is
-not a production release path.
+The host pairs first, negotiates the receiver panel, then creates the isolated
+CGVirtualDisplay helper at receiver-native dimensions unless width/height are
+explicitly overridden. Post-pairing DMP traffic uses the authenticated encrypted
+session implemented by the macOS/Apple development binding.
 EOF
 }
 
@@ -79,6 +84,11 @@ while [[ $# -gt 0 ]]; do
       SECONDS="$2"
       shift 2
       ;;
+    --reconnect-attempts)
+      [[ $# -ge 2 ]] || die "--reconnect-attempts requires a value"
+      RECONNECT_ATTEMPTS="$2"
+      shift 2
+      ;;
     --keep-display)
       KEEP_VIRTUAL_DISPLAY=1
       shift
@@ -94,73 +104,46 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$HOST" ]] || die "--host <receiver-ip> is required"
-[[ "$WIDTH" =~ ^[0-9]+$ ]] && (( WIDTH >= 640 )) || die "width must be >= 640"
-[[ "$HEIGHT" =~ ^[0-9]+$ ]] && (( HEIGHT >= 480 )) || die "height must be >= 480"
+if [[ -n "$WIDTH" ]]; then
+  [[ "$WIDTH" =~ ^[0-9]+$ ]] && (( WIDTH >= 640 )) || die "width must be >= 640"
+fi
+if [[ -n "$HEIGHT" ]]; then
+  [[ "$HEIGHT" =~ ^[0-9]+$ ]] && (( HEIGHT >= 480 )) || die "height must be >= 480"
+fi
 [[ "$FPS" =~ ^[0-9]+$ ]] && (( FPS >= 15 && FPS <= 240 )) || die "fps must be 15...240"
 [[ "$BITRATE" =~ ^[0-9]+$ ]] && (( BITRATE >= 2 && BITRATE <= 200 )) || die "bitrate must be 2...200"
 [[ "$HIDPI" == "0" || "$HIDPI" == "1" ]] || die "hidpi must be 0 or 1"
+[[ "$RECONNECT_ATTEMPTS" =~ ^[0-9]+$ ]] && (( RECONNECT_ATTEMPTS <= 10 )) || die "reconnect attempts must be 0...10"
 if [[ -n "$SECONDS" ]]; then
   [[ "$SECONDS" =~ ^[0-9]+$ ]] && (( SECONDS > 0 )) || die "seconds must be > 0"
 fi
 
-LOG_DIR="$(mktemp -d /tmp/displaymesh-session.XXXXXX)"
-DISPLAY_LOG="$LOG_DIR/virtual-display.log"
-DISPLAY_PID=""
-
-cleanup() {
-  local exit_code=$?
-  if [[ -n "$DISPLAY_PID" && "$KEEP_VIRTUAL_DISPLAY" -eq 0 ]]; then
-    kill -TERM "$DISPLAY_PID" 2>/dev/null || true
-    wait "$DISPLAY_PID" 2>/dev/null || true
-  fi
-  rm -rf "$LOG_DIR"
-  exit "$exit_code"
-}
-trap cleanup EXIT INT TERM
-
-echo "Building virtual-display harness…"
+echo "Building virtual-display helper…"
 make -C "$HARNESS_DIR" >/dev/null
 
 echo "Building macOS media harness…"
 swift build --package-path "$MEDIA_DIR" >/dev/null
 
-echo "Creating DisplayMesh virtual display ${WIDTH}x${HEIGHT}@${FPS}, HiDPI=${HIDPI}…"
-"$VIRTUAL_DISPLAY_BIN" "$WIDTH" "$HEIGHT" "$FPS" "$HIDPI" >"$DISPLAY_LOG" 2>&1 &
-DISPLAY_PID=$!
-
-DISPLAY_ID=""
-for _ in {1..50}; do
-  if ! kill -0 "$DISPLAY_PID" 2>/dev/null; then
-    cat "$DISPLAY_LOG" >&2
-    die "virtual-display harness exited before a display was created"
-  fi
-
-  DISPLAY_ID="$(sed -n 's/.*id=\([0-9][0-9]*\).*/\1/p' "$DISPLAY_LOG" | head -n 1)"
-  if [[ -n "$DISPLAY_ID" ]]; then
-    break
-  fi
-  sleep 0.1
-done
-
-if [[ -z "$DISPLAY_ID" ]]; then
-  cat "$DISPLAY_LOG" >&2
-  die "timed out waiting for the virtual display ID"
-fi
-
-echo "Virtual display ready: id=$DISPLAY_ID"
-echo "Connecting media path to receiver at $HOST…"
-
 MEDIA_ARGS=(
   --host "$HOST"
-  --display "$DISPLAY_ID"
+  --virtual-display-helper "$VIRTUAL_DISPLAY_BIN"
   --fps "$FPS"
   --bitrate "$BITRATE"
-  --width "$WIDTH"
-  --height "$HEIGHT"
+  --hidpi "$HIDPI"
+  --reconnect-attempts "$RECONNECT_ATTEMPTS"
 )
 
+if [[ -n "$WIDTH" ]]; then
+  MEDIA_ARGS+=(--width "$WIDTH")
+fi
+if [[ -n "$HEIGHT" ]]; then
+  MEDIA_ARGS+=(--height "$HEIGHT")
+fi
 if [[ -n "$SECONDS" ]]; then
   MEDIA_ARGS+=(--seconds "$SECONDS")
+fi
+if [[ "$KEEP_VIRTUAL_DISPLAY" -eq 1 ]]; then
+  MEDIA_ARGS+=(--keep-virtual-display)
 fi
 
 swift run --package-path "$MEDIA_DIR" displaymesh-mac-media-harness -- "${MEDIA_ARGS[@]}"
