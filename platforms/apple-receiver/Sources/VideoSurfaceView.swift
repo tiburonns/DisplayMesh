@@ -231,9 +231,9 @@ final class VideoSurfaceView: MTKView {
             constant float4 *vertices [[buffer(0)]]
         ) {
             RasterData out;
-            float4 vertex = vertices[vertexID];
-            out.position = float4(vertex.xy, 0.0, 1.0);
-            out.texCoord = vertex.zw;
+            float4 sample = vertices[vertexID];
+            out.position = float4(sample.xy, 0.0, 1.0);
+            out.texCoord = sample.zw;
             return out;
         }
 
