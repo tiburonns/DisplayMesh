@@ -50,11 +50,7 @@ impl DmpMessageType {
         }
     }
 
-    pub fn validate_payload_len(
-        self,
-        size: usize,
-        flags: u16,
-    ) -> Result<(), DmpFrameError> {
+    pub fn validate_payload_len(self, size: usize, flags: u16) -> Result<(), DmpFrameError> {
         let encrypted = flags & DMP_ENCRYPTED_PAYLOAD_FLAG != 0;
         let overhead = if encrypted {
             DMP_AUTHENTICATED_ENCRYPTION_OVERHEAD
