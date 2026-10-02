@@ -106,3 +106,17 @@ This is deliberately transport-independent. It does not claim that the Windows W
 `protocol/DmpSecureSession` and `DmpProtectedFrameCodec` mirror the Apple/macOS protected-frame boundary using Windows CNG: HKDF-SHA256 directional keys, ChaCha20-Poly1305 payload protection, DMP header AAD binding, 12-byte random nonces and 16-byte authentication tags. The codec permits plaintext only for hello/pairing before session installation and rejects plaintext post-pairing traffic.
 
 This is a tested protocol primitive, not a claim that the Windows network/pairing service is complete. The live Windows service must derive the shared secret from pairing-bound ephemeral P-256 ECDH material, install the codec, advance `DmpHostSessionGate` only after identity verification, and clear all secure/session state on reconnect.
+
+
+## Fail-closed host connection coordinator
+
+`protocol/DmpHostConnectionCoordinator` composes the sequence tracker, host phase gate and protected-frame codec into one transport-independent boundary. The future Windows socket service can no longer safely treat these as optional independent helpers:
+
+- incoming type must be legal for the current phase;
+- the per-connection sequence must match exactly;
+- post-pairing payload authentication/decryption must succeed;
+- accepted pairing installs the secure session before capabilities are admitted;
+- video/input remain closed until capabilities and panel negotiation complete;
+- reconnect/reset clears sequence, phase, secure-session and outbound sequence state together.
+
+Identity/signature verification and ECDH derivation remain responsibilities of the pairing service; this coordinator begins at the point where those results are supplied.

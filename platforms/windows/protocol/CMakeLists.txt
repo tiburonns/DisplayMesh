@@ -7,6 +7,7 @@ add_library(displaymesh_protocol STATIC
     DmpHostReconnectPolicy.cpp
     DmpSecureSession.cpp
     DmpProtectedFrameCodec.cpp
+    DmpHostConnectionCoordinator.cpp
 )
 
 target_include_directories(displaymesh_protocol PUBLIC
@@ -74,5 +75,20 @@ if(BUILD_TESTING)
     add_test(
         NAME displaymesh-secure-session
         COMMAND displaymesh-secure-session-tests
+    )
+
+    add_executable(
+        displaymesh-host-connection-coordinator-tests
+        tests/DmpHostConnectionCoordinatorTests.cpp
+    )
+
+    target_link_libraries(
+        displaymesh-host-connection-coordinator-tests
+        PRIVATE displaymesh_protocol
+    )
+
+    add_test(
+        NAME displaymesh-host-connection-coordinator
+        COMMAND displaymesh-host-connection-coordinator-tests
     )
 endif()

@@ -91,3 +91,17 @@ La integración pendiente es el servicio real de red/pairing Windows: deberá av
 `protocol/DmpSecureSession` y `DmpProtectedFrameCodec` replican la frontera de frames protegidos de Apple/macOS usando CNG de Windows: claves direccionales HKDF-SHA256, protección ChaCha20-Poly1305, AAD ligado al header DMP, nonces aleatorios de 12 bytes y tags de autenticación de 16 bytes. El codec sólo permite hello/pairing en claro antes de instalar la sesión y rechaza tráfico post-pairing sin cifrar.
 
 Es una primitiva de protocolo probada, no significa que el servicio de red/pairing Windows esté completo. El servicio en vivo deberá derivar el secreto desde ECDH P-256 efímero ligado al pairing, instalar el codec, avanzar `DmpHostSessionGate` sólo después de verificar identidad y limpiar todo el estado seguro/de sesión al reconectar.
+
+
+## Coordinador host fail-closed
+
+`protocol/DmpHostConnectionCoordinator` combina el guard de secuencia, gate de fases y codec protegido en una sola frontera independiente del transporte. El futuro servicio de sockets Windows ya no podrá tratar estas protecciones como helpers opcionales:
+
+- el tipo entrante debe ser válido para la fase actual;
+- la secuencia por conexión debe coincidir exactamente;
+- autenticación/descifrado post-pairing debe tener éxito;
+- aceptar pairing instala la sesión segura antes de admitir capabilities;
+- video/input siguen cerrados hasta completar capabilities y panel;
+- reconnect/reset limpia conjuntamente secuencia, fase, sesión segura y secuencia de salida.
+
+La verificación de identidad/firma y derivación ECDH siguen perteneciendo al servicio de pairing; el coordinador recibe sus resultados ya validados.
