@@ -38,7 +38,8 @@
 - [x] D3D11 IddCx swap-chain consumer foundation without CPU readback
 - [x] CI contract validation for bootstrap/INF/modes/hot-path invariants
 - [ ] Compile driver with a real WDK toolchain (x64 + ARM64)
-- [ ] Dynamic receiver-native panel mode
+- [x] Receiver-native mode request/normalization contract (including odd mobile-panel dimensions)
+- [ ] Apply receiver-native mode changes to a live IddCx monitor through controlled re-arrival/hot reconfiguration
 - [ ] Install/uninstall development package on Windows hardware
 - [ ] Test-sign development driver
 

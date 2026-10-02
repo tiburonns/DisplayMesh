@@ -84,3 +84,10 @@ Es una frontera de admisión/estado, **no** la implementación criptográfica de
 `input-bridge/DmpInputRouter` une el gate de admisión del protocolo con el decoder de input de 40 bytes. Incluso un sample touch estructuralmente válido se rechaza mientras la sesión host no esté en `streaming`; frames que no sean input y los flags reservados del payload DMP Input también se rechazan antes de la inyección.
 
 La integración pendiente es el servicio real de red/pairing Windows: deberá avanzar `DmpHostSessionGate` sólo después de validar identidad/pairing/capabilities, decodificar frames con la biblioteca DMP nativa y entregar únicamente input autorizado a `TouchInjector`.
+
+
+## Normalización de modo nativo del receiver
+
+La solicitud de modo del driver ahora pasa por una política compartida `ReceiverModePolicy` antes de modificar estado IddCx. Acepta dimensiones negociadas de panel móvil dentro de límites seguros y normaliza ejes impares reduciendo como máximo un píxel para mantener compatibilidad con el pipeline GPU NV12/H.264. Versiones de protocolo inválidas, dimensiones extremas y refresh fuera de rango fallan antes de tocar el driver.
+
+Esto elimina una incompatibilidad evitable con paneles móviles reales que reportan ancho o alto nativo impar, manteniendo geometría determinista y acotada.

@@ -15,6 +15,7 @@ required = [
     IDD / "DisplayMeshIdd.vcxproj",
     IDD / "README.md",
     ROOT / "platforms" / "windows" / "bridge" / "DisplayMeshBridgeProtocol.h",
+    ROOT / "platforms" / "windows" / "bridge" / "ReceiverModePolicy.h",
     ROOT / "platforms" / "windows" / "bridge-probe" / "main.cpp",
 ]
 
@@ -41,6 +42,7 @@ for token in (
     "WdfDeviceCreateDeviceInterface",
     "kIoctlQueryStatus",
     "kIoctlSetReceiverMode",
+    "NormalizeReceiverMode",
 ):
     if token not in driver:
         errors.append(f"Driver.cpp is missing required IddCx/D3D token: {token}")
@@ -87,6 +89,16 @@ for forbidden in (
             f"IDD hot path contains CPU-readback token that requires review: {forbidden}"
         )
 
+policy = (ROOT / "platforms" / "windows" / "bridge" / "ReceiverModePolicy.h").read_text(encoding="utf-8")
+for token in (
+    "kMinimumReceiverWidth",
+    "kMaximumReceiverDimension",
+    "normalized.width &= ~1U",
+    "normalized.height &= ~1U",
+):
+    if token not in policy:
+        errors.append(f"receiver mode policy is missing required token: {token}")
+
 if errors:
     print("Windows IDD contract validation failed:")
     for error in errors:
@@ -95,6 +107,7 @@ if errors:
 
 print(
     "Windows IDD contract validation passed: "
-    "bootstrap/INF identity aligned, 5 display modes present, "
-    "IddCx lifecycle/swap-chain APIs present, no CPU readback/staging tokens."
+    "bootstrap/INF identity aligned, receiver mode normalization present, "
+    "5 baseline modes present, IddCx lifecycle/swap-chain APIs present, "
+    "no CPU readback/staging tokens."
 )
