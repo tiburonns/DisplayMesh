@@ -62,8 +62,10 @@ bool DmpHostSessionGate::PermitsIncoming(
         case DmpMessageType::KeyframeRequest:
         case DmpMessageType::Input:
         case DmpMessageType::Telemetry:
+        case DmpMessageType::Pong:
             return true;
 
+        case DmpMessageType::Ping:
         case DmpMessageType::Hello:
         case DmpMessageType::Pairing:
         case DmpMessageType::Video:

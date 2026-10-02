@@ -49,6 +49,8 @@ bool ParseMessageType(
     case 0x20: type = DmpMessageType::Input; return true;
     case 0x30: type = DmpMessageType::Telemetry; return true;
     case 0x31: type = DmpMessageType::KeyframeRequest; return true;
+    case 0x32: type = DmpMessageType::Ping; return true;
+    case 0x33: type = DmpMessageType::Pong; return true;
     case 0x7F: type = DmpMessageType::Error; return true;
     default: return false;
     }
@@ -66,6 +68,9 @@ std::size_t MaximumPayloadSize(DmpMessageType type) {
     case DmpMessageType::Input: return 40U;
     case DmpMessageType::Telemetry: return 16U * 1024U;
     case DmpMessageType::KeyframeRequest: return 0U;
+    case DmpMessageType::Ping:
+    case DmpMessageType::Pong:
+        return 8U;
     case DmpMessageType::Error: return 8U * 1024U;
     }
     return 0;
@@ -74,20 +79,49 @@ std::size_t MaximumPayloadSize(DmpMessageType type) {
 bool ValidatePayloadSize(
     DmpMessageType type,
     std::size_t size,
+    std::uint16_t flags,
     std::string& error) {
-    if (type == DmpMessageType::Input && size != 40U) {
-        error = "DMP input payload must be exactly 40 bytes";
-        return false;
+    const bool encrypted =
+        (flags & kDmpEncryptedPayloadFlag) != 0U;
+    const std::size_t overhead = encrypted
+        ? kDmpAuthenticatedEncryptionOverhead
+        : 0U;
+
+    std::size_t exact = 0U;
+    bool hasExact = true;
+
+    switch (type) {
+    case DmpMessageType::Input:
+        exact = 40U;
+        break;
+    case DmpMessageType::KeyframeRequest:
+        exact = 0U;
+        break;
+    case DmpMessageType::Ping:
+    case DmpMessageType::Pong:
+        exact = 8U;
+        break;
+    default:
+        hasExact = false;
+        break;
     }
 
-    if (type == DmpMessageType::KeyframeRequest && size != 0U) {
-        error = "DMP keyframe request payload must be empty";
-        return false;
+    if (hasExact) {
+        const auto expected = exact + overhead;
+        if (size != expected) {
+            error =
+                "DMP exact-size payload has invalid wire length";
+            return false;
+        }
+        error.clear();
+        return true;
     }
 
-    const auto maximum = MaximumPayloadSize(type);
+    const auto maximum =
+        MaximumPayloadSize(type) + overhead;
     if (size > maximum) {
-        error = "DMP payload exceeds the message-specific limit";
+        error =
+            "DMP payload exceeds the message-specific wire limit";
         return false;
     }
 
@@ -125,11 +159,12 @@ DmpDecodeStatus DecodeDmpFrame(
         return DmpDecodeStatus::Error;
     }
 
+    const auto flags = ReadU16(buffer.data() + 6);
     const auto payloadSize =
         static_cast<std::size_t>(ReadU32(buffer.data() + 12));
 
-    if (payloadSize > kDmpMaximumPayloadSize ||
-        !ValidatePayloadSize(type, payloadSize, error)) {
+    if (payloadSize > kDmpMaximumWirePayloadSize ||
+        !ValidatePayloadSize(type, payloadSize, flags, error)) {
         if (error.empty()) {
             error = "DMP payload exceeds the global limit";
         }
@@ -143,7 +178,7 @@ DmpDecodeStatus DecodeDmpFrame(
     }
 
     output.type = type;
-    output.flags = ReadU16(buffer.data() + 6);
+    output.flags = flags;
     output.sequence = ReadU32(buffer.data() + 8);
     output.payload.assign(
         buffer.begin() + static_cast<std::ptrdiff_t>(kDmpHeaderSize),
@@ -157,8 +192,12 @@ bool EncodeDmpFrame(
     const DmpFrame& frame,
     std::vector<std::uint8_t>& output,
     std::string& error) {
-    if (frame.payload.size() > kDmpMaximumPayloadSize ||
-        !ValidatePayloadSize(frame.type, frame.payload.size(), error)) {
+    if (frame.payload.size() > kDmpMaximumWirePayloadSize ||
+        !ValidatePayloadSize(
+            frame.type,
+            frame.payload.size(),
+            frame.flags,
+            error)) {
         if (error.empty()) {
             error = "DMP payload exceeds the global limit";
         }
