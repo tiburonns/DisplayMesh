@@ -4,6 +4,7 @@ project(DisplayMeshWindowsProtocol LANGUAGES CXX)
 add_library(displaymesh_protocol STATIC
     DmpFrame.cpp
     DmpHostSessionGate.cpp
+    DmpHostReconnectPolicy.cpp
 )
 
 target_include_directories(displaymesh_protocol PUBLIC
@@ -39,5 +40,20 @@ if(BUILD_TESTING)
     add_test(
         NAME displaymesh-host-session-gate
         COMMAND displaymesh-host-session-gate-tests
+    )
+
+    add_executable(
+        displaymesh-host-reconnect-policy-tests
+        tests/DmpHostReconnectPolicyTests.cpp
+    )
+
+    target_link_libraries(
+        displaymesh-host-reconnect-policy-tests
+        PRIVATE displaymesh_protocol
+    )
+
+    add_test(
+        NAME displaymesh-host-reconnect-policy
+        COMMAND displaymesh-host-reconnect-policy-tests
     )
 endif()

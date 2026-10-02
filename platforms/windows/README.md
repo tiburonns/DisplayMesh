@@ -93,3 +93,9 @@ This is an admission/state-machine boundary, **not** the Windows pairing/crypto 
 `input-bridge/DmpInputRouter` joins the protocol admission gate and the 40-byte input decoder. Even a structurally valid touch sample is rejected unless the host session is already in `streaming`; non-input frames and reserved DMP input-payload flags are rejected before injection.
 
 The remaining integration is the actual Windows network/pairing service: it must advance `DmpHostSessionGate` only after identity/pairing/capability validation, decode frames through the native DMP library, then pass authorized input frames through this router into `TouchInjector`.
+
+## Reconnect policy
+
+`protocol/DmpHostReconnectPolicy` mirrors the bounded reconnect behavior used by the macOS development host. Only transport closure and bounded machine-phase timeouts are retryable. Pairing timeout/rejection, identity change, protocol violations, incompatible capabilities and replay/sequence failures stop instead of looping. Reconnect uses 500 ms → 1 s → 2 s → 4 s capped backoff and resets `DmpHostSessionGate` to `AwaitingHello` before any retry, closing video and input gates immediately.
+
+This is deliberately transport-independent. It does not claim that the Windows Wi-Fi/USB network service is already implemented.
