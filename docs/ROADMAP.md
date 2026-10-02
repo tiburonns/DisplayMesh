@@ -109,6 +109,8 @@
 - [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder
 - [x] Apply adaptive stream raster to ScreenCaptureKit + VideoToolbox on the macOS development path
 - [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
+- [x] Windows receiver-driven adaptive bitrate/raster controller with the same 100/85/75/67% hysteresis policy as macOS
+- [ ] Wire authenticated Windows receiver telemetry into the adaptive controller and live MFT/raster pipeline
 
 ## M4 — Touch and input
 

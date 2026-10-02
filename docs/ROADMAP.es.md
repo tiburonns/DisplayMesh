@@ -46,7 +46,8 @@
 - [ ] Discovery equivalente en Windows, QUIC/TLS, TCP/TLS, usbmux macOS/Windows y handoff Wi‑Fi↔USB.
 - [x] Motor adaptativo con histéresis de raster 100/85/75/67%, conectado a telemetría del receiver y al bitrate del encoder VideoToolbox macOS.
 - [x] Aplicar raster dinámico a ScreenCaptureKit + VideoToolbox en la ruta macOS de desarrollo.
-- [ ] Completar adaptación equivalente en Windows.
+- [x] Controlador Windows de bitrate/raster adaptativo con histéresis 100/85/75/67% equivalente a macOS.
+- [ ] Conectar telemetría autenticada del receiver Windows con el controlador y el pipeline MFT/raster en vivo.
 
 ## M4 — Input
 

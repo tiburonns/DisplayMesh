@@ -92,3 +92,17 @@ The media harness now has the concrete pieces between an admitted GPU frame and 
 `MftAsyncEventPump` consumes asynchronous Media Foundation transform events and routes `METransformNeedInput`, `METransformHaveOutput`, and `METransformDrainComplete` into `LiveEncodeCoordinator`. Transform/event errors fail closed and stop the pump.
 
 The remaining end-to-end Windows media gate is the live IddCx producer and BGRA→NV12 surface publication feeding this path, followed by the Windows DMP network/session binding.
+
+
+## Receiver-driven adaptive quality
+
+`ReceiverAdaptiveController` ports the proven macOS telemetry policy to the Windows media path. It consumes receiver frame/drop/FPS/decode-queue telemetry and applies bounded hysteresis:
+
+- bitrate reduction occurs before raster reduction;
+- severe decoder pressure can reduce bitrate immediately;
+- raster steps are fixed at 100% → 85% → 75% → 67%;
+- raster changes require sustained stress/recovery and request a keyframe;
+- counter resets and invalid telemetry never look like congestion;
+- recovery is intentionally slower than degradation to avoid oscillation.
+
+This controller is deterministic and hardware-independent. The live Windows network/session service still needs to feed authenticated receiver telemetry into it and apply its decisions to the MFT bitrate and GPU raster pipeline.
