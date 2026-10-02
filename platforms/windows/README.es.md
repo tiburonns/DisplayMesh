@@ -91,3 +91,9 @@ La integración pendiente es el servicio real de red/pairing Windows: deberá av
 La solicitud de modo del driver ahora pasa por una política compartida `ReceiverModePolicy` antes de modificar estado IddCx. Acepta dimensiones negociadas de panel móvil dentro de límites seguros y normaliza ejes impares reduciendo como máximo un píxel para mantener compatibilidad con el pipeline GPU NV12/H.264. Versiones de protocolo inválidas, dimensiones extremas y refresh fuera de rango fallan antes de tocar el driver.
 
 Esto elimina una incompatibilidad evitable con paneles móviles reales que reportan ancho o alto nativo impar, manteniendo geometría determinista y acotada.
+
+## Primitiva nativa de sesión segura
+
+`protocol/DmpSecureSession` y `DmpProtectedFrameCodec` replican la frontera de frames protegidos de Apple/macOS usando CNG de Windows: claves direccionales HKDF-SHA256, protección ChaCha20-Poly1305, AAD ligado al header DMP, nonces aleatorios de 12 bytes y tags de autenticación de 16 bytes. El codec sólo permite hello/pairing en claro antes de instalar la sesión y rechaza tráfico post-pairing sin cifrar.
+
+Es una primitiva de protocolo probada, no significa que el servicio de red/pairing Windows esté completo. El servicio en vivo deberá derivar el secreto desde ECDH P-256 efímero ligado al pairing, instalar el codec, avanzar `DmpHostSessionGate` sólo después de verificar identidad y limpiar todo el estado seguro/de sesión al reconectar.

@@ -163,6 +163,43 @@ for token in ["ValidatePayloadSize", "DmpSequenceTracker::Accept", "kDmpMaximumP
     if token not in windows_frame:
         raise SystemExit(f"windows protocol contract failed: missing {token}")
 
+for relative in [
+    "DmpSecureSession.h",
+    "DmpSecureSession.cpp",
+    "DmpProtectedFrameCodec.h",
+    "DmpProtectedFrameCodec.cpp",
+    "tests/DmpSecureSessionTests.cpp",
+]:
+    if not (windows_protocol / relative).exists():
+        raise SystemExit(
+            f"windows secure-session contract failed: missing {relative}"
+        )
+
+windows_secure = (windows_protocol / "DmpSecureSession.cpp").read_text(encoding="utf-8")
+for token in [
+    "BCRYPT_CHACHA20_POLY1305_ALGORITHM",
+    "DMP1-HOST-TO-RECEIVER",
+    "DMP1-RECEIVER-TO-HOST",
+    "BCRYPT_USE_SYSTEM_PREFERRED_RNG",
+    "AdditionalAuthenticatedData",
+]:
+    if token not in windows_secure:
+        raise SystemExit(
+            f"windows secure-session contract failed: missing {token}"
+        )
+
+windows_protected = (windows_protocol / "DmpProtectedFrameCodec.cpp").read_text(encoding="utf-8")
+for token in [
+    "kDmpEncryptedPayloadFlag",
+    "rejected plaintext post-pairing frame",
+    "DmpMessageType::Hello",
+    "DmpMessageType::Pairing",
+]:
+    if token not in windows_protected:
+        raise SystemExit(
+            f"windows protected-frame contract failed: missing {token}"
+        )
+
 windows_gate = windows_protocol / "DmpHostSessionGate.cpp"
 windows_gate_header = windows_protocol / "DmpHostSessionGate.h"
 windows_gate_tests = windows_protocol / "tests/DmpHostSessionGateTests.cpp"
