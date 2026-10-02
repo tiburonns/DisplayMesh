@@ -372,8 +372,8 @@ bool EncryptChaChaPoly(
     }
 
     AlgorithmHandle algorithm;
-    KeyHandle key;
     std::vector<std::uint8_t> keyObject;
+    KeyHandle key;
     if (!CreateChaChaKey(
             keyBytes,
             algorithm,
@@ -435,8 +435,8 @@ bool DecryptChaChaPoly(
     std::vector<std::uint8_t>& plaintext,
     std::string& error) {
     AlgorithmHandle algorithm;
-    KeyHandle key;
     std::vector<std::uint8_t> keyObject;
+    KeyHandle key;
     if (!CreateChaChaKey(
             keyBytes,
             algorithm,
