@@ -310,7 +310,6 @@ bool CreateChaChaKey(
     std::span<const std::uint8_t> keyBytes,
     AlgorithmHandle& algorithm,
     KeyHandle& key,
-    std::vector<std::uint8_t>& keyObject,
     std::string& error) {
     auto status = BCryptOpenAlgorithmProvider(
         algorithm.Put(),
@@ -324,21 +323,15 @@ bool CreateChaChaKey(
         return false;
     }
 
-    ULONG objectLength = 0;
-    if (!QueryUlong(
-            algorithm.Get(),
-            BCRYPT_OBJECT_LENGTH,
-            objectLength,
-            error)) {
-        return false;
-    }
-    keyObject.resize(objectLength);
-
+    // Let CNG own the key-object allocation. Microsoft documents that
+    // pbKeyObject=nullptr/cbKeyObject=0 is supported and the storage is
+    // released with BCryptDestroyKey. This avoids external key-object
+    // lifetime coupling to the BCRYPT_KEY_HANDLE.
     status = BCryptGenerateSymmetricKey(
         algorithm.Get(),
         key.Put(),
-        keyObject.empty() ? nullptr : keyObject.data(),
-        static_cast<ULONG>(keyObject.size()),
+        nullptr,
+        0,
         const_cast<PUCHAR>(keyBytes.data()),
         static_cast<ULONG>(keyBytes.size()),
         0);
@@ -372,13 +365,11 @@ bool EncryptChaChaPoly(
     }
 
     AlgorithmHandle algorithm;
-    std::vector<std::uint8_t> keyObject;
     KeyHandle key;
     if (!CreateChaChaKey(
             keyBytes,
             algorithm,
             key,
-            keyObject,
             error)) {
         return false;
     }
@@ -435,13 +426,11 @@ bool DecryptChaChaPoly(
     std::vector<std::uint8_t>& plaintext,
     std::string& error) {
     AlgorithmHandle algorithm;
-    std::vector<std::uint8_t> keyObject;
     KeyHandle key;
     if (!CreateChaChaKey(
             keyBytes,
             algorithm,
             key,
-            keyObject,
             error)) {
         return false;
     }
