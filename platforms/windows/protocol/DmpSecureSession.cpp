@@ -394,17 +394,24 @@ bool EncryptChaChaPoly(
     authInfo.cbTag = static_cast<ULONG>(tag.size());
 
     ciphertext.resize(plaintext.size());
+    std::uint8_t emptyInput = 0;
+    std::uint8_t emptyOutput = 0;
+    auto* inputPointer = plaintext.empty()
+        ? &emptyInput
+        : const_cast<PUCHAR>(plaintext.data());
+    auto* outputPointer = ciphertext.empty()
+        ? &emptyOutput
+        : ciphertext.data();
+
     ULONG written = 0;
     status = BCryptEncrypt(
         key.Get(),
-        plaintext.empty()
-            ? nullptr
-            : const_cast<PUCHAR>(plaintext.data()),
+        inputPointer,
         static_cast<ULONG>(plaintext.size()),
         &authInfo,
         nullptr,
         0,
-        ciphertext.empty() ? nullptr : ciphertext.data(),
+        outputPointer,
         static_cast<ULONG>(ciphertext.size()),
         &written,
         0);
@@ -452,17 +459,24 @@ bool DecryptChaChaPoly(
     authInfo.cbTag = static_cast<ULONG>(tag.size());
 
     plaintext.resize(ciphertext.size());
+    std::uint8_t emptyInput = 0;
+    std::uint8_t emptyOutput = 0;
+    auto* inputPointer = ciphertext.empty()
+        ? &emptyInput
+        : const_cast<PUCHAR>(ciphertext.data());
+    auto* outputPointer = plaintext.empty()
+        ? &emptyOutput
+        : plaintext.data();
+
     ULONG written = 0;
     const auto status = BCryptDecrypt(
         key.Get(),
-        ciphertext.empty()
-            ? nullptr
-            : const_cast<PUCHAR>(ciphertext.data()),
+        inputPointer,
         static_cast<ULONG>(ciphertext.size()),
         &authInfo,
         nullptr,
         0,
-        plaintext.empty() ? nullptr : plaintext.data(),
+        outputPointer,
         static_cast<ULONG>(plaintext.size()),
         &written,
         0);
