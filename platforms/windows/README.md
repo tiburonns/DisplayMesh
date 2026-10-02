@@ -99,3 +99,10 @@ The remaining integration is the actual Windows network/pairing service: it must
 `protocol/DmpHostReconnectPolicy` mirrors the bounded reconnect behavior used by the macOS development host. Only transport closure and bounded machine-phase timeouts are retryable. Pairing timeout/rejection, identity change, protocol violations, incompatible capabilities and replay/sequence failures stop instead of looping. Reconnect uses 500 ms → 1 s → 2 s → 4 s capped backoff and resets `DmpHostSessionGate` to `AwaitingHello` before any retry, closing video and input gates immediately.
 
 This is deliberately transport-independent. It does not claim that the Windows Wi-Fi/USB network service is already implemented.
+
+
+## Receiver-native mode normalization
+
+The driver-side mode request now uses a shared `ReceiverModePolicy` before touching IddCx state. It accepts negotiated mobile-panel dimensions within the product safety bounds and normalizes odd pixel axes down by at most one pixel so the resulting mode stays compatible with the NV12/H.264 GPU pipeline. Invalid protocol versions, extreme dimensions and unsupported refresh rates fail before driver state changes.
+
+This removes an avoidable incompatibility with real mobile panels that report an odd native width or height while preserving deterministic, bounded virtual-display geometry.

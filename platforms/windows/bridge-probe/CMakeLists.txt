@@ -134,4 +134,25 @@ if(BUILD_TESTING)
         NAME displaymesh-shared-d3d11
         COMMAND displaymesh-shared-d3d11-tests
     )
+
+    add_executable(
+        displaymesh-receiver-mode-policy-tests
+        tests/ReceiverModePolicyTests.cpp
+    )
+
+    target_include_directories(
+        displaymesh-receiver-mode-policy-tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../bridge
+    )
+
+    target_compile_features(
+        displaymesh-receiver-mode-policy-tests
+        PRIVATE cxx_std_20
+    )
+
+    add_test(
+        NAME displaymesh-receiver-mode-policy
+        COMMAND displaymesh-receiver-mode-policy-tests
+    )
 endif()

@@ -21,7 +21,8 @@
 
 ### Windows
 - [x] Bootstrap de Software Device.
-- [ ] Driver IddCx, modos, instalación/desinstalación y firma de desarrollo.
+- [x] Política de solicitud/normalización de modo nativo del receiver, incluyendo paneles móviles con dimensión impar.
+- [ ] Aplicar cambios de modo al monitor IddCx en vivo mediante re-arrival/reconfiguración controlada; instalación/desinstalación y firma de desarrollo.
 
 ### iPhone/iPad receiver
 - [x] Descriptor de panel, multitouch/Pencil, Bonjour/TCP, UI, EN/ES/Sistema, pairing, H.264 decode y Metal NV12.

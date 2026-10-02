@@ -1,5 +1,7 @@
 #include "Driver.h"
 
+#include "../bridge/ReceiverModePolicy.h"
+
 #include <algorithm>
 #include <array>
 
@@ -469,24 +471,19 @@ void DeviceContext::DisconnectMonitor() noexcept {
 
 NTSTATUS DeviceContext::SetRequestedMode(
     const bridge::ReceiverModeRequest& request) noexcept {
-    if (request.protocolVersion !=
-            bridge::kProtocolVersion ||
-        request.width < 640 ||
-        request.height < 480 ||
-        request.width > 8192 ||
-        request.height > 8192 ||
-        request.refreshHz < 30 ||
-        request.refreshHz > 240 ||
-        (request.width & 1U) != 0 ||
-        (request.height & 1U) != 0) {
+    const auto normalized =
+        bridge::NormalizeReceiverMode(
+            request);
+
+    if (!normalized.has_value()) {
         return STATUS_INVALID_PARAMETER;
     }
 
     requestedMode_.store(
         PackMode(
-            request.width,
-            request.height,
-            request.refreshHz),
+            normalized->width,
+            normalized->height,
+            normalized->refreshHz),
         std::memory_order_release);
 
     // The requested mode is included whenever Windows next queries modes.
