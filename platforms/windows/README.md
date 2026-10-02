@@ -99,3 +99,10 @@ The remaining integration is the actual Windows network/pairing service: it must
 `protocol/DmpHostReconnectPolicy` mirrors the bounded reconnect behavior used by the macOS development host. Only transport closure and bounded machine-phase timeouts are retryable. Pairing timeout/rejection, identity change, protocol violations, incompatible capabilities and replay/sequence failures stop instead of looping. Reconnect uses 500 ms → 1 s → 2 s → 4 s capped backoff and resets `DmpHostSessionGate` to `AwaitingHello` before any retry, closing video and input gates immediately.
 
 This is deliberately transport-independent. It does not claim that the Windows Wi-Fi/USB network service is already implemented.
+
+
+## Native secure-session primitive
+
+`protocol/DmpSecureSession` and `DmpProtectedFrameCodec` mirror the Apple/macOS protected-frame boundary using Windows CNG: HKDF-SHA256 directional keys, ChaCha20-Poly1305 payload protection, DMP header AAD binding, 12-byte random nonces and 16-byte authentication tags. The codec permits plaintext only for hello/pairing before session installation and rejects plaintext post-pairing traffic.
+
+This is a tested protocol primitive, not a claim that the Windows network/pairing service is complete. The live Windows service must derive the shared secret from pairing-bound ephemeral P-256 ECDH material, install the codec, advance `DmpHostSessionGate` only after identity verification, and clear all secure/session state on reconnect.

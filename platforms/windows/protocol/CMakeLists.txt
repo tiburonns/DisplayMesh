@@ -5,6 +5,8 @@ add_library(displaymesh_protocol STATIC
     DmpFrame.cpp
     DmpHostSessionGate.cpp
     DmpHostReconnectPolicy.cpp
+    DmpSecureSession.cpp
+    DmpProtectedFrameCodec.cpp
 )
 
 target_include_directories(displaymesh_protocol PUBLIC
@@ -12,6 +14,8 @@ target_include_directories(displaymesh_protocol PUBLIC
 )
 
 target_compile_features(displaymesh_protocol PUBLIC cxx_std_20)
+
+target_link_libraries(displaymesh_protocol PUBLIC bcrypt)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -55,5 +59,20 @@ if(BUILD_TESTING)
     add_test(
         NAME displaymesh-host-reconnect-policy
         COMMAND displaymesh-host-reconnect-policy-tests
+    )
+
+    add_executable(
+        displaymesh-secure-session-tests
+        tests/DmpSecureSessionTests.cpp
+    )
+
+    target_link_libraries(
+        displaymesh-secure-session-tests
+        PRIVATE displaymesh_protocol
+    )
+
+    add_test(
+        NAME displaymesh-secure-session
+        COMMAND displaymesh-secure-session-tests
     )
 endif()

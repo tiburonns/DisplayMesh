@@ -84,3 +84,10 @@ Es una frontera de admisión/estado, **no** la implementación criptográfica de
 `input-bridge/DmpInputRouter` une el gate de admisión del protocolo con el decoder de input de 40 bytes. Incluso un sample touch estructuralmente válido se rechaza mientras la sesión host no esté en `streaming`; frames que no sean input y los flags reservados del payload DMP Input también se rechazan antes de la inyección.
 
 La integración pendiente es el servicio real de red/pairing Windows: deberá avanzar `DmpHostSessionGate` sólo después de validar identidad/pairing/capabilities, decodificar frames con la biblioteca DMP nativa y entregar únicamente input autorizado a `TouchInjector`.
+
+
+## Primitiva nativa de sesión segura
+
+`protocol/DmpSecureSession` y `DmpProtectedFrameCodec` replican la frontera de frames protegidos de Apple/macOS usando CNG de Windows: claves direccionales HKDF-SHA256, protección ChaCha20-Poly1305, AAD ligado al header DMP, nonces aleatorios de 12 bytes y tags de autenticación de 16 bytes. El codec sólo permite hello/pairing en claro antes de instalar la sesión y rechaza tráfico post-pairing sin cifrar.
+
+Es una primitiva de protocolo probada, no significa que el servicio de red/pairing Windows esté completo. El servicio en vivo deberá derivar el secreto desde ECDH P-256 efímero ligado al pairing, instalar el codec, avanzar `DmpHostSessionGate` sólo después de verificar identidad y limpiar todo el estado seguro/de sesión al reconectar.
