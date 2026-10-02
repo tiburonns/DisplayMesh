@@ -280,3 +280,26 @@ print(
     "Windows framing, adaptive transport, secure-session primitive, "
     "and native harness scaffolds"
 )
+
+
+# Windows adaptive quality parity.
+windows_adaptive = ROOT / "platforms/windows/media-harness/ReceiverAdaptiveController.cpp"
+windows_adaptive_tests = ROOT / "platforms/windows/media-harness/tests/ReceiverAdaptiveControllerTests.cpp"
+for path in [windows_adaptive, windows_adaptive_tests]:
+    if not path.exists():
+        raise SystemExit(
+            f"windows adaptive contract failed: missing {path.relative_to(ROOT)}"
+        )
+adaptive_source = windows_adaptive.read_text(encoding="utf-8")
+for token in [
+    "0.85",
+    "0.75",
+    "0.67",
+    "severeRasterStressSamples_",
+    "rasterRecoverySamples_",
+    "decodeQueueDepth",
+]:
+    if token not in adaptive_source:
+        raise SystemExit(
+            f"windows adaptive contract failed: missing {token}"
+        )

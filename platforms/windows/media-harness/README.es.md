@@ -61,3 +61,17 @@ El harness multimedia ya tiene las piezas concretas entre un frame GPU admitido 
 `MftAsyncEventPump` consume los eventos asíncronos del transform y dirige `METransformNeedInput`, `METransformHaveOutput` y `METransformDrainComplete` a `LiveEncodeCoordinator`. Los errores del transform/eventos fallan de forma cerrada y detienen el pump.
 
 El gate multimedia Windows restante es conectar el productor IddCx vivo y la publicación BGRA→NV12 a esta ruta, seguido del binding de sesión/red DMP de Windows.
+
+
+## Calidad adaptativa dirigida por el receiver
+
+`ReceiverAdaptiveController` lleva al path Windows la política de telemetría ya validada en macOS. Consume frames/drops/FPS/cola de decode y usa histéresis acotada:
+
+- primero reduce bitrate y después raster;
+- presión severa del decoder puede bajar bitrate inmediatamente;
+- raster usa pasos fijos 100% → 85% → 75% → 67%;
+- cambiar raster requiere estrés/recuperación sostenidos y solicita keyframe;
+- resets de contadores y telemetría inválida nunca se interpretan como congestión;
+- la recuperación es intencionalmente más lenta que la degradación para evitar oscilaciones.
+
+El controlador es determinista e independiente del hardware. El servicio real Windows aún debe alimentarlo con telemetría autenticada del receiver y aplicar las decisiones al bitrate MFT y al pipeline GPU.

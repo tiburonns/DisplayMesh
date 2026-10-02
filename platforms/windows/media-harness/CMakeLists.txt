@@ -49,6 +49,7 @@ add_library(displaymesh_windows_media STATIC
     MftAsyncEventPump.cpp
     MftDxgiInputSampleFactory.cpp
     SharedSurfaceEncodeInput.cpp
+    ReceiverAdaptiveController.cpp
 )
 
 target_include_directories(displaymesh_windows_media PUBLIC
@@ -272,5 +273,20 @@ if(BUILD_TESTING)
     add_test(
         NAME shared-surface-encode-input
         COMMAND shared-surface-encode-input-tests
+    )
+
+    add_executable(
+        receiver-adaptive-controller-tests
+        tests/ReceiverAdaptiveControllerTests.cpp
+    )
+
+    target_link_libraries(
+        receiver-adaptive-controller-tests
+        PRIVATE displaymesh_windows_media
+    )
+
+    add_test(
+        NAME receiver-adaptive-controller
+        COMMAND receiver-adaptive-controller-tests
     )
 endif()
