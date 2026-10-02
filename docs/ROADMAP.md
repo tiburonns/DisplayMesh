@@ -99,6 +99,8 @@
 - [ ] QUIC + TLS 1.3 for Wi-Fi/LAN
 - [x] Post-pairing frame protection policy/codec
 - [x] Authenticated encrypted DMP-over-TCP binding for Apple↔macOS (ECDH/HKDF/ChaChaPoly)
+- [x] Windows CNG secure-session + protected-frame primitive matching the DMP directional HKDF/ChaChaPoly boundary
+- [ ] Wire Windows pairing-bound P-256 ECDH + protected codec into the live network service
 - [ ] TCP + TLS binding (optional/alternative reviewed binding)
 - [ ] macOS usbmux host transport
 - [ ] Windows usbmux-compatible host transport

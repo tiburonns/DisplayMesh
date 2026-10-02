@@ -76,3 +76,7 @@
 ## M6 — Avanzado
 
 120 Hz, 4K60, HEVC, AV1, HDR, audio y multi-display permanecen planificados.
+
+- [x] Primitiva Windows CNG de sesión segura + codec protegido con HKDF-SHA256/ChaCha20-Poly1305 equivalente al boundary DMP de Apple/macOS.
+- [ ] Conectar ECDH P-256 ligado al pairing y codec protegido al servicio de red Windows en vivo.
+
