@@ -83,3 +83,10 @@ Antes de aprobar rendimiento en hardware, verifica que las pruebas deterministas
 - golden frame y tracker de secuencia del framing DMP Windows.
 
 Estos checks endurecen la ruta plaintext de desarrollo, pero no sustituyen el gate TLS de producción.
+
+
+## Gate de admisión de telemetría en Windows
+
+El controlador adaptativo de Windows debe ignorar y reiniciar su baseline cuando la telemetría no proviene de la sesión activa, autenticada, en streaming y de la generación actual. También debe rechazar métricas inválidas antes de que puedan cambiar bitrate/raster: frames descartados no pueden superar recibidos, FPS debe quedar en 0–480, decode promedio en 0–10,000 ms, cola de decode en 0–64 y cola de presentación en 0–8.
+
+Este es un gate determinista del plano de control. Sigue pendiente conectar la telemetría autenticada del transporte DMP real de Windows con este controlador.

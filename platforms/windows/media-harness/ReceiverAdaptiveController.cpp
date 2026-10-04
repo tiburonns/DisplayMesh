@@ -52,13 +52,13 @@ ReceiverAdaptiveController::ReceiverAdaptiveController(
 
 std::optional<ReceiverAdaptationDecision>
 ReceiverAdaptiveController::Update(
-    const ReceiverTelemetrySample& telemetry) {
-    if (!std::isfinite(telemetry.framesPerSecond) ||
-        !std::isfinite(
-            telemetry.averageDecodeMilliseconds) ||
-        telemetry.framesPerSecond < 0 ||
-        telemetry.averageDecodeMilliseconds < 0) {
-        ResetTrend();
+    const ReceiverTelemetrySample& telemetry,
+    const ReceiverTelemetryAdmissionContext& context) {
+    if (!context.sessionStreaming ||
+        !context.authenticated ||
+        !context.generationMatches ||
+        !IsTelemetryValid(telemetry)) {
+        ResetBaseline();
         return std::nullopt;
     }
 
@@ -265,11 +265,42 @@ ReceiverAdaptiveController::RasterScale() const noexcept {
     return rasterScale_;
 }
 
+bool ReceiverAdaptiveController::IsTelemetryValid(
+    const ReceiverTelemetrySample& telemetry) noexcept {
+    if (!std::isfinite(telemetry.framesPerSecond) ||
+        !std::isfinite(telemetry.averageDecodeMilliseconds) ||
+        telemetry.framesPerSecond < 0 ||
+        telemetry.framesPerSecond > 480 ||
+        telemetry.averageDecodeMilliseconds < 0 ||
+        telemetry.averageDecodeMilliseconds > 10'000 ||
+        telemetry.droppedFrames > telemetry.receivedFrames) {
+        return false;
+    }
+
+    if (telemetry.decodeQueueDepth.has_value() &&
+        *telemetry.decodeQueueDepth > 64) {
+        return false;
+    }
+
+    if (telemetry.presentationQueueDepth.has_value() &&
+        *telemetry.presentationQueueDepth > 8) {
+        return false;
+    }
+
+    return true;
+}
+
 void ReceiverAdaptiveController::ResetTrend() noexcept {
     stressedSamples_ = 0;
     healthySamples_ = 0;
     severeRasterStressSamples_ = 0;
     rasterRecoverySamples_ = 0;
+}
+
+void ReceiverAdaptiveController::ResetBaseline() noexcept {
+    previousReceivedFrames_.reset();
+    previousDroppedFrames_.reset();
+    ResetTrend();
 }
 
 double ReceiverAdaptiveController::NearestRasterScale(
