@@ -36,3 +36,8 @@ Los logs no deben contener secretos, claves, frames completos, clipboard, teclas
 ## Límite actual de identidad de desarrollo
 
 DisplayMesh 0.2.2 autentica la **identidad del host macOS de desarrollo** durante el pairing mediante P-256 y un challenge nuevo del receiver. Esto evita sustituir silenciosamente la clave de un host ya confiable, pero **no** vuelve seguro para producción el transporte TCP actual: el receiver todavía no presenta una identidad criptográfica autenticada al host y media/control siguen sin cifrado.
+
+
+## Agotamiento del espacio de secuencias
+
+Una conexión DMP debe cerrarse después de emitir o aceptar la secuencia `0xFFFFFFFF`. La secuencia no puede hacer wrap a cero dentro de una conexión autenticada. Para continuar, se requiere una conexión nueva que complete la autenticación normal y derive claves de sesión nuevas.

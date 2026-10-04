@@ -105,13 +105,14 @@ final class ReceiverListener {
             guard let self, let connection else { return }
 
             do {
+                guard nextSequence != 0 else { throw DMPFrameError.sequenceExhausted }
                 let frame = try protectedCodec.outboundFrame(
                     type: type,
                     payload: payload,
                     sequence: nextSequence
                 )
                 let data = try frame.encoded()
-                nextSequence &+= 1
+                nextSequence = nextSequence == UInt32.max ? 0 : nextSequence + 1
 
                 connection.send(
                 content: data,
