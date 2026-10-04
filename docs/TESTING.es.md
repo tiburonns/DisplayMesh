@@ -83,3 +83,18 @@ Antes de aprobar rendimiento en hardware, verifica que las pruebas deterministas
 - golden frame y tracker de secuencia del framing DMP Windows.
 
 Estos checks endurecen la ruta plaintext de desarrollo, pero no sustituyen el gate TLS de producción.
+
+
+## Gate de política de handoff
+
+Antes de integrar usbmux real, la suite determinista del core debe comprobar que:
+
+- conectar un cable nunca evita la autenticación;
+- un candidato con identidad de peer distinta no puede reemplazar la sesión activa;
+- USB + QUIC se rechaza en el contrato inicial;
+- USB autenticado puede reemplazar Wi-Fi sano;
+- USB sano no baja a Wi-Fi sólo porque Wi-Fi aparezca;
+- un transporte activo degradado puede hacer failover a una ruta autenticada de menor prioridad;
+- cada handoff aceptado incrementa una generación para descartar callbacks obsoletos.
+
+Estas pruebas sólo validan la política de control. El descubrimiento USB, forwarding usbmux y la continuidad real de vídeo/input siguen siendo gates de integración/hardware.

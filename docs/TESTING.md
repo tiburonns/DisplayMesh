@@ -83,3 +83,18 @@ Before hardware performance sign-off, verify the deterministic protocol suites c
 - Windows DMP encode/decode golden frame and sequence tracker.
 
 These checks are defense-in-depth for the plaintext development path; they are not a substitute for the production TLS gate.
+
+
+## Transport handoff policy gate
+
+Before live usbmux integration, the deterministic core suite must prove that:
+
+- cable presence never bypasses authentication;
+- a candidate with a changed peer identity cannot replace the active session;
+- USB + QUIC is rejected by the initial binding contract;
+- authenticated USB may replace healthy Wi-Fi;
+- healthy USB is not downgraded to Wi-Fi merely because Wi-Fi appears;
+- an unhealthy active transport may fail over to an authenticated lower-priority path;
+- every accepted handoff increments a generation used to reject stale transport callbacks.
+
+These tests validate control-plane policy only. Physical USB discovery, usbmux forwarding and seamless media/input continuity remain hardware/integration gates.

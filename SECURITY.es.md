@@ -36,3 +36,8 @@ Los logs no deben contener secretos, claves, frames completos, clipboard, teclas
 ## Límite actual de identidad de desarrollo
 
 DisplayMesh 0.2.2 autentica la **identidad del host macOS de desarrollo** durante el pairing mediante P-256 y un challenge nuevo del receiver. Esto evita sustituir silenciosamente la clave de un host ya confiable, pero **no** vuelve seguro para producción el transporte TCP actual: el receiver todavía no presenta una identidad criptográfica autenticada al host y media/control siguen sin cifrado.
+
+
+## Confianza durante handoff
+
+El handoff no transfiere confianza sólo porque aparezca una ruta física nueva. Un binding candidato debe completar autenticación y coincidir con la identidad del peer de la sesión activa antes de poder sustituir al transporte actual. USB se trata como un medio de menor jitter, no como un mecanismo de autenticación.
