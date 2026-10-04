@@ -28,13 +28,30 @@ ReceiverTelemetrySample Telemetry(
     };
 }
 
+constexpr ReceiverTelemetryAdmissionContext
+AuthenticatedStreaming() {
+    return ReceiverTelemetryAdmissionContext{
+        true,
+        true,
+        true,
+    };
+}
+
+std::optional<ReceiverAdaptationDecision> Update(
+    ReceiverAdaptiveController& controller,
+    const ReceiverTelemetrySample& telemetry) {
+    return controller.Update(
+        telemetry,
+        AuthenticatedStreaming());
+}
+
 void TestFirstSampleEstablishesBaseline() {
     ReceiverAdaptiveController controller(
         24,
         60);
 
     assert(
-        !controller.Update(
+        !Update(controller, 
             Telemetry(60, 0))
              .has_value());
     assert(
@@ -46,11 +63,11 @@ void TestModerateStressNeedsHysteresis() {
         24,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     assert(
-        !controller.Update(
+        !Update(controller, 
             Telemetry(
                 120,
                 2,
@@ -59,7 +76,7 @@ void TestModerateStressNeedsHysteresis() {
              .has_value());
 
     const auto decision =
-        controller.Update(
+        Update(controller, 
             Telemetry(
                 180,
                 4,
@@ -80,11 +97,11 @@ void TestSevereStressReducesImmediately() {
         40,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     const auto decision =
-        controller.Update(
+        Update(controller, 
             Telemetry(
                 120,
                 8,
@@ -101,11 +118,11 @@ void TestFullDecodeQueueIsSevere() {
         40,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     const auto decision =
-        controller.Update(
+        Update(controller, 
             Telemetry(
                 120,
                 0,
@@ -124,11 +141,11 @@ void TestPresentationQueueAloneDoesNotReduce() {
         24,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     assert(
-        !controller.Update(
+        !Update(controller, 
             Telemetry(
                 120,
                 0,
@@ -146,7 +163,7 @@ void TestPersistentStressStepsRasterDown() {
         40,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     std::optional<ReceiverAdaptationDecision>
@@ -155,7 +172,7 @@ void TestPersistentStressStepsRasterDown() {
          index <= 3;
          ++index) {
         decision =
-            controller.Update(
+            Update(controller, 
                 Telemetry(
                     60 + index * 60,
                     index * 8,
@@ -179,7 +196,7 @@ void TestHealthyLinkRecoversBitrate() {
         6,
         24);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     std::optional<ReceiverAdaptationDecision>
@@ -188,7 +205,7 @@ void TestHealthyLinkRecoversBitrate() {
          index <= 6;
          ++index) {
         decision =
-            controller.Update(
+            Update(controller, 
                 Telemetry(
                     60 + index * 60,
                     0,
@@ -209,7 +226,7 @@ void TestRasterRecoversAfterBitrate() {
         6,
         24);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     std::optional<ReceiverAdaptationDecision>
@@ -218,7 +235,7 @@ void TestRasterRecoversAfterBitrate() {
          index <= 12;
          ++index) {
         if (const auto next =
-                controller.Update(
+                Update(controller, 
                     Telemetry(
                         60 + index * 60,
                         0,
@@ -242,13 +259,13 @@ void TestCounterResetIsNotCongestion() {
         24,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(
             600,
             20));
 
     assert(
-        !controller.Update(
+        !Update(controller, 
             Telemetry(
                 20,
                 0))
@@ -262,11 +279,11 @@ void TestInvalidTelemetryIsIgnored() {
         24,
         60);
 
-    (void)controller.Update(
+    (void)Update(controller, 
         Telemetry(60, 0));
 
     assert(
-        !controller.Update(
+        !Update(controller, 
             Telemetry(
                 120,
                 0,
@@ -276,6 +293,124 @@ void TestInvalidTelemetryIsIgnored() {
              .has_value());
     assert(
         controller.BitrateMbps() == 24);
+}
+
+void TestUnauthenticatedTelemetryIsRejectedAndResetsBaseline() {
+    ReceiverAdaptiveController controller(
+        24,
+        60);
+
+    const ReceiverTelemetryAdmissionContext unauthenticated{
+        true,
+        false,
+        true,
+    };
+
+    assert(
+        !controller.Update(
+            Telemetry(600, 20),
+            unauthenticated)
+             .has_value());
+
+    // The first subsequently admitted sample becomes a fresh baseline.
+    assert(
+        !Update(
+            controller,
+            Telemetry(60, 0))
+             .has_value());
+    assert(controller.BitrateMbps() == 24);
+}
+
+void TestNonStreamingAndStaleGenerationTelemetryAreRejected() {
+    ReceiverAdaptiveController controller(
+        24,
+        60);
+
+    const ReceiverTelemetryAdmissionContext notStreaming{
+        false,
+        true,
+        true,
+    };
+    assert(
+        !controller.Update(
+            Telemetry(60, 0),
+            notStreaming)
+             .has_value());
+
+    const ReceiverTelemetryAdmissionContext staleGeneration{
+        true,
+        true,
+        false,
+    };
+    assert(
+        !controller.Update(
+            Telemetry(120, 0),
+            staleGeneration)
+             .has_value());
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(60, 0))
+             .has_value());
+}
+
+void TestMalformedTelemetryIsRejected() {
+    ReceiverAdaptiveController controller(
+        24,
+        60);
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(10, 11))
+             .has_value());
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(
+                60,
+                0,
+                481,
+                3))
+             .has_value());
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(
+                60,
+                0,
+                60,
+                10'001))
+             .has_value());
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(
+                60,
+                0,
+                60,
+                3,
+                65,
+                0))
+             .has_value());
+
+    assert(
+        !Update(
+            controller,
+            Telemetry(
+                60,
+                0,
+                60,
+                3,
+                0,
+                9))
+             .has_value());
+
+    assert(controller.BitrateMbps() == 24);
 }
 
 void TestRasterInitializationSnaps() {
@@ -303,6 +438,9 @@ int main() {
     TestRasterRecoversAfterBitrate();
     TestCounterResetIsNotCongestion();
     TestInvalidTelemetryIsIgnored();
+    TestUnauthenticatedTelemetryIsRejectedAndResetsBaseline();
+    TestNonStreamingAndStaleGenerationTelemetryAreRejected();
+    TestMalformedTelemetryIsRejected();
     TestRasterInitializationSnaps();
     return 0;
 }

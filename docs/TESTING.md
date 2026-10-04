@@ -83,3 +83,10 @@ Before hardware performance sign-off, verify the deterministic protocol suites c
 - Windows DMP encode/decode golden frame and sequence tracker.
 
 These checks are defense-in-depth for the plaintext development path; they are not a substitute for the production TLS gate.
+
+
+## Windows telemetry admission gate
+
+The Windows adaptive controller must ignore and reset its trend baseline when telemetry is not from the authenticated current-generation streaming session. It must also reject malformed receiver metrics before they can affect bitrate/raster decisions: dropped frames may not exceed received frames, FPS must stay within 0–480, average decode time within 0–10,000 ms, decode queue depth within 0–64 and presentation queue depth within 0–8.
+
+This is a deterministic control-plane gate. The remaining integration gate is wiring authenticated telemetry from the live Windows DMP transport into this controller.
