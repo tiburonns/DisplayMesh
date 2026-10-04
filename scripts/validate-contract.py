@@ -303,3 +303,16 @@ for token in [
         raise SystemExit(
             f"windows adaptive contract failed: missing {token}"
         )
+
+
+# Windows Release test targets must keep assert() active.
+for relative in [
+    "platforms/windows/input-bridge/CMakeLists.txt",
+    "platforms/windows/bridge-probe/CMakeLists.txt",
+    "platforms/windows/media-harness/CMakeLists.txt",
+]:
+    content = (ROOT / relative).read_text(encoding="utf-8")
+    if "add_compile_options(/UNDEBUG)" not in content:
+        raise SystemExit(
+            f"windows test contract failed: {relative} disables assert() in Release CI"
+        )
