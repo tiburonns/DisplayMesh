@@ -42,8 +42,8 @@ pub use session::{
     NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
 };
 pub use transport::{
-    TransportBinding, TransportCandidate, TransportHandoffController,
-    TransportHandoffDecision, TransportHandoffRejection,
+    TransportBinding, TransportCandidate, TransportHandoffController, TransportHandoffDecision,
+    TransportHandoffRejection,
 };
 pub use video::{
     DMP_VIDEO_HEADER_LEN, DmpVideoCodec, DmpVideoFlags, DmpVideoPacket, DmpVideoPacketError,

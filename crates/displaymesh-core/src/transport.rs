@@ -11,10 +11,7 @@ pub struct TransportBinding {
 }
 
 impl TransportBinding {
-    pub const fn new(
-        medium: ConnectionMedium,
-        protocol: WireProtocol,
-    ) -> Self {
+    pub const fn new(medium: ConnectionMedium, protocol: WireProtocol) -> Self {
         Self { medium, protocol }
     }
 
@@ -89,9 +86,7 @@ pub struct TransportHandoffController {
 }
 
 impl TransportHandoffController {
-    pub fn new(
-        active: TransportBinding,
-    ) -> Result<Self, TransportHandoffRejection> {
+    pub fn new(active: TransportBinding) -> Result<Self, TransportHandoffRejection> {
         if !active.is_supported() {
             return Err(TransportHandoffRejection::UnsupportedBinding);
         }
@@ -148,8 +143,7 @@ impl TransportHandoffController {
         }
 
         let should_switch =
-            !active_healthy
-                || candidate.binding.preference() > self.active.preference();
+            !active_healthy || candidate.binding.preference() > self.active.preference();
 
         if !should_switch {
             return self.stay();
