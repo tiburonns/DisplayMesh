@@ -163,3 +163,12 @@ A receiver backend exposes:
 - decode/present frames
 - capture touch/stylus
 - report decode/display telemetry
+
+
+## Transport handoff policy
+
+The shared core now owns a deterministic handoff policy, while platform code remains responsible for discovery and the actual socket/usbmux switch.
+
+A candidate transport may replace the active one only when it is ready, authenticated, and proves the **same peer identity**. USB presence is never treated as trust. The initial USB binding remains TCP-only, and a healthy higher-preference transport is not replaced by a lower-preference path. Each accepted switch increments a transport generation so platform callbacks from the previous binding can be discarded as stale.
+
+Current preference order is USB → Ethernet → Wi-Fi. A degraded/unhealthy active path may fail over to a lower-preference authenticated path. This policy does **not** claim that usbmux discovery or live handoff is already implemented.

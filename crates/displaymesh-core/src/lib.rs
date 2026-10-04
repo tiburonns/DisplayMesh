@@ -16,6 +16,7 @@ mod input;
 mod model;
 mod optimizer;
 mod session;
+mod transport;
 mod video;
 
 pub use adaptive::{AdaptationDecision, AdaptiveController, LinkTelemetry, PerformanceProfile};
@@ -39,6 +40,10 @@ pub use model::{
 pub use optimizer::{OptimizationError, SessionOptimizer};
 pub use session::{
     NegotiatedSession, SessionConfig, SessionNegotiationError, SessionPhase, SessionValidationError,
+};
+pub use transport::{
+    TransportBinding, TransportCandidate, TransportHandoffController, TransportHandoffDecision,
+    TransportHandoffRejection,
 };
 pub use video::{
     DMP_VIDEO_HEADER_LEN, DmpVideoCodec, DmpVideoFlags, DmpVideoPacket, DmpVideoPacketError,
