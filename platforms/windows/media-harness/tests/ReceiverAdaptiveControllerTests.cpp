@@ -119,7 +119,7 @@ void TestFullDecodeQueueIsSevere() {
     assert(decision->requestKeyframe);
 }
 
-void TestPresentationQueueAloneDoesNotReduce() {
+void TestPresentationQueueStressUsesHysteresis() {
     ReceiverAdaptiveController controller(
         24,
         60);
@@ -137,8 +137,43 @@ void TestPresentationQueueAloneDoesNotReduce() {
                 0,
                 2))
              .has_value());
-    assert(
-        controller.BitrateMbps() == 24);
+
+    const auto decision =
+        controller.Update(
+            Telemetry(
+                180,
+                0,
+                60,
+                3,
+                0,
+                2));
+
+    assert(decision.has_value());
+    assert(decision->bitrateMbps == 21);
+    assert(!decision->requestKeyframe);
+}
+
+void TestFullPresentationQueueIsSevere() {
+    ReceiverAdaptiveController controller(
+        40,
+        60);
+
+    (void)controller.Update(
+        Telemetry(60, 0));
+
+    const auto decision =
+        controller.Update(
+            Telemetry(
+                120,
+                0,
+                60,
+                3,
+                0,
+                3));
+
+    assert(decision.has_value());
+    assert(decision->bitrateMbps == 30);
+    assert(decision->requestKeyframe);
 }
 
 void TestPersistentStressStepsRasterDown() {
@@ -297,7 +332,8 @@ int main() {
     TestModerateStressNeedsHysteresis();
     TestSevereStressReducesImmediately();
     TestFullDecodeQueueIsSevere();
-    TestPresentationQueueAloneDoesNotReduce();
+    TestPresentationQueueStressUsesHysteresis();
+    TestFullPresentationQueueIsSevere();
     TestPersistentStressStepsRasterDown();
     TestHealthyLinkRecoversBitrate();
     TestRasterRecoversAfterBitrate();
