@@ -222,24 +222,34 @@ bool EncodeDmpFrame(
     return true;
 }
 
+DmpSequenceTracker::DmpSequenceTracker(
+    std::uint32_t initialExpected) noexcept
+    : expected_(initialExpected == 0U ? 1U : initialExpected),
+      exhausted_(initialExpected == 0U) {}
+
 bool DmpSequenceTracker::Accept(
     std::uint32_t sequence,
     std::string& error) {
+    if (exhausted_) {
+        error = "DMP sequence space exhausted; reconnect is required";
+        return false;
+    }
     if (sequence != expected_) {
         error = "unexpected DMP frame sequence";
         return false;
     }
-
-    expected_ =
-        expected_ == std::numeric_limits<std::uint32_t>::max()
-        ? 0U
-        : expected_ + 1U;
+    if (expected_ == std::numeric_limits<std::uint32_t>::max()) {
+        exhausted_ = true;
+    } else {
+        ++expected_;
+    }
     error.clear();
     return true;
 }
 
 void DmpSequenceTracker::Reset() noexcept {
     expected_ = 1;
+    exhausted_ = false;
 }
 
 std::uint32_t DmpSequenceTracker::Expected() const noexcept {

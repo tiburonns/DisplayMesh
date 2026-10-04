@@ -82,6 +82,7 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
     case connectionClosed
     case pairingRejected
     case unexpectedSequence(expected: UInt32, received: UInt32)
+    case sequenceExhausted
     case timeout(String)
     case invalidReceiverHello
     case invalidReceiverTelemetry
@@ -126,6 +127,8 @@ enum DMPProtocolError: Error, LocalizedError, Equatable {
             return "The receiver rejected pairing"
         case .unexpectedSequence(let expected, let received):
             return "Unexpected DMP sequence: expected \(expected), received \(received)"
+        case .sequenceExhausted:
+            return "DMP sequence space exhausted; reconnect is required"
         case .timeout(let operation):
             return "Timed out waiting for \(operation)"
         case .invalidReceiverHello:
@@ -189,20 +192,25 @@ struct DMPFrame: Equatable {
 }
 
 struct DMPSequenceTracker {
-    private(set) var expected: UInt32 = 1
+    private(set) var expected: UInt32
+    private(set) var isExhausted: Bool
+
+    init(expected: UInt32 = 1, isExhausted: Bool = false) {
+        self.expected = expected == 0 ? 1 : expected
+        self.isExhausted = isExhausted || expected == 0
+    }
 
     mutating func accept(_ sequence: UInt32) throws {
+        guard !isExhausted else { throw DMPProtocolError.sequenceExhausted }
         guard sequence == expected else {
-            throw DMPProtocolError.unexpectedSequence(
-                expected: expected,
-                received: sequence
-            )
+            throw DMPProtocolError.unexpectedSequence(expected: expected, received: sequence)
         }
-        expected &+= 1
+        if expected == UInt32.max { isExhausted = true } else { expected += 1 }
     }
 
     mutating func reset() {
         expected = 1
+        isExhausted = false
     }
 }
 

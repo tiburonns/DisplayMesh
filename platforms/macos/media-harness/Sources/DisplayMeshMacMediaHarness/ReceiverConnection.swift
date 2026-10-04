@@ -478,13 +478,14 @@ final class ReceiverConnection: @unchecked Sendable {
         type: DMPMessageType,
         payload: Data
     ) throws -> Data {
+        guard nextSequence != 0 else { throw DMPProtocolError.sequenceExhausted }
         let frame = try protectedCodec.outboundFrame(
             type: type,
             payload: payload,
             sequence: nextSequence
         )
         let encoded = try frame.encoded()
-        nextSequence &+= 1
+        nextSequence = nextSequence == UInt32.max ? 0 : nextSequence + 1
         return encoded
     }
 
