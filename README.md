@@ -10,21 +10,30 @@ The goal is to let a computer create a real extended display and stream it to an
 
 > **Current `main`: 0.2.3.** The Apple receiver includes the real low-latency H.264 receive path (DMP video packet → Annex-B parser → VideoToolbox → NV12 → Metal), bounded decoder work, keyframe recovery, live diagnostics and EN/ES/System UI. The Apple↔macOS path now uses mutual persistent P-256 identities plus signed ephemeral P-256 ECDH, HKDF-SHA256 and ChaCha20-Poly1305 protection for every post-pairing DMP frame; plaintext post-pairing traffic fails closed. Receiver queue/decode telemetry, adaptive bitrate/raster and encrypted RTT probes are wired into the macOS harness. Windows includes the IddCx/D3D11 virtual-display foundation and a concrete asynchronous Media Foundation encode adapter/coordinator. WDK hardware validation, live IddCx→NV12→MFT wiring, USB transport, independent security review and end-to-end hardware acceptance remain release blockers.
 
-## Product requirements
+## Capability status
 
-- True extended display or mirror mode
-- macOS ↔ Windows, macOS ↔ macOS, Windows ↔ Windows
-- iPhone and iPad as external touch displays
-- USB and Wi-Fi as first-class connection modes
-- Native Retina-aware panel negotiation
-- Hardware-accelerated H.264 low-latency baseline
-- HEVC / AV1 later where hardware support makes sense
-- 1080p60 and 1440p60 first; 4K60 and 120 Hz only after hardware validation
-- Multitouch, scroll and Apple Pencil metadata
-- Mouse and keyboard input where applicable
-- Adaptive bitrate and encoded raster without changing logical desktop geometry
-- Pairing and encrypted sessions
-- English, Spanish and system-language UI
+The lists below distinguish code that exists on current `main` from product targets. A capability is not considered release-ready until its platform-specific hardware acceptance gate in [docs/TESTING.md](docs/TESTING.md) passes.
+
+### Implemented on current `main`
+
+- iPhone/iPad receiver with low-latency H.264 decode through VideoToolbox, NV12 Metal presentation, panel-capability reporting, touch/Pencil sample capture, diagnostics, and English/Spanish/System UI.
+- macOS developer path that creates a real temporary virtual display, captures it with ScreenCaptureKit, encodes H.264 with VideoToolbox, and streams it to the Apple receiver over the current LAN/TCP DMP path.
+- Persistent P-256 peer identities, signed ephemeral P-256 ECDH, HKDF-SHA256, and ChaCha20-Poly1305 protection for Apple↔macOS post-pairing DMP traffic.
+- Bounded decode/presentation work, stale-frame handling, keyframe recovery, receiver telemetry, encrypted RTT probes, and adaptive bitrate/raster control.
+
+### Implemented foundation; release validation still pending
+
+- Windows IddCx/D3D11 virtual-display foundation plus the asynchronous Media Foundation encode adapter/coordinator.
+- 1080p60 and 1440p60 are current acceptance targets, not universal performance claims; they still require end-to-end measurements on representative hardware.
+- Windows hardware behavior, WDK deployment/signing, and live IddCx → NV12 → Media Foundation integration remain release gates.
+
+### Product targets / not production-ready yet
+
+- USB to iPhone/iPad through usbmux.
+- Complete macOS ↔ Windows, macOS ↔ macOS, and Windows ↔ Windows product paths.
+- Production-ready mirror mode and complete mouse/keyboard/touch system-injection mappings on every supported host.
+- HEVC / AV1 where hardware support makes sense.
+- 4K60 and 120 Hz modes after the complete virtual-display, capture, codec, transport, decoder, renderer, and panel path is validated.
 
 ## Latency strategy
 
@@ -44,13 +53,13 @@ DisplayMesh optimizes for interaction freshness instead of media-player behavior
 
 DisplayMesh keeps the physical connection separate from the wire protocol:
 
-| Connection | Initial wire protocol |
-| --- | --- |
-| Wi-Fi / LAN | QUIC or TCP |
-| Ethernet | QUIC or TCP |
-| USB to iPhone/iPad | TCP through usbmux |
+| Connection | Protocol model | Current status |
+| --- | --- | --- |
+| Wi-Fi / LAN | TCP today; QUIC remains an architectural option | Apple receiver ↔ macOS developer path is wired |
+| Ethernet | TCP / future QUIC | Uses the same LAN transport model; end-to-end product acceptance is still pending |
+| USB to iPhone/iPad | TCP through usbmux | Target architecture; not wired as a production path yet |
 
-This lets the product use USB as a true low-jitter path without pretending that USB and QUIC/TCP are the same layer.
+The table describes the transport model, not a claim that every binding is currently release-ready. USB remains a release blocker on current `main`.
 
 ## Architecture
 
