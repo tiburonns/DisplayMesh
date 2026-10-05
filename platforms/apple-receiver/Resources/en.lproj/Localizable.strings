@@ -76,3 +76,5 @@
 
 "diagnostics.decodeQueue" = "DQ %lld";
 "diagnostics.presentationQueue" = "PQ %lld";
+"settings.support.feedback" = "Support & Feedback";
+"settings.support.patreon" = "Support on Patreon";
