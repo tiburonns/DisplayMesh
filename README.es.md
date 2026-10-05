@@ -6,21 +6,30 @@ El objetivo es permitir que una computadora cree una pantalla extendida real y l
 
 > **`main` actual: 0.2.3.** El receptor Apple incluye la ruta real H.264 de baja latencia (paquete DMP → Annex-B → VideoToolbox → NV12 → Metal), decode acotado, recuperación por keyframe, diagnósticos e interfaz Sistema/English/Español. La ruta Apple↔macOS ya usa identidades P-256 persistentes mutuas, ECDH P-256 efímero firmado, HKDF-SHA256 y ChaCha20-Poly1305 para proteger todos los frames DMP posteriores al pairing; el tráfico plaintext posterior al pairing falla cerrado. La telemetría de colas/decode, bitrate/raster adaptativos y las sondas RTT cifradas están conectadas al harness macOS. Windows ya incluye la base IddCx/D3D11 y un adaptador/coordinador asíncrono concreto de Media Foundation. Siguen pendientes validación WDK real, cablear IddCx→NV12→MFT en vivo, USB, revisión independiente de seguridad y aceptación end-to-end en hardware.
 
-## Requisitos del producto
+## Estado de capacidades
 
-- Pantalla extendida real o modo duplicado
-- macOS ↔ Windows, macOS ↔ macOS y Windows ↔ Windows
-- iPhone y iPad como pantallas táctiles externas
-- USB y Wi-Fi como modos de conexión de primera clase
-- Negociación de resolución nativa Retina
-- H.264 por hardware como baseline de baja latencia
-- HEVC / AV1 después cuando el hardware lo permita
-- 1080p60 y 1440p60 primero; 4K60 y 120 Hz sólo después de validación en hardware
-- Multitouch, scroll y metadatos de Apple Pencil
-- Mouse y teclado cuando aplique
-- Bitrate y raster codificado adaptativos sin cambiar la geometría lógica del escritorio
-- Emparejamiento y sesiones cifradas
-- Interfaz en inglés, español e idioma del sistema
+Las listas siguientes separan el código que existe en `main` de los objetivos del producto. Una capacidad no se considera lista para release hasta pasar su gate de aceptación en hardware de [docs/TESTING.es.md](docs/TESTING.es.md).
+
+### Implementado en `main`
+
+- Receptor para iPhone/iPad con decode H.264 de baja latencia mediante VideoToolbox, presentación NV12 con Metal, reporte de capacidades del panel, captura de muestras touch/Pencil, diagnósticos e interfaz English/Español/Sistema.
+- Ruta de desarrollo macOS que crea un monitor virtual temporal real, lo captura con ScreenCaptureKit, codifica H.264 con VideoToolbox y lo transmite al receptor Apple mediante la ruta DMP LAN/TCP actual.
+- Identidades P-256 persistentes, ECDH P-256 efímero firmado, HKDF-SHA256 y ChaCha20-Poly1305 para proteger el tráfico DMP posterior al pairing entre Apple y macOS.
+- Trabajo de decode/presentación acotado, descarte de frames obsoletos, recuperación por keyframe, telemetría del receptor, sondas RTT cifradas y control adaptativo de bitrate/raster.
+
+### Base implementada; validación de release pendiente
+
+- Base de monitor virtual IddCx/D3D11 para Windows y adaptador/coordinador asíncrono de Media Foundation.
+- 1080p60 y 1440p60 son objetivos actuales de aceptación, no afirmaciones universales de rendimiento; aún requieren mediciones end-to-end en hardware representativo.
+- El comportamiento real de Windows, despliegue/firma WDK y la integración IddCx → NV12 → Media Foundation en vivo siguen siendo gates de release.
+
+### Objetivos del producto / todavía no listos para producción
+
+- USB a iPhone/iPad mediante usbmux.
+- Rutas completas macOS ↔ Windows, macOS ↔ macOS y Windows ↔ Windows.
+- Modo duplicado listo para producción y mapeos completos de mouse/teclado/touch a nivel de sistema en cada host soportado.
+- HEVC / AV1 donde el hardware lo permita.
+- 4K60 y 120 Hz después de validar la ruta completa de monitor virtual, captura, codec, transporte, decoder, renderer y panel.
 
 ## Estrategia de latencia
 
@@ -40,13 +49,13 @@ DisplayMesh prioriza interacción fresca en lugar de comportamiento de reproduct
 
 DisplayMesh separa la conexión física del protocolo:
 
-| Conexión | Protocolo inicial |
-| --- | --- |
-| Wi-Fi / LAN | QUIC o TCP |
-| Ethernet | QUIC o TCP |
-| USB a iPhone/iPad | TCP mediante usbmux |
+| Conexión | Modelo de protocolo | Estado actual |
+| --- | --- | --- |
+| Wi-Fi / LAN | TCP actualmente; QUIC permanece como opción arquitectónica | La ruta de desarrollo receptor Apple ↔ macOS está conectada |
+| Ethernet | TCP / QUIC futuro | Usa el mismo modelo LAN; la aceptación end-to-end del producto sigue pendiente |
+| USB a iPhone/iPad | TCP mediante usbmux | Arquitectura objetivo; todavía no está conectado como ruta de producción |
 
-Esto permite que USB sea una ruta real de baja variación de latencia sin mezclarlo conceptualmente con QUIC/TCP.
+La tabla describe el modelo de transporte, no afirma que todos los enlaces estén listos para release. USB sigue siendo un blocker de release en `main`.
 
 ## Arquitectura
 
