@@ -77,6 +77,10 @@ struct SettingsView: View {
                         "Support & feedback / Soporte y feedback",
                         destination: URL(string: "https://github.com/tiburonns/DisplayMesh/issues/new?template=feedback.yml")!
                     )
+                    Link(
+                        "Support on Patreon / Apoyar en Patreon",
+                        destination: URL(string: "https://www.patreon.com/tiburonns")!
+                    )
                 }
 
                 Section("settings.about.section") {
