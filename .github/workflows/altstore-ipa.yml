@@ -1,0 +1,39 @@
+name: AltStore IPA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: platforms/apple-receiver
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project DisplayMeshReceiver.xcodeproj -scheme DisplayMeshReceiver -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO BUILD_DIR="$RUNNER_TEMP/build" build
+          APP="$RUNNER_TEMP/build/Release-iphoneos/DisplayMeshReceiver.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry DisplayMesh.ipa Payload
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${${ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(xcodebuild -project DisplayMeshReceiver.xcodeproj -scheme DisplayMeshReceiver -configuration Release -sdk iphoneos -showBuildSettings | awk -F' = ' '/MARKETING_VERSION/{print $2; exit}')
+          BUILD=$(xcodebuild -project DisplayMeshReceiver.xcodeproj -scheme DisplayMeshReceiver -configuration Release -sdk iphoneos -showBuildSettings | awk -F' = ' '/CURRENT_PROJECT_VERSION/{print $2; exit}')
+          TAG="altstore-$VERSION-$BUILD-${${ github.run_number }}"
+          gh release create "$TAG" "$RUNNER_TEMP/DisplayMesh.ipa" --target "${${ github.sha }}" --title "DisplayMesh $VERSION ($BUILD)" --generate-notes
