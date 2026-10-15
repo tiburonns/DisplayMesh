@@ -106,3 +106,9 @@ This is deliberately transport-independent. It does not claim that the Windows W
 The driver-side mode request now uses a shared `ReceiverModePolicy` before touching IddCx state. It accepts negotiated mobile-panel dimensions within the product safety bounds and normalizes odd pixel axes down by at most one pixel so the resulting mode stays compatible with the NV12/H.264 GPU pipeline. Invalid protocol versions, extreme dimensions and unsupported refresh rates fail before driver state changes.
 
 This removes an avoidable incompatibility with real mobile panels that report an odd native width or height while preserving deterministic, bounded virtual-display geometry.
+
+## Native secure-session primitive
+
+`protocol/DmpSecureSession` and `DmpProtectedFrameCodec` mirror the Apple/macOS protected-frame boundary using Windows CNG: HKDF-SHA256 directional keys, ChaCha20-Poly1305 payload protection, DMP header AAD binding, 12-byte random nonces and 16-byte authentication tags. The codec permits plaintext only for hello/pairing before session installation and rejects plaintext post-pairing traffic.
+
+This is a tested protocol primitive, not a claim that the Windows network/pairing service is complete. The live Windows service must derive the shared secret from pairing-bound ephemeral P-256 ECDH material, install the codec, advance `DmpHostSessionGate` only after identity verification, and clear all secure/session state on reconnect.
