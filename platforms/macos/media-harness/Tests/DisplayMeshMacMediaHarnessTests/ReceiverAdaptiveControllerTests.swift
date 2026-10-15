@@ -98,7 +98,7 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
         XCTAssertEqual(decision?.requestKeyframe, true)
     }
 
-    func testPresentationQueueAloneDoesNotForceBitrateReduction() {
+    func testPresentationQueueStressUsesHysteresis() {
         var controller = ReceiverAdaptiveController(
             initialBitrateMbps: 24,
             targetFramesPerSecond: 60
@@ -116,11 +116,49 @@ final class ReceiverAdaptiveControllerTests: XCTestCase {
                     fps: 60,
                     decodeMilliseconds: 3,
                     decodeQueueDepth: 0,
-                    presentationQueueDepth: 1
+                    presentationQueueDepth: 2
                 )
             )
         )
-        XCTAssertEqual(controller.bitrateMbps, 24)
+
+        let decision = controller.update(
+            telemetry(
+                received: 180,
+                dropped: 0,
+                fps: 60,
+                decodeMilliseconds: 3,
+                decodeQueueDepth: 0,
+                presentationQueueDepth: 2
+            )
+        )
+
+        XCTAssertEqual(decision?.bitrateMbps, 21)
+        XCTAssertEqual(decision?.requestKeyframe, false)
+    }
+
+    func testFullPresentationQueueIsImmediateSevereStress() {
+        var controller = ReceiverAdaptiveController(
+            initialBitrateMbps: 40,
+            targetFramesPerSecond: 60
+        )
+
+        _ = controller.update(
+            telemetry(received: 60, dropped: 0)
+        )
+
+        let decision = controller.update(
+            telemetry(
+                received: 120,
+                dropped: 0,
+                fps: 60,
+                decodeMilliseconds: 3,
+                decodeQueueDepth: 0,
+                presentationQueueDepth: 3
+            )
+        )
+
+        XCTAssertEqual(decision?.bitrateMbps, 30)
+        XCTAssertEqual(decision?.requestKeyframe, true)
     }
 
     func testSevereStressReducesImmediatelyAndRequestsKeyframe() {
