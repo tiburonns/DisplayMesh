@@ -76,3 +76,12 @@
 
 "diagnostics.decodeQueue" = "DQ %lld";
 "diagnostics.presentationQueue" = "PQ %lld";
+"feedback.title" = "Bugs, comments & suggestions";
+"feedback.category" = "Category";
+"feedback.message" = "Message";
+"feedback.send" = "Continue in email";
+"feedback.emailDraft" = "Your email app opens with a draft. Review and send it there.";
+"feedback.bug" = "Bug";
+"feedback.comment" = "Comment";
+"feedback.suggestion" = "Suggestion";
+"feedback.other" = "Other";
