@@ -76,3 +76,12 @@
 
 "diagnostics.decodeQueue" = "CD %lld";
 "diagnostics.presentationQueue" = "CP %lld";
+"feedback.title" = "Errores, comentarios y sugerencias";
+"feedback.category" = "Categoría";
+"feedback.message" = "Mensaje";
+"feedback.send" = "Continuar en correo";
+"feedback.emailDraft" = "Tu app de correo abrirá un borrador. Revísalo y envíalo desde allí.";
+"feedback.bug" = "Error";
+"feedback.comment" = "Comentario";
+"feedback.suggestion" = "Sugerencia";
+"feedback.other" = "Otro";

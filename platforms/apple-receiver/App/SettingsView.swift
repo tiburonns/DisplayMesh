@@ -4,6 +4,9 @@ struct SettingsView: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
     @EnvironmentObject private var receiver: ReceiverViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var feedbackCategory = "feedback.suggestion"
+    @State private var feedbackMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -76,6 +79,21 @@ struct SettingsView: View {
                     LabeledContent("settings.about.protocol", value: "DMPv1")
                     LabeledContent("settings.about.version", value: appVersion)
                 }
+
+                Section("feedback.title") {
+                    Picker("feedback.category", selection: $feedbackCategory) {
+                        ForEach(["feedback.bug", "feedback.comment", "feedback.suggestion", "feedback.other"], id: \.self) {
+                            Text($0)
+                        }
+                    }
+                    TextField("feedback.message", text: $feedbackMessage, axis: .vertical)
+                        .lineLimit(5...10)
+                    Button("feedback.send", action: sendFeedback)
+                        .disabled(feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Text("feedback.emailDraft")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("settings.title")
             .toolbar {
@@ -101,5 +119,16 @@ struct SettingsView: View {
         }
 
         return version ?? "—"
+    }
+
+    private func sendFeedback() {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = "adrianbarcenasm37@gmail.com"
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "[DisplayMesh] [\(String(localized: String.LocalizationValue(feedbackCategory)))]"),
+            URLQueryItem(name: "body", value: "\(feedbackMessage)\n\nDisplayMesh \(appVersion)")
+        ]
+        if let url = components.url { openURL(url) }
     }
 }
