@@ -14,6 +14,12 @@ struct ReceiverTelemetrySample {
     std::optional<std::uint32_t> presentationQueueDepth;
 };
 
+struct ReceiverTelemetryAdmissionContext {
+    bool sessionStreaming{};
+    bool authenticated{};
+    bool generationMatches{};
+};
+
 struct ReceiverAdaptationDecision {
     std::uint32_t bitrateMbps{};
     double rasterScale{1.0};
@@ -30,7 +36,8 @@ public:
         std::uint32_t maximumBitrateMbps = 120);
 
     std::optional<ReceiverAdaptationDecision> Update(
-        const ReceiverTelemetrySample& telemetry);
+        const ReceiverTelemetrySample& telemetry,
+        const ReceiverTelemetryAdmissionContext& context);
 
     std::uint32_t BitrateMbps() const noexcept;
     double RasterScale() const noexcept;
@@ -40,7 +47,11 @@ private:
     static std::optional<double> LowerRasterStep(double value) noexcept;
     static std::optional<double> HigherRasterStep(double value) noexcept;
 
+    static bool IsTelemetryValid(
+        const ReceiverTelemetrySample& telemetry) noexcept;
+
     void ResetTrend() noexcept;
+    void ResetBaseline() noexcept;
 
     std::uint32_t minimumBitrateMbps_{};
     std::uint32_t maximumBitrateMbps_{};
