@@ -124,7 +124,7 @@ struct SettingsView: View {
     private func sendFeedback() {
         var components = URLComponents()
         components.scheme = "mailto"
-        components.path = "adrianbarcenasm37@gmail.com"
+        components.path = "tiburonns@icloud.com"
         components.queryItems = [
             URLQueryItem(name: "subject", value: "[DisplayMesh] [\(String(localized: String.LocalizationValue(feedbackCategory)))]"),
             URLQueryItem(name: "body", value: "\(feedbackMessage)\n\nDisplayMesh \(appVersion)")
