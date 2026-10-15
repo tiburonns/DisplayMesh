@@ -69,6 +69,13 @@ target_link_libraries(
 include(CTest)
 
 if(BUILD_TESTING)
+    # CI builds the test executables in Release. Keep assert() active so
+    # invariant checks are evaluated instead of being compiled out by NDEBUG.
+    if(MSVC)
+        add_compile_options(/UNDEBUG)
+    else()
+        add_compile_options(-UNDEBUG)
+    endif()
     add_executable(displaymesh-frame-mailbox-tests
         tests/LatestFrameMailboxTests.cpp
     )
