@@ -107,6 +107,12 @@ open DisplayMeshReceiver.xcodeproj
 - English: this file
 - Español: [README.es.md](README.es.md)
 
+## Contact and feedback
+
+Questions, suggestions, bug reports, and general feedback can be submitted through [GitHub Issues](https://github.com/tiburonns/DisplayMesh/issues). The Apple receiver also exposes this flow from **Settings → Support** and prepares the report for review before GitHub publishes anything.
+
+Do not include passwords, pairing secrets, private network information, or other sensitive data. Security vulnerabilities should use GitHub's private **Security → Report a vulnerability** flow.
+
 ## Repository policy
 
 DisplayMesh is an independent implementation. Do not copy OpenDisplay branding, artwork, or source code into this repository. Interoperability work should be based on public protocol/API documentation and clean implementation boundaries.
