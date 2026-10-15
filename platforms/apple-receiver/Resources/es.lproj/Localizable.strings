@@ -76,3 +76,5 @@
 
 "diagnostics.decodeQueue" = "CD %lld";
 "diagnostics.presentationQueue" = "CP %lld";
+"settings.support.feedback" = "Soporte y feedback";
+"settings.support.patreon" = "Apoyar en Patreon";

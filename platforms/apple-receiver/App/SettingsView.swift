@@ -72,6 +72,17 @@ struct SettingsView: View {
                     )
                 }
 
+                Section {
+                    Link(
+                        "settings.support.feedback",
+                        destination: URL(string: "https://github.com/tiburonns/DisplayMesh/issues/new?template=feedback.yml")!
+                    )
+                    Link(
+                        "settings.support.patreon",
+                        destination: URL(string: "https://www.patreon.com/tiburonns")!
+                    )
+                }
+
                 Section("settings.about.section") {
                     LabeledContent("settings.about.protocol", value: "DMPv1")
                     LabeledContent("settings.about.version", value: appVersion)
