@@ -158,5 +158,18 @@ int main() {
     assert(tracker.Accept(1, error));
     assert(!tracker.Accept(3, error));
 
+    DmpSequenceTracker exhaustionTracker(UINT32_MAX);
+    assert(exhaustionTracker.Accept(UINT32_MAX, error));
+    assert(exhaustionTracker.Expected() == UINT32_MAX);
+    assert(!exhaustionTracker.Accept(0, error));
+    assert(error.find("reconnect") != std::string::npos);
+    exhaustionTracker.Reset();
+    assert(exhaustionTracker.Expected() == 1);
+    assert(exhaustionTracker.Accept(1, error));
+
+    DmpSequenceTracker invalidInitial(0);
+    assert(!invalidInitial.Accept(1, error));
+    assert(error.find("reconnect") != std::string::npos);
+
     return 0;
 }

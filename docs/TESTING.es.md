@@ -83,3 +83,10 @@ Antes de aprobar rendimiento en hardware, verifica que las pruebas deterministas
 - golden frame y tracker de secuencia del framing DMP Windows.
 
 Estos checks endurecen la ruta plaintext de desarrollo, pero no sustituyen el gate TLS de producción.
+
+
+## Gate de agotamiento de secuencia
+
+- Cada conexión inicia en secuencia 1.
+- Gaps y replays deben rechazarse.
+- Tras aceptar o emitir `0xFFFFFFFF`, la conexión debe cerrarse antes de enviar otro frame; nunca se permite wrap a 0 dentro de la misma sesión autenticada.

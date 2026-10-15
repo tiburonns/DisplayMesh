@@ -273,3 +273,10 @@ During an authorized streaming session, the host may send a `ping` frame contain
 Only one probe needs to be outstanding per connection. The host measures elapsed monotonic time between sending the token and receiving the matching pong. An unexpected token, malformed payload length, plaintext probe, or probe outside the streaming phase is a protocol violation.
 
 RTT is diagnostic telemetry. It does not by itself prove display/input latency because capture, encode, decode, render and OS input injection add separate latency components.
+
+
+## Sequence lifetime
+
+Each transport connection starts its DMP sequence space at **1**. Sequence **0** is never emitted by an active connection. After a peer emits or accepts sequence `0xFFFFFFFF`, that connection is exhausted and must be closed; any further DMP traffic requires a fresh authenticated connection with a new sequence space and new session keys. DMP sequence numbers never wrap within one connection.
+
+This rule keeps replay tracking deterministic and prevents an authenticated-encryption session from reusing the sequence-derived nonce space after wraparound.

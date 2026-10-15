@@ -76,7 +76,7 @@ Before hardware performance sign-off, verify the deterministic protocol suites c
 
 - per-message frame payload budgets and exact 40-byte input / empty keyframe-request payloads;
 - reserved DMP input flags rejected consistently by Rust, Swift and Windows decoders;
-- sequence gap/replay rejection per transport connection;
+- sequence gap/replay rejection per transport connection, plus mandatory reconnect before the 32-bit sequence space can wrap;
 - receiver authorization-phase admission and bounded malformed pairing attempts;
 - receiver capabilities and panel descriptor validation before video starts;
 - generic Bonjour naming and active-session replacement rejection;

@@ -176,11 +176,15 @@ impl DmpFrame {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DmpSequenceTracker {
     expected: u32,
+    exhausted: bool,
 }
 
 impl Default for DmpSequenceTracker {
     fn default() -> Self {
-        Self { expected: 1 }
+        Self {
+            expected: 1,
+            exhausted: false,
+        }
     }
 }
 
@@ -189,20 +193,31 @@ impl DmpSequenceTracker {
         self.expected
     }
 
+    pub const fn is_exhausted(&self) -> bool {
+        self.exhausted
+    }
+
     pub fn accept(&mut self, sequence: u32) -> Result<(), DmpFrameError> {
+        if self.exhausted {
+            return Err(DmpFrameError::SequenceExhausted);
+        }
         if sequence != self.expected {
             return Err(DmpFrameError::UnexpectedSequence {
                 expected: self.expected,
                 received: sequence,
             });
         }
-
-        self.expected = self.expected.wrapping_add(1);
+        if self.expected == u32::MAX {
+            self.exhausted = true;
+        } else {
+            self.expected += 1;
+        }
         Ok(())
     }
 
     pub fn reset(&mut self) {
         self.expected = 1;
+        self.exhausted = false;
     }
 }
 
@@ -226,6 +241,7 @@ pub enum DmpFrameError {
         expected: u32,
         received: u32,
     },
+    SequenceExhausted,
 }
 
 impl fmt::Display for DmpFrameError {
@@ -259,6 +275,9 @@ impl fmt::Display for DmpFrameError {
                 f,
                 "unexpected DMP sequence: expected {expected}, received {received}"
             ),
+            Self::SequenceExhausted => {
+                f.write_str("DMP sequence space exhausted; reconnect is required")
+            }
         }
     }
 }
@@ -349,12 +368,19 @@ mod tests {
     }
 
     #[test]
-    fn sequence_tracker_wraps_without_panicking() {
-        let mut tracker = DmpSequenceTracker { expected: u32::MAX };
+    fn sequence_tracker_requires_reconnect_before_wrap() {
+        let mut tracker = DmpSequenceTracker {
+            expected: u32::MAX,
+            exhausted: false,
+        };
         tracker.accept(u32::MAX).unwrap();
-        assert_eq!(tracker.expected(), 0);
-        tracker.accept(0).unwrap();
+        assert!(tracker.is_exhausted());
+        assert_eq!(tracker.expected(), u32::MAX);
+        assert_eq!(tracker.accept(0), Err(DmpFrameError::SequenceExhausted));
+        tracker.reset();
+        assert!(!tracker.is_exhausted());
         assert_eq!(tracker.expected(), 1);
+        tracker.accept(1).unwrap();
     }
 
     #[test]

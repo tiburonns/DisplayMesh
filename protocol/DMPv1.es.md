@@ -67,3 +67,10 @@ La implementación ya define en código ejecutable el límite de protección pos
 La validación del tamaño de payload cifrado contempla los 28 bytes de overhead del formato combinado de ChaChaPoly, incluidos mensajes de tamaño exacto como input y solicitud de keyframe.
 
 La ruta TCP de desarrollo ya intercambia las claves públicas efímeras P-256 dentro del transcript de pairing firmado e instala este codec en ambos sockets antes de capabilities/media.
+
+
+## Vida útil de la secuencia
+
+Cada conexión de transporte inicia su espacio de secuencias DMP en **1**. Una conexión activa nunca emite la secuencia **0**. Después de emitir o aceptar la secuencia `0xFFFFFFFF`, la conexión queda agotada y debe cerrarse; cualquier tráfico DMP posterior requiere una conexión autenticada nueva, con un espacio de secuencias y claves de sesión nuevos. Las secuencias DMP nunca hacen wrap dentro de una misma conexión.
+
+Esta regla mantiene determinista la protección contra replay y evita reutilizar el espacio de nonce derivado de la secuencia después de un wraparound.

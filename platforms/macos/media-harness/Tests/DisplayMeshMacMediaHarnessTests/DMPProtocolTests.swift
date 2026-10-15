@@ -43,6 +43,20 @@ final class DMPProtocolTests: XCTestCase {
         XCTAssertThrowsError(try tracker.accept(3))
     }
 
+    func testSequenceTrackerRequiresReconnectBeforeWrap() throws {
+        var tracker = DMPSequenceTracker(expected: UInt32.max)
+        try tracker.accept(UInt32.max)
+        XCTAssertTrue(tracker.isExhausted)
+        XCTAssertEqual(tracker.expected, UInt32.max)
+        XCTAssertThrowsError(try tracker.accept(0)) { error in
+            XCTAssertEqual(error as? DMPProtocolError, .sequenceExhausted)
+        }
+        tracker.reset()
+        XCTAssertFalse(tracker.isExhausted)
+        XCTAssertEqual(tracker.expected, 1)
+        XCTAssertNoThrow(try tracker.accept(1))
+    }
+
     func testPairingPayloadBudgetRejectsHeaderBeforeBodyArrives() {
         let header = Data([
             0x44, 0x4D, 0x50, 0x31,

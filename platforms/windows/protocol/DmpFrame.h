@@ -63,12 +63,14 @@ bool EncodeDmpFrame(
 
 class DmpSequenceTracker {
 public:
+    explicit DmpSequenceTracker(std::uint32_t initialExpected = 1U) noexcept;
     bool Accept(std::uint32_t sequence, std::string& error);
     void Reset() noexcept;
     std::uint32_t Expected() const noexcept;
 
 private:
     std::uint32_t expected_{1};
+    bool exhausted_{false};
 };
 
 }  // namespace displaymesh

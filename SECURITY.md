@@ -99,3 +99,8 @@ DisplayMesh now has a mirrored Apple/macOS protected-frame codec that enforces t
 - the encrypted flag, message type and sequence remain authenticated metadata.
 
 The active TCP listener/connection now install the codec from pairing-bound ephemeral key-agreement material before capabilities or media are admitted. Production readiness still requires the remaining transport review, hardware acceptance, signing and packaging gates.
+
+
+## Sequence-space exhaustion
+
+A DMP transport connection must close after sequence `0xFFFFFFFF` is emitted or accepted. Sequence numbers do not wrap to zero inside an authenticated connection. A new connection must perform the normal authenticated session setup and derive fresh session keys before traffic resumes.

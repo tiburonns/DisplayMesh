@@ -18,7 +18,7 @@
 - [x] macOS / Windows backend boundaries
 - [x] Managed backend lifecycle with create/capture/stop/destroy rollback tests
 - [x] Product quality gates documented
-- [ ] CI green on all host/receiver jobs
+- [x] CI green on all host/receiver jobs
 
 ## M1 — Native display creation
 
@@ -150,7 +150,7 @@
 - [x] Bounded malformed pairing attempts + challenge-bound response
 - [x] Generic Bonjour receiver identity (no configured device-name leak)
 - [x] Windows native DMP framing/sequence contract
-- [ ] Apple receiver CI build confirmed green
+- [x] Apple receiver CI build confirmed green
 - [x] First-run Local Network permission education before Bonjour/listener startup
 - [ ] Production transport security review / TLS 1.3 or equivalent binding
 - [x] Fail-closed encrypted DMP frame codec and encrypted-wire payload validation

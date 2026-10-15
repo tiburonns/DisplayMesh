@@ -32,7 +32,7 @@ enum HostReconnectPolicy {
         }
 
         switch protocolError {
-        case .connectionClosed:
+        case .connectionClosed, .sequenceExhausted:
             return true
         case .timeout(let operation):
             return operation == "transport connection"
