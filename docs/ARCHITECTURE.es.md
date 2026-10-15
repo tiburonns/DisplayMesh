@@ -77,3 +77,12 @@ La ruta TCP de desarrollo reinicia secuencias DMP por conexión, rechaza gaps/re
 ## Adaptación de bitrate
 
 El harness macOS consume telemetría válida del receiver y ajusta el bitrate de VideoToolbox con histéresis: estrés persistente o severo reduce bitrate y varias muestras sanas permiten recuperación gradual sin superar el valor configurado al inicio. El cambio de raster sigue pendiente hasta validar el pipeline completo en hardware.
+
+
+## Política de handoff de transporte
+
+El core compartido ahora contiene una política determinista de handoff, mientras que cada plataforma sigue siendo responsable del descubrimiento y del cambio real de socket/usbmux.
+
+Un transporte candidato sólo puede reemplazar al activo cuando está listo, autenticado y demuestra la **misma identidad del peer**. Conectar USB nunca implica confianza. El binding USB inicial sigue siendo sólo TCP y un transporte sano de mayor preferencia no se reemplaza por uno inferior. Cada cambio aceptado incrementa una generación de transporte para descartar callbacks obsoletos del binding anterior.
+
+La preferencia actual es USB → Ethernet → Wi-Fi. Si el transporte activo está degradado puede hacerse failover a una ruta autenticada de menor preferencia. Esta política **no** afirma que el descubrimiento usbmux o el handoff real ya estén implementados.

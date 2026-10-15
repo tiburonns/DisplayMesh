@@ -99,3 +99,8 @@ DisplayMesh now has a mirrored Apple/macOS protected-frame codec that enforces t
 - the encrypted flag, message type and sequence remain authenticated metadata.
 
 The active TCP listener/connection now install the codec from pairing-bound ephemeral key-agreement material before capabilities or media are admitted. Production readiness still requires the remaining transport review, hardware acceptance, signing and packaging gates.
+
+
+## Transport handoff trust
+
+Transport handoff never transfers trust merely because a new physical path appears. A candidate binding must complete authentication and match the identity of the peer already attached to the active session before the policy can switch transports. USB is therefore treated as a lower-jitter medium, not as an authentication mechanism.

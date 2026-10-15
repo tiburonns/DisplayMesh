@@ -109,7 +109,8 @@
 - [x] Wire receiver decode/drop telemetry into the macOS development adaptive controller
 - [x] Apply adaptive bitrate to the macOS VideoToolbox development encoder
 - [x] Apply adaptive stream raster to ScreenCaptureKit + VideoToolbox on the macOS development path
-- [ ] Reconnect / seamless Wi-Fi ↔ USB handoff
+- [x] Deterministic authenticated Wi-Fi/Ethernet/USB handoff policy in shared core
+- [ ] Wire the handoff policy into live Wi-Fi ↔ USB transports
 - [x] Windows receiver-driven adaptive bitrate/raster controller with the same 100/85/75/67% hysteresis policy as macOS
 - [ ] Wire authenticated Windows receiver telemetry into the adaptive controller and live MFT/raster pipeline
 
